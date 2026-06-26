@@ -49,7 +49,6 @@ function resolveCallbackUrl(event: H3Event): string {
  *    within an organisation.
  * 4. In parallel (gated by `preferences`):
  *    - Fetches user + SCIM2 user profile  (`preferences.user.fetchUserProfile !== false`)
- *    - Fetches current org + my orgs      (`preferences.user.fetchOrganizations !== false`)
  * 5. Writes the full {@link ThunderIDSSRData} to `event.context.thunderid.ssr`
  *    so the Nuxt plugin can seed `useState` keys for zero-cost hydration.
  *
@@ -154,20 +153,13 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
 
     // ── 4. Parallel SSR data fetches (gated by preferences) ───────────────
     const shouldFetchProfile: boolean = prefs?.user?.fetchUserProfile !== false;
-    const shouldFetchOrgs: boolean = prefs?.user?.fetchOrganizations !== false;
 
-    const [userResult, userProfileResult, orgsResult, currentOrgResult] = await Promise.allSettled([
+    const [userResult, userProfileResult] = await Promise.allSettled([
       // Always fetch the basic user object (needed for ThunderIDAuthState.user)
       client.getUser(session.sessionId),
 
       // SCIM2 user profile (flattened + schemas)
       shouldFetchProfile ? client.getUserProfile(session.sessionId) : Promise.resolve(null),
-
-      // User's organisations
-      shouldFetchOrgs ? client.getMyOrganizations(session.sessionId) : Promise.resolve([] as any[]),
-
-      // Current organisation (derived from the ID token)
-      shouldFetchOrgs ? client.getCurrentOrganization(session.sessionId) : Promise.resolve(null),
     ]);
 
     if (userResult.status === 'rejected') {
@@ -176,18 +168,10 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
     if (userProfileResult.status === 'rejected') {
       log.warn('Failed to fetch user profile (SCIM2):', userProfileResult.reason);
     }
-    if (orgsResult.status === 'rejected') {
-      log.warn('Failed to fetch my organisations:', orgsResult.reason);
-    }
-    if (currentOrgResult.status === 'rejected') {
-      log.warn('Failed to resolve current organisation:', currentOrgResult.reason);
-    }
 
     // ── 5. Write to event context ──────────────────────────────────────────
     const ssrData: ThunderIDSSRData = {
-      currentOrganization: currentOrgResult.status === 'fulfilled' ? currentOrgResult.value : null,
       isSignedIn: true,
-      myOrganizations: orgsResult.status === 'fulfilled' && Array.isArray(orgsResult.value) ? orgsResult.value : [],
       resolvedBaseUrl,
       session,
       user: userResult.status === 'fulfilled' ? userResult.value : null,

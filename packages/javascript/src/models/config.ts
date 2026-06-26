@@ -519,14 +519,6 @@ export interface I18nPreferences {
 
 export interface UserPreferences {
   /**
-   * Whether to automatically fetch the user's associated organizations after sign-in.
-   * When set to false, the SDK will not make API calls to `/api/users/v1/me/organizations`.
-   * @default true
-   * @remarks Disabling this will improve performance if you don't need organization information.
-   * You can manually call `getMyOrganizations()` when needed if this is disabled.
-   */
-  fetchOrganizations?: boolean;
-  /**
    * Whether to automatically fetch the user profile from SCIM2 endpoints after sign-in.
    * When set to false, the SDK will not make API calls to `/scim2/Me` and `/scim2/Schemas`.
    * Instead, it will extract basic user claims from the ID token.

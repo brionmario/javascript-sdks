@@ -17,18 +17,15 @@
  */
 
 import {
-  AllOrganizationsApiResponse,
   ThunderIDRuntimeError,
   generateFlattenedUserProfile,
   OIDCDiscoveryApiResponse,
-  Organization,
   SignInOptions,
   User,
   UserProfile,
   IdToken,
   extractUserClaimsFromIdToken,
   EmbeddedSignInFlowResponse,
-  TokenResponse,
   createPackageComponentLogger,
 } from '@thunderid/browser';
 import {FC, RefObject, PropsWithChildren, ReactElement, useEffect, useMemo, useRef, useState, useCallback} from 'react';
@@ -40,7 +37,6 @@ import ComponentRendererProvider from '../ComponentRenderer/ComponentRendererPro
 import FlowProvider from '../Flow/FlowProvider';
 import FlowMetaProvider from '../FlowMeta/FlowMetaProvider';
 import I18nProvider from '../I18n/I18nProvider';
-import OrganizationProvider from '../Organization/OrganizationProvider';
 import ThemeProvider from '../Theme/ThemeProvider';
 import UserProvider from '../User/UserProvider';
 
@@ -79,13 +75,10 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   const storageManagerRef: any = useRef<any>(null);
   const {hasAuthParams, hasCalledForThisInstance} = useBrowserUrl();
   const [user, setUser] = useState<any | null>(null);
-  const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
-
   const [isSignedInSync, setIsSignedInSync] = useState<boolean>(false);
   const [isInitializedSync, setIsInitializedSync] = useState<boolean>(false);
   const [isLoadingSync, setIsLoadingSync] = useState<boolean>(true);
 
-  const [myOrganizations, setMyOrganizations] = useState<Organization[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [baseUrl, setBaseUrl] = useState<string>(initialBaseUrl ?? '');
   const [config, setConfig] = useState<ThunderIDReactConfig>({
@@ -368,30 +361,6 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
     }
   };
 
-  const switchOrganization = async (organization: Organization): Promise<TokenResponse | Response> => {
-    try {
-      setIsUpdatingSession(true);
-      setIsLoadingSync(true);
-      const response: TokenResponse | Response = await client.switchOrganization(organization);
-
-      if (await client.isSignedIn()) {
-        await updateSession();
-      }
-
-      return response;
-    } catch (error) {
-      throw new ThunderIDRuntimeError(
-        `Failed to switch organization: ${error instanceof Error ? error.message : String(JSON.stringify(error))}`,
-        'thunderid-switchOrganization-Error',
-        'react',
-        'An error occurred while switching to the specified organization.',
-      );
-    } finally {
-      setIsUpdatingSession(false);
-      setIsLoadingSync(client.isLoading());
-    }
-  };
-
   const handleProfileUpdate = (payload: User): void => {
     setUser(payload);
     setUserProfile((prev: UserProfile | null) => ({
@@ -485,7 +454,6 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       isInitialized: isInitializedSync,
       isLoading: isLoadingSync,
       isSignedIn: isSignedInSync,
-      organization: currentOrganization,
       organizationChain,
       organizationHandle: config?.organizationHandle,
       reInitialize,
@@ -498,7 +466,6 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       signOut,
       signUp,
       signUpUrl,
-      switchOrganization,
       syncSession,
       user,
     }),
@@ -515,7 +482,6 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       isInitializedSync,
       isLoadingSync,
       isSignedInSync,
-      currentOrganization,
       signIn,
       signInSilently,
       user,
@@ -523,7 +489,6 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       signInOptions,
       tokenRequest,
       syncSession,
-      switchOrganization,
       getDecodedIdToken,
       clearSession,
       exchangeToken,
@@ -552,17 +517,9 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
           >
             <FlowProvider>
               <UserProvider profile={userProfile!} onUpdateProfile={handleProfileUpdate}>
-                <OrganizationProvider
-                  getAllOrganizations={async (): Promise<AllOrganizationsApiResponse> => client.getAllOrganizations()}
-                  myOrganizations={myOrganizations}
-                  currentOrganization={currentOrganization}
-                  onOrganizationSwitch={switchOrganization}
-                  revalidateMyOrganizations={async (): Promise<Organization[]> => client.getMyOrganizations()}
-                >
-                  <ComponentRendererProvider renderers={(extensions?.components?.renderers ?? {}) as any}>
-                    {children}
-                  </ComponentRendererProvider>
-                </OrganizationProvider>
+                <ComponentRendererProvider renderers={(extensions?.components?.renderers ?? {}) as any}>
+                  {children}
+                </ComponentRendererProvider>
               </UserProvider>
             </FlowProvider>
           </ThemeProvider>

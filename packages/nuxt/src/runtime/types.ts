@@ -18,7 +18,6 @@
 
 import type {
   I18nPreferences,
-  Organization,
   TokenEndpointAuthMethod,
   User,
   UserProfile,
@@ -62,8 +61,6 @@ export interface ThunderIDNuxtConfig {
       mode?: 'light' | 'dark' | 'system' | 'class' | 'branding';
     };
     user?: {
-      /** Whether to fetch the user's organisations during SSR (default: true). */
-      fetchOrganizations?: boolean;
       /** Whether to fetch the SCIM2 user profile during SSR (default: true). */
       fetchUserProfile?: boolean;
     };
@@ -132,11 +129,7 @@ export interface ThunderIDTempSessionPayload extends JWTPayload {
  * hydrated `useState` keys so the client never re-fetches on first render.
  */
 export interface ThunderIDSSRData {
-  /** The organisation the user is currently acting within (null when not in an org). */
-  currentOrganization: Organization | null;
   isSignedIn: boolean;
-  /** All organisations the user is a member of (empty array when `preferences.user.fetchOrganizations` is false). */
-  myOrganizations: Organization[];
   /**
    * The base URL actually used for this request.
    * Equals `${baseUrl}/o` when the user is acting within an organisation

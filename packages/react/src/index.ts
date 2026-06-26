@@ -32,11 +32,6 @@ export * from './contexts/User/UserProvider';
 
 export {default as useUser} from './contexts/User/useUser';
 
-export {default as OrganizationProvider} from './contexts/Organization/OrganizationProvider';
-export * from './contexts/Organization/OrganizationProvider';
-
-export {default as useOrganization} from './contexts/Organization/useOrganization';
-
 export {default as FlowContext} from './contexts/Flow/FlowContext';
 export type {FlowStep, FlowMessage, FlowContextValue} from './contexts/Flow/FlowContext';
 
@@ -99,9 +94,6 @@ export * from './components/control/SignedOut';
 export {default as Loading} from './components/control/Loading';
 export * from './components/control/Loading';
 
-export {default as OrganizationContext} from './components/control/OrganizationContext/OrganizationContext';
-export * from './components/control/OrganizationContext/OrganizationContext';
-
 export {default as BaseSignIn} from './components/presentation/auth/SignIn/BaseSignIn';
 export * from './components/presentation/auth/SignIn/BaseSignIn';
 
@@ -121,7 +113,6 @@ export {default as Recovery} from './components/presentation/auth/Recovery/Recov
 export * from './components/presentation/auth/Recovery/Recovery';
 
 export * from './components/presentation/auth/InviteUser';
-export * from './components/presentation/auth/OrganizationUnitPicker';
 
 export {BaseAcceptInvite, AcceptInvite} from './components/presentation/auth/AcceptInvite';
 export type {AcceptInviteFlowResponse} from './components/presentation/auth/AcceptInvite';
@@ -155,11 +146,6 @@ export * from './components/presentation/User/BaseUser';
 export {default as User} from './components/presentation/User/User';
 export * from './components/presentation/User/User';
 
-export {default as BaseOrganization} from './components/presentation/Organization/BaseOrganization';
-export * from './components/presentation/Organization/BaseOrganization';
-
-export {default as Organization} from './components/presentation/Organization/Organization';
-
 export {default as BaseUserProfile} from './components/presentation/UserProfile/BaseUserProfile';
 export * from './components/presentation/UserProfile/BaseUserProfile';
 
@@ -177,33 +163,6 @@ export type {BaseUserDropdownProps} from './components/presentation/UserDropdown
 
 export {default as UserDropdown} from './components/presentation/UserDropdown/UserDropdown';
 export * from './components/presentation/UserDropdown/UserDropdown';
-
-export {default as BaseOrganizationSwitcher} from './components/presentation/OrganizationSwitcher/BaseOrganizationSwitcher';
-export type {BaseOrganizationSwitcherProps} from './components/presentation/OrganizationSwitcher/BaseOrganizationSwitcher';
-
-export {default as OrganizationSwitcher} from './components/presentation/OrganizationSwitcher/OrganizationSwitcher';
-
-export {default as BaseOrganizationList} from './components/presentation/OrganizationList/BaseOrganizationList';
-export type {
-  BaseOrganizationListProps,
-  OrganizationWithSwitchAccess,
-} from './components/presentation/OrganizationList/BaseOrganizationList';
-
-export {default as OrganizationList} from './components/presentation/OrganizationList/OrganizationList';
-
-export {default as BaseOrganizationProfile} from './components/presentation/OrganizationProfile/BaseOrganizationProfile';
-export * from './components/presentation/OrganizationProfile/BaseOrganizationProfile';
-
-export {default as OrganizationProfile} from './components/presentation/OrganizationProfile/OrganizationProfile';
-export * from './components/presentation/OrganizationProfile/OrganizationProfile';
-
-export {BaseCreateOrganization} from './components/presentation/CreateOrganization/BaseCreateOrganization';
-export type {
-  BaseCreateOrganizationProps,
-  OrganizationFormData,
-} from './components/presentation/CreateOrganization/BaseCreateOrganization';
-
-export {CreateOrganization} from './components/presentation/CreateOrganization/CreateOrganization';
 
 export {default as BaseLanguageSwitcher} from './components/presentation/LanguageSwitcher/BaseLanguageSwitcher';
 export type {
@@ -280,18 +239,6 @@ export {createField, FieldFactory, validateFieldValue} from './components/factor
 
 export {default as BuildingAlt} from './components/primitives/Icons/BuildingAlt';
 
-export {default as getAllOrganizations} from './api/getAllOrganizations';
-export type {GetAllOrganizationsConfig} from './api/getAllOrganizations';
-export {default as createOrganization} from './api/createOrganization';
-export type {CreateOrganizationConfig} from './api/createOrganization';
-export {default as getMeOrganizations} from './api/getMeOrganizations';
-export type {GetMeOrganizationsConfig} from './api/getMeOrganizations';
-export {default as getOrganization} from './api/getOrganization';
-export type {GetOrganizationConfig} from './api/getOrganization';
-export {default as updateOrganization, createPatchOperations} from './api/updateOrganization';
-export type {UpdateOrganizationConfig} from './api/updateOrganization';
-export {default as getSchemas} from './api/getSchemas';
-export type {GetSchemasConfig} from './api/getSchemas';
 export {default as updateMeProfile} from './api/updateMeProfile';
 export type {UpdateMeProfileConfig} from './api/updateMeProfile';
 export {default as getMeProfile} from './api/getScim2Me';

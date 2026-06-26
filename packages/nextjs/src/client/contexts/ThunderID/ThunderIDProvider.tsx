@@ -19,15 +19,11 @@
 'use client';
 
 import {
-  AllOrganizationsApiResponse,
   EmbeddedFlowExecuteRequestConfig,
   generateFlattenedUserProfile,
-  Organization,
   UpdateMeProfileConfig,
   User,
   UserProfile,
-  TokenResponse,
-  CreateOrganizationPayload,
   ThunderIDRuntimeError,
 } from '@thunderid/node';
 import {
@@ -37,7 +33,6 @@ import {
   UserProvider,
   ThemeProvider,
   ThunderIDProviderProps,
-  OrganizationProvider,
   getActiveTheme,
 } from '@thunderid/react';
 import {ReadonlyURLSearchParams} from 'next/dist/client/components/navigation.react-server';
@@ -55,23 +50,17 @@ export type ThunderIDClientProviderProps = Partial<Omit<ThunderIDProviderProps, 
   Pick<ThunderIDProviderProps, 'baseUrl' | 'clientId'> & {
     applicationId: ThunderIDContextProps['applicationId'];
     clearSession: () => Promise<void>;
-    createOrganization: (payload: CreateOrganizationPayload, sessionId: string) => Promise<Organization>;
-    currentOrganization: Organization;
-    getAllOrganizations: (options?: any, sessionId?: string) => Promise<AllOrganizationsApiResponse>;
     handleOAuthCallback: (
       code: string,
       state: string,
       sessionState?: string,
     ) => Promise<{error?: string; redirectUrl?: string; success: boolean}>;
     isSignedIn: boolean;
-    myOrganizations: Organization[];
     organizationHandle: ThunderIDContextProps['organizationHandle'];
     refreshToken: () => Promise<RefreshResult>;
-    revalidateMyOrganizations?: (sessionId?: string) => Promise<Organization[]>;
     signIn: ThunderIDContextProps['signIn'];
     signOut: ThunderIDContextProps['signOut'];
     signUp: ThunderIDContextProps['signUp'];
-    switchOrganization: (organization: Organization, sessionId?: string) => Promise<TokenResponse | Response>;
     updateProfile: (
       requestConfig: UpdateMeProfileConfig,
       sessionId?: string,
@@ -89,22 +78,16 @@ const ThunderIDClientProvider: FC<PropsWithChildren<ThunderIDClientProviderProps
   signOut,
   signUp,
   handleOAuthCallback,
-  createOrganization,
   preferences,
   isSignedIn,
   signInUrl,
   signUpUrl,
   user: _user,
   userProfile: _userProfile,
-  currentOrganization,
   updateProfile,
   applicationId,
   organizationHandle,
   scopes,
-  myOrganizations,
-  revalidateMyOrganizations,
-  getAllOrganizations,
-  switchOrganization,
 }: PropsWithChildren<ThunderIDClientProviderProps>) => {
   const reRenderCheckRef: RefObject<boolean> = useRef(false);
   const router: AppRouterInstance = useRouter();
@@ -325,16 +308,7 @@ const ThunderIDClientProvider: FC<PropsWithChildren<ThunderIDClientProviderProps
           >
             <FlowProvider>
               <UserProvider profile={userProfile} onUpdateProfile={handleProfileUpdate} updateProfile={updateProfile}>
-                <OrganizationProvider
-                  createOrganization={createOrganization}
-                  getAllOrganizations={getAllOrganizations}
-                  myOrganizations={myOrganizations}
-                  currentOrganization={currentOrganization}
-                  onOrganizationSwitch={switchOrganization as any}
-                  revalidateMyOrganizations={revalidateMyOrganizations as any}
-                >
-                  {children}
-                </OrganizationProvider>
+                {children}
               </UserProvider>
             </FlowProvider>
           </ThemeProvider>

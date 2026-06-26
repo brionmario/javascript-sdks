@@ -27,7 +27,6 @@ export {default as ThunderIDProvider} from './providers/ThunderIDProvider';
 export {default as FlowMetaProvider} from './providers/FlowMetaProvider';
 export {default as FlowProvider} from './providers/FlowProvider';
 export {default as I18nProvider} from './providers/I18nProvider';
-export {default as OrganizationProvider} from './providers/OrganizationProvider';
 export {default as ThemeProvider} from './providers/ThemeProvider';
 export {default as UserProvider} from './providers/UserProvider';
 
@@ -36,7 +35,6 @@ export {default as useThunderID} from './composables/useThunderID';
 export {default as useFlow} from './composables/useFlow';
 export {default as useFlowMeta} from './composables/useFlowMeta';
 export {default as useI18n} from './composables/useI18n';
-export {default as useOrganization} from './composables/useOrganization';
 export {default as useTheme} from './composables/useTheme';
 export {default as useUser} from './composables/useUser';
 export {useOAuthCallback} from './composables/useOAuthCallback';
@@ -51,7 +49,6 @@ export {
   FLOW_KEY,
   FLOW_META_KEY,
   I18N_KEY,
-  ORGANIZATION_KEY,
   THEME_KEY,
   USER_KEY,
 } from './keys';
@@ -65,7 +62,6 @@ export type {
   FlowMetaContextValue,
   FlowStep,
   I18nContextValue,
-  OrganizationContextValue,
   ThemeContextValue,
   UserContextValue,
 } from './models/contexts';
@@ -130,7 +126,6 @@ export {default as Loading} from './components/control/Loading';
 
 // ── UI Components — Presentation ──
 export {default as User} from './components/presentation/user/User';
-export {default as Organization} from './components/presentation/organization/Organization';
 export {default as UserProfile} from './components/presentation/user-profile/UserProfile';
 export {default as BaseUserProfile} from './components/presentation/user-profile/BaseUserProfile';
 export {default as UserDropdown} from './components/presentation/user-dropdown/UserDropdown';
@@ -149,14 +144,6 @@ export type {
   BaseInviteUserRenderProps,
   BaseInviteUserProps,
 } from './components/presentation/invite-user/BaseInviteUser';
-export {default as OrganizationList} from './components/presentation/organization-list/OrganizationList';
-export {default as BaseOrganizationList} from './components/presentation/organization-list/BaseOrganizationList';
-export {default as OrganizationProfile} from './components/presentation/organization-profile/OrganizationProfile';
-export {default as BaseOrganizationProfile} from './components/presentation/organization-profile/BaseOrganizationProfile';
-export {default as OrganizationSwitcher} from './components/presentation/organization-switcher/OrganizationSwitcher';
-export {default as BaseOrganizationSwitcher} from './components/presentation/organization-switcher/BaseOrganizationSwitcher';
-export {default as CreateOrganization} from './components/presentation/create-organization/CreateOrganization';
-export {default as BaseCreateOrganization} from './components/presentation/create-organization/BaseCreateOrganization';
 export {default as LanguageSwitcher} from './components/presentation/language-switcher/LanguageSwitcher';
 export {default as BaseLanguageSwitcher} from './components/presentation/language-switcher/BaseLanguageSwitcher';
 
@@ -178,12 +165,10 @@ export type {HeadingExtractionResult, AuthComponentHeadingsResult} from './utils
 // ── Re-exports from @thunderid/browser ──
 export {
   FieldType,
-  type AllOrganizationsApiResponse,
   type Config,
   type HttpRequestConfig,
   type HttpResponse,
   type IdToken,
-  type Organization as IOrganization,
   type SignInOptions,
   type SignOutOptions,
   type SignUpOptions,

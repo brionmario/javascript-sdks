@@ -22,7 +22,6 @@ import type {
   FlowContextValue,
   FlowMetaContextValue,
   I18nContextValue,
-  OrganizationContextValue,
   ThemeContextValue,
   UserContextValue,
 } from './models/contexts';
@@ -36,11 +35,6 @@ export const THUNDERID_KEY: InjectionKey<ThunderIDContext> = Symbol('thunderid')
  * Injection key for the User context (profile, schemas, update operations).
  */
 export const USER_KEY: InjectionKey<UserContextValue> = Symbol('thunderid-user');
-
-/**
- * Injection key for the Organization context (list, current org, switching).
- */
-export const ORGANIZATION_KEY: InjectionKey<OrganizationContextValue> = Symbol('thunderid-organization');
 
 /**
  * Injection key for the Flow context (embedded flow UI state).
