@@ -359,6 +359,7 @@ const ThunderIDClientProvider: FC<PropsWithChildren<ThunderIDClientProviderProps
       signUp: handleSignUp,
       signUpUrl,
       user,
+      userSchema: null,
       vendor: getVendorPrefix(vendor),
     }),
     [

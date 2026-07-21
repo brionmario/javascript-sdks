@@ -1,7 +1,7 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {UpdateMeProfileConfig, User, UserProfile} from '@thunderid/browser';
+import {UpdateMeProfileConfig, User, UserProfile, AttributeSchema} from '@thunderid/browser';
 import {FC, PropsWithChildren, ReactElement, useMemo} from 'react';
 import UserContext from './UserContext';
 
@@ -10,12 +10,13 @@ import UserContext from './UserContext';
  */
 export interface UserProviderProps {
   onUpdateProfile?: (payload: User) => void;
-  profile: UserProfile;
+  profile: UserProfile & {userSchema?: Record<string, AttributeSchema> | null};
   revalidateProfile?: () => Promise<void>;
   updateProfile?: (
     requestConfig: UpdateMeProfileConfig,
     sessionId?: string,
   ) => Promise<{data: {user: User}; error: string; success: boolean}>;
+  userSchema?: Record<string, AttributeSchema> | null;
 }
 
 /**
@@ -51,6 +52,7 @@ const UserProvider: FC<PropsWithChildren<UserProviderProps>> = ({
   revalidateProfile,
   onUpdateProfile,
   updateProfile,
+  userSchema,
 }: PropsWithChildren<UserProviderProps>): ReactElement => {
   const contextValue: any = useMemo(
     () => ({
@@ -59,8 +61,9 @@ const UserProvider: FC<PropsWithChildren<UserProviderProps>> = ({
       profile: profile?.profile,
       revalidateProfile,
       updateProfile,
+      userSchema: profile?.userSchema ?? userSchema ?? null,
     }),
-    [profile, onUpdateProfile, revalidateProfile, updateProfile],
+    [profile, onUpdateProfile, revalidateProfile, updateProfile, userSchema],
   );
 
   return <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>;

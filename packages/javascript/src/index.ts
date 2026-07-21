@@ -18,6 +18,8 @@ export type {
 export {default as getUserInfo} from './api/getUserInfo';
 export {default as getUsersMe} from './api/getUsersMe';
 export type {GetUsersMeConfig} from './api/getUsersMe';
+export {default as getUsersMeMeta} from './api/getUsersMeMeta';
+export type {GetUsersMeMetaConfig, UsersMeMetaResponse, AttributeSchema} from './api/getUsersMeMeta';
 export {default as updateMeProfile} from './api/updateMeProfile';
 export type {UpdateMeProfileConfig} from './api/updateMeProfile';
 

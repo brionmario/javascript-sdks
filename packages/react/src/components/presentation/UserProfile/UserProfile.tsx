@@ -1,7 +1,7 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {ThunderIDError, User, deepMerge} from '@thunderid/browser';
+import {ThunderIDError, User, deepMerge, resolveResourceEndpoint} from '@thunderid/browser';
 import {FC, ReactElement, useState} from 'react';
 // eslint-disable-next-line import/no-named-as-default
 import BaseUserProfile, {BaseUserProfileProps} from './BaseUserProfile';
@@ -50,8 +50,8 @@ export type UserProfileProps = Omit<BaseUserProfileProps, 'user' | 'profile' | '
  * ```
  */
 const UserProfile: FC<UserProfileProps> = ({preferences, editable = true, ...rest}: UserProfileProps): ReactElement => {
-  const {baseUrl, instanceId, preferences: contextPreferences} = useThunderID();
-  const {profile, flattenedProfile, onUpdateProfile} = useUser();
+  const {baseUrl, endpoints, instanceId, preferences: contextPreferences} = useThunderID();
+  const {profile, flattenedProfile, onUpdateProfile, userSchema} = useUser();
   const resolvedPreferences = {
     ...contextPreferences,
     ...preferences,
@@ -80,7 +80,12 @@ const UserProfile: FC<UserProfileProps> = ({preferences, editable = true, ...res
         }
       });
 
-      const response: User = await updateMeProfile({baseUrl, instanceId, payload: updatedAttributes});
+      const response: User = await updateMeProfile({
+        baseUrl,
+        url: resolveResourceEndpoint('usersMe', {endpoints}),
+        instanceId,
+        payload: updatedAttributes,
+      });
       onUpdateProfile(response);
     } catch (caughtError: unknown) {
       let message: string = t('user.profile.update.generic.error');
@@ -97,6 +102,7 @@ const UserProfile: FC<UserProfileProps> = ({preferences, editable = true, ...res
     <BaseUserProfile
       profile={profile ?? undefined}
       flattenedProfile={flattenedProfile ?? undefined}
+      userSchema={userSchema ?? undefined}
       editable={isEditableProfile}
       onUpdate={isEditableProfile ? handleProfileUpdate : undefined}
       error={error}
