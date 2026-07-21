@@ -88,6 +88,7 @@ export default defineNuxtModule<ThunderIDNuxtConfig>({
         applicationId: publicConfig.applicationId,
         baseUrl: publicConfig.baseUrl,
         clientId: publicConfig.clientId,
+        endpoints: publicConfig.endpoints,
         platform: publicConfig.platform,
         preferences: publicConfig.preferences,
         scopes: publicConfig.scopes,
@@ -102,6 +103,7 @@ export default defineNuxtModule<ThunderIDNuxtConfig>({
       applicationId?: string;
       baseUrl: string;
       clientId: string;
+      endpoints?: ThunderIDNuxtConfig['endpoints'];
       platform?: ThunderIDNuxtConfig['platform'];
       preferences: ThunderIDNuxtConfig['preferences'];
       scopes: string | string[];
@@ -286,6 +288,7 @@ declare module '@nuxt/schema' {
       applicationId?: string;
       baseUrl: string;
       clientId: string;
+      endpoints?: ThunderIDNuxtConfig['endpoints'];
       platform?: ThunderIDNuxtConfig['platform'];
       preferences?: ThunderIDNuxtConfig['preferences'];
       scopes: string | string[];

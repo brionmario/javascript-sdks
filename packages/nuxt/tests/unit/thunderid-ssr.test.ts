@@ -28,6 +28,9 @@ const mockClient = vi.hoisted(() => ({
     profile: {sub: 'user-123', email: 'test@example.com'},
     flattenedProfile: {email: 'test@example.com'},
   }),
+  getUserSchema: vi.fn<(sessionId: string) => Promise<any>>().mockResolvedValue({
+    email: {displayName: 'Email', type: 'string'},
+  }),
   getDecodedIdToken: vi.fn<(sessionId: string) => Promise<any>>().mockResolvedValue({sub: 'user-123'}),
 }));
 

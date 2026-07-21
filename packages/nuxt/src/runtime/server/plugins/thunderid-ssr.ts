@@ -85,6 +85,7 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
           baseUrl: publicConfig.baseUrl,
           clientId: publicConfig.clientId,
           clientSecret: privateConfig?.clientSecret || undefined,
+          endpoints: publicConfig.endpoints,
           platform: publicConfig.platform,
           scopes: publicConfig.scopes || ['openid', 'profile'],
           tokenRequest: publicConfig.tokenRequest,
@@ -144,12 +145,15 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
     // ── 4. Parallel SSR data fetches (gated by preferences) ───────────────
     const shouldFetchProfile: boolean = prefs?.user?.fetchUserProfile !== false;
 
-    const [userResult, userProfileResult] = await Promise.allSettled([
+    const [userResult, userProfileResult, userSchemaResult] = await Promise.allSettled([
       // Always fetch the basic user object (needed for ThunderIDAuthState.user)
       client.getUser(session.sessionId),
 
       // User profile (flattened)
       shouldFetchProfile ? client.getUserProfile(session.sessionId) : Promise.resolve(null),
+
+      // User schema metadata from /users/me/meta
+      shouldFetchProfile ? client.getUserSchema(session.sessionId) : Promise.resolve(null),
     ]);
 
     if (userResult.status === 'rejected') {
@@ -157,6 +161,9 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
     }
     if (userProfileResult.status === 'rejected') {
       log.warn('Failed to fetch user profile:', userProfileResult.reason);
+    }
+    if (userSchemaResult.status === 'rejected') {
+      log.warn('Failed to fetch user schema:', userSchemaResult.reason);
     }
 
     // ── 5. Write to event context ──────────────────────────────────────────
@@ -166,6 +173,7 @@ export default defineNitroPlugin((nitro: {hooks: {hook: Function}}) => {
       session,
       user: userResult.status === 'fulfilled' ? userResult.value : null,
       userProfile: userProfileResult.status === 'fulfilled' ? userProfileResult.value : null,
+      userSchema: userSchemaResult.status === 'fulfilled' ? userSchemaResult.value : null,
     };
 
     const eventContext: Record<string, unknown> = event.context;

@@ -34,7 +34,11 @@ vi.mock('#app', () => {
   // defineNuxtRouteMiddleware just returns the handler unchanged in tests
   const defineNuxtRouteMiddleware = vi.fn((fn: Function) => fn);
 
-  return {navigateTo, useState, defineNuxtRouteMiddleware};
+  const useRuntimeConfig = vi.fn(() => ({
+    public: {thunderid: {vendor: 'thunderid'}},
+  }));
+
+  return {navigateTo, useState, defineNuxtRouteMiddleware, useRuntimeConfig};
 });
 
 /** Build a fake `to` route object */

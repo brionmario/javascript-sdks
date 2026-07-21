@@ -1,7 +1,7 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {type User, withVendorCSSClassPrefix} from '@thunderid/browser';
+import {AttributeSchema, Preferences, type User, startCase, withVendorCSSClassPrefix} from '@thunderid/browser';
 import {type Component, type PropType, type Ref, type SetupContext, type VNode, defineComponent, h, ref} from 'vue';
 import getDisplayName from '../../../utils/getDisplayName';
 import getMappedUserProfileValue from '../../../utils/getMappedUserProfileValue';
@@ -25,6 +25,7 @@ interface ExtendedSchema {
   multiValued?: boolean;
   mutability?: string;
   name?: string;
+  regex?: string;
   required?: boolean;
   schemaId?: string;
   subAttributes?: ExtendedSchema[];
@@ -44,11 +45,14 @@ export interface BaseUserProfileProps {
   hideFields?: string[];
   isLoading?: boolean;
   onUpdate?: (payload: any) => Promise<void>;
+  preferences?: Preferences;
   profile?: User | null;
   schemas?: any[] | null;
   showAvatar?: boolean;
   showFields?: string[];
+  t?: (key: string, fallback?: string) => string;
   title?: string;
+  userSchema?: Record<string, AttributeSchema> | null;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -71,15 +75,28 @@ const FIELDS_TO_SKIP: string[] = [
   'phoneNumbers.mobile',
   'emailAddresses',
   'preferredMFAOption',
+  'attributes',
+  'isReadOnly',
+  'isReadonly',
 ];
 
-const READONLY_FIELDS: string[] = ['username', 'userName', 'user_name'];
+const READONLY_FIELDS: string[] = [
+  'username',
+  'userName',
+  'user_name',
+  'sub',
+  'id',
+  'ouId',
+  'attributes',
+  'isReadOnly',
+  'isReadonly',
+];
 
 const DEFAULT_ATTRIBUTE_MAPPINGS: Record<string, string | string[]> = {
   email: ['emails', 'email'],
   firstName: ['name.givenName', 'given_name'],
   lastName: ['name.familyName', 'family_name'],
-  picture: ['profile', 'profileUrl', 'picture', 'URL'],
+  picture: ['picture', 'avatar', 'pictureUrl', 'attributes.picture'],
   username: ['userName', 'username', 'user_name'],
 };
 
@@ -157,48 +174,111 @@ const BaseUserProfile: Component = defineComponent({
     hideFields: {default: () => [], type: Array as PropType<string[]>},
     isLoading: {default: false, type: Boolean},
     onUpdate: {default: undefined, type: Function as PropType<(payload: any) => Promise<void>>},
+    preferences: {default: undefined, type: Object as PropType<Preferences>},
     profile: {default: null, type: Object as PropType<User | null>},
     schemas: {default: () => [], type: Array as PropType<any[] | null>},
     /** Whether to render the avatar hero banner. */
     showAvatar: {default: true, type: Boolean},
     showFields: {default: () => [], type: Array as PropType<string[]>},
+    t: {default: undefined, type: Function as PropType<(key: string, fallback?: string) => string>},
     title: {default: 'Profile', type: String},
+    /** User schema metadata. */
+    userSchema: {default: null, type: Object as PropType<Record<string, AttributeSchema> | null>},
   },
   setup(props: BaseUserProfileProps, {slots}: SetupContext): () => VNode | VNode[] | null {
     const editingFields: Ref<Record<string, boolean>> = ref({});
     const editedValues: Ref<Record<string, any>> = ref({});
 
     const px: typeof withVendorCSSClassPrefix = withVendorCSSClassPrefix;
+    const regexCache = new Map<string, RegExp | null>();
+
+    const t = (key: string, fallback?: string): string => {
+      if (props.t) {
+        const res = props.t(key);
+        if (res && res !== key) return res;
+      }
+      return fallback ?? key;
+    };
 
     // ── Visibility ────────────────────────────────────────────────────────────
 
-    function shouldShowField(fieldName: string): boolean {
-      if (FIELDS_TO_SKIP.includes(fieldName)) return false;
+    function shouldShowField(fieldName: string, isSchemaBased = false): boolean {
+      if (!isSchemaBased && FIELDS_TO_SKIP.includes(fieldName)) return false;
       if (props.hideFields && props.hideFields.length > 0 && props.hideFields.includes(fieldName)) return false;
       if (props.showFields && props.showFields.length > 0) return props.showFields.includes(fieldName);
       return true;
     }
 
-    // ── Edit state ────────────────────────────────────────────────────────────
+    const fieldErrors: Ref<Record<string, string>> = ref({});
 
     function startEditing(fieldName: string, currentValue: any): void {
       editedValues.value = {...editedValues.value, [fieldName]: currentValue ?? ''};
       editingFields.value = {...editingFields.value, [fieldName]: true};
+      fieldErrors.value = {...fieldErrors.value, [fieldName]: ''};
     }
 
     function cancelEditing(fieldName: string): void {
       const data: User | null = props.flattenedProfile ?? props.profile ?? null;
-      const originalValue: any = (data as Record<string, any>)?.[fieldName] ?? '';
+      const originalValue: any =
+        (data as Record<string, any>)?.[fieldName] ?? (data as any)?.attributes?.[fieldName] ?? '';
       editedValues.value = {...editedValues.value, [fieldName]: originalValue};
       editingFields.value = {...editingFields.value, [fieldName]: false};
+      fieldErrors.value = {...fieldErrors.value, [fieldName]: ''};
     }
 
-    function saveField(schema: ExtendedSchema): void {
+    async function saveField(schema: ExtendedSchema): Promise<void> {
       if (!props.onUpdate || !schema.name) return;
-      const value: any = editedValues.value[schema.name] ?? '';
-      const payload: Record<string, unknown> = buildPatchValue(schema.name, value, schema.schemaId, schema.multiValued);
-      props.onUpdate(payload);
-      editingFields.value = {...editingFields.value, [schema.name]: false};
+      const fieldName: string = schema.name;
+      const value: any = editedValues.value[fieldName] ?? '';
+      const strVal: string = String(value ?? '').trim();
+      const fieldLabel: string = schema.displayName || formatLabel(fieldName);
+
+      if (schema.required && !strVal) {
+        fieldErrors.value = {
+          ...fieldErrors.value,
+          [fieldName]: t('userProfile.field.required', `${fieldLabel} is required.`),
+        };
+        return;
+      }
+
+      if (schema.regex && strVal) {
+        if (schema.regex.length > 250) {
+          console.warn(`Regex pattern for field "${fieldName}" exceeds maximum length limit (250 chars).`);
+        } else {
+          let reg: RegExp | null | undefined = regexCache.get(schema.regex);
+          if (reg === undefined) {
+            try {
+              reg = new RegExp(schema.regex);
+              regexCache.set(schema.regex, reg);
+            } catch (err) {
+              regexCache.set(schema.regex, null);
+              console.warn(`Invalid regular expression syntax in user schema for field "${fieldName}":`, err);
+            }
+          }
+          if (reg && !reg.test(strVal)) {
+            fieldErrors.value = {
+              ...fieldErrors.value,
+              [fieldName]: t('userProfile.field.invalidFormat', `${fieldLabel} has an invalid format.`),
+            };
+            return;
+          }
+        }
+      }
+
+      fieldErrors.value = {...fieldErrors.value, [fieldName]: ''};
+      const submitVal: any = typeof value === 'string' ? strVal : value;
+      const payload: Record<string, unknown> = buildPatchValue(
+        fieldName,
+        submitVal,
+        schema.schemaId,
+        schema.multiValued,
+      );
+      try {
+        await props.onUpdate(payload);
+        editingFields.value = {...editingFields.value, [fieldName]: false};
+      } catch {
+        // Keep field in editing mode on error so user input is preserved
+      }
     }
 
     // ── Input rendering per schema type ───────────────────────────────────────
@@ -261,46 +341,59 @@ const BaseUserProfile: Component = defineComponent({
           )
         : null;
       const displayValueNode: VNode | null = hasValue
-        ? h(Typography, {class: px('user-profile__field-value'), variant: 'body1'}, () => String(value))
+        ? h('span', {class: px('user-profile__field-value')}, String(value))
         : editablePlaceholder;
 
       return h('div', {class: px('user-profile__field'), key: name}, [
-        h('div', {class: px('user-profile__field-label-col')}, [
-          h(Typography, {class: px('user-profile__field-label'), variant: 'body2'}, () => label),
-        ]),
-        h('div', {class: px('user-profile__field-value-col')}, [
+        h('div', {class: px('user-profile__field-inner')}, [
+          h('span', {class: px('user-profile__field-label')}, label),
           isEditing
             ? h('div', {class: px('user-profile__field-edit')}, [
                 renderInput(schema),
-                h('div', {class: px('user-profile__field-edit-actions')}, [
-                  h(
-                    Button,
-                    {onClick: () => saveField(schema), size: 'small' as const, variant: 'solid' as const},
-                    () => 'Save',
-                  ),
-                  h(
-                    Button,
-                    {onClick: () => cancelEditing(name), size: 'small' as const, variant: 'text' as const},
-                    () => 'Cancel',
-                  ),
-                ]),
-              ])
-            : h('div', {class: px('user-profile__field-display')}, [
-                displayValueNode,
-                isEditable
-                  ? h(
-                      'button',
-                      {
-                        'aria-label': `Edit ${label}`,
-                        class: px('user-profile__field-edit-btn'),
-                        onClick: () => startEditing(name, value),
-                        type: 'button',
-                      },
-                      [h(PencilIcon)],
-                    )
+                fieldErrors.value[name]
+                  ? h('div', {class: px('user-profile__field-error')}, fieldErrors.value[name])
                   : null,
-              ]),
+              ])
+            : displayValueNode,
         ]),
+        isEditable && !isReadonly
+          ? h('div', {class: px('user-profile__field-actions')}, [
+              isEditing
+                ? [
+                    h(
+                      Button,
+                      {
+                        color: 'primary' as const,
+                        onClick: () => saveField(schema),
+                        size: 'small' as const,
+                        variant: 'solid' as const,
+                      },
+                      () => t('userProfile.actions.save', 'Save'),
+                    ),
+                    h(
+                      Button,
+                      {
+                        color: 'secondary' as const,
+                        onClick: () => cancelEditing(name),
+                        size: 'small' as const,
+                        variant: 'solid' as const,
+                      },
+                      () => t('userProfile.actions.cancel', 'Cancel'),
+                    ),
+                  ]
+                : hasValue
+                  ? h(Button, {
+                      class: px('user-profile__field-edit-btn'),
+                      color: 'secondary' as const,
+                      onClick: () => startEditing(name, value),
+                      size: 'small' as const,
+                      startIcon: h(PencilIcon),
+                      title: t('userProfile.actions.edit', 'Edit'),
+                      variant: 'ghost' as const,
+                    })
+                  : null,
+            ])
+          : null,
       ]);
     }
 
@@ -318,11 +411,11 @@ const BaseUserProfile: Component = defineComponent({
         .sort(([a]: [string, any], [b]: [string, any]) => a.localeCompare(b))
         .map(([key, value]: [string, any]) =>
           h('div', {class: px('user-profile__field'), key}, [
-            h('div', {class: px('user-profile__field-label-col')}, [
-              h(Typography, {class: px('user-profile__field-label'), variant: 'body2'}, () => formatLabel(key)),
-            ]),
-            h('div', {class: px('user-profile__field-value-col')}, [
-              h(Typography, {class: px('user-profile__field-value'), variant: 'body1'}, () =>
+            h('div', {class: px('user-profile__field-inner')}, [
+              h('span', {class: px('user-profile__field-label')}, formatLabel(key)),
+              h(
+                'span',
+                {class: px('user-profile__field-value')},
                 typeof value === 'object' ? JSON.stringify(value) : String(value),
               ),
             ]),
@@ -337,6 +430,9 @@ const BaseUserProfile: Component = defineComponent({
       const email: any =
         getMappedUserProfileValue('email', DEFAULT_ATTRIBUTE_MAPPINGS, currentUser as User) ||
         getMappedUserProfileValue('username', DEFAULT_ATTRIBUTE_MAPPINGS, currentUser as User);
+
+      const picture: string | null =
+        getMappedUserProfileValue('picture', DEFAULT_ATTRIBUTE_MAPPINGS, currentUser as User) || null;
 
       const avatarSeed = String(
         currentUser['username'] || currentUser['userName'] || currentUser['email'] || currentUser['sub'] || displayName,
@@ -354,11 +450,17 @@ const BaseUserProfile: Component = defineComponent({
 
       return h('div', {class: px('user-profile__hero')}, [
         h('div', {class: px('user-profile__avatar-wrapper')}, [
-          h(
-            'div',
-            {class: [px('user-profile__avatar'), avatarSizeClass].join(' '), style: {background: avatarGradient}},
-            [h('span', {class: px('user-profile__avatar-initials')}, initials)],
-          ),
+          picture
+            ? h('img', {
+                alt: displayName,
+                class: [px('user-profile__avatar'), avatarSizeClass].join(' '),
+                src: picture,
+              })
+            : h(
+                'div',
+                {class: [px('user-profile__avatar'), avatarSizeClass].join(' '), style: {background: avatarGradient}},
+                [h('span', {class: px('user-profile__avatar-initials')}, initials)],
+              ),
         ]),
         h('div', {class: px('user-profile__hero-info')}, [
           h('span', {class: px('user-profile__hero-name')}, displayName),
@@ -396,14 +498,6 @@ const BaseUserProfile: Component = defineComponent({
 
       const children: VNode[] = [];
 
-      // Title header
-      children.push(
-        h('div', {class: px('user-profile__header')}, [
-          h('span', {class: px('user-profile__title')}, props.title ?? 'Profile'),
-        ]),
-      );
-      children.push(h(Divider, {class: px('user-profile__header-divider')}));
-
       // Hero
       if (props.showAvatar !== false && currentUser) {
         children.push(renderHero(currentUser));
@@ -417,6 +511,34 @@ const BaseUserProfile: Component = defineComponent({
       // Fields
       if (props.isLoading) {
         children.push(h('div', {class: px('user-profile__loading')}, [h(Spinner)]));
+      } else if (props.userSchema && typeof props.userSchema === 'object' && Object.keys(props.userSchema).length > 0) {
+        const metaSchemas: ExtendedSchema[] = Object.entries(props.userSchema)
+          .filter(([key, metaAttr]: [string, AttributeSchema]) => {
+            if (metaAttr?.credential) return false;
+            return shouldShowField(key, true);
+          })
+          .map(([key, metaAttr]: [string, AttributeSchema]) => {
+            const val =
+              editedValues.value?.[key] ?? (currentUser as any)?.attributes?.[key] ?? (currentUser as any)?.[key] ?? '';
+            const isReadonly =
+              metaAttr.readOnly === true || metaAttr.mutability === 'READ_ONLY' || READONLY_FIELDS.includes(key);
+
+            return {
+              displayName: metaAttr.displayName ?? (key ? startCase(key) : ''),
+              mutability: isReadonly ? 'READ_ONLY' : 'READ_WRITE',
+              name: key,
+              regex: metaAttr.regex,
+              required: !!metaAttr.required,
+              type: (metaAttr.type ?? 'STRING').toUpperCase(),
+              value: val,
+            };
+          });
+
+        const fieldRows: VNode[] = metaSchemas
+          .map((schema: ExtendedSchema) => renderSchemaFieldRow(schema))
+          .filter((node: VNode | null): node is VNode => node !== null);
+
+        children.push(h('div', {class: px('user-profile__fields')}, fieldRows));
       } else if (hasSchemas) {
         const fieldRows: VNode[] = schemas
           .filter((s: ExtendedSchema) => s.name && shouldShowField(s.name))

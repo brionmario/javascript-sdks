@@ -3,6 +3,14 @@
 
 import {
   ThunderIDNodeClient,
+  ThunderIDRuntimeError,
+  extractUserClaimsFromIdToken,
+  generateFlattenedUserProfile,
+  getUsersMe,
+  getUsersMeMeta,
+  resolveResourceEndpoint,
+  updateMeProfile,
+  type AttributeSchema,
   type AuthClientConfig,
   type IdToken,
   type Storage,
@@ -44,6 +52,7 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
       clientId: config.clientId!,
       clientSecret: config.clientSecret || undefined,
       enablePKCE: true,
+      endpoints: config.endpoints,
       scopes: config.scopes || ['openid', 'profile'],
       tokenRequest: config.tokenRequest,
     } as AuthClientConfig<ThunderIDNuxtConfig>;
@@ -124,8 +133,23 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
     return (configData?.afterSignOutUrl as string) || (configData?.afterSignInUrl as string) || '/';
   }
 
-  override getUser(sessionId?: string): Promise<User> {
-    return super.getUser(sessionId);
+  override async getUser(sessionId?: string): Promise<User> {
+    try {
+      const configData: AuthClientConfig<ThunderIDNuxtConfig> = await this.getStorageManager().getConfigData();
+      const baseUrl: string | undefined = configData?.baseUrl;
+
+      const profile: User = await getUsersMe({
+        baseUrl,
+        url: resolveResourceEndpoint('usersMe', configData),
+        headers: {
+          Authorization: `Bearer ${await this.getAccessToken(sessionId)}`,
+        },
+      });
+
+      return profile;
+    } catch (error) {
+      return await super.getUser(sessionId);
+    }
   }
 
   override getAccessToken(sessionId?: string): Promise<string> {
@@ -144,13 +168,68 @@ class ThunderIDNuxtClient extends ThunderIDNodeClient<ThunderIDNuxtConfig> {
     return super.exchangeToken(config, sessionId) as unknown as Promise<TokenResponse | Response>;
   }
 
-  override async getUserProfile(sessionId: string): Promise<UserProfile> {
-    const user: User = await this.getUser(sessionId);
-    return {flattenedProfile: user, profile: user};
+  override async getUserProfile(sessionId?: string): Promise<UserProfile> {
+    try {
+      const configData: AuthClientConfig<ThunderIDNuxtConfig> = await this.getStorageManager().getConfigData();
+      const baseUrl: string | undefined = configData?.baseUrl;
+
+      const profile: User = await getUsersMe({
+        baseUrl,
+        url: resolveResourceEndpoint('usersMe', configData),
+        headers: {
+          Authorization: `Bearer ${await this.getAccessToken(sessionId)}`,
+        },
+      });
+
+      return {
+        flattenedProfile: generateFlattenedUserProfile(profile),
+        profile,
+      };
+    } catch (error) {
+      const claims = extractUserClaimsFromIdToken(await super.getDecodedIdToken(sessionId));
+      return {
+        flattenedProfile: claims,
+        profile: claims,
+      };
+    }
   }
 
-  override async updateUserProfile(config: UpdateMeProfileConfig, sessionId: string): Promise<User> {
-    throw new Error('Profile updates are not supported for the ThunderID platform.');
+  override async updateUserProfile(config: UpdateMeProfileConfig, sessionId?: string): Promise<User> {
+    try {
+      const configData: AuthClientConfig<ThunderIDNuxtConfig> = await this.getStorageManager().getConfigData();
+      const baseUrl: string | undefined = configData?.baseUrl;
+
+      return updateMeProfile({
+        baseUrl,
+        url: resolveResourceEndpoint('usersMe', configData),
+        headers: {
+          Authorization: `Bearer ${await this.getAccessToken(sessionId)}`,
+        },
+        payload: (config as any)?.payload ?? config,
+      });
+    } catch (error) {
+      throw new ThunderIDRuntimeError(
+        `Failed to update user profile: ${error instanceof Error ? error.message : String(error)}`,
+        'ThunderIDNuxtClient-UpdateProfileError-001',
+        'nuxt',
+        'An error occurred while updating the user profile. Please check your configuration and network connection.',
+      );
+    }
+  }
+
+  async getUserSchema(sessionId?: string): Promise<Record<string, AttributeSchema> | null> {
+    const configData: AuthClientConfig<ThunderIDNuxtConfig> = await this.getStorageManager().getConfigData();
+    const baseUrl: string | undefined = configData?.baseUrl;
+
+    const metaRes = await getUsersMeMeta({
+      baseUrl,
+      url: resolveResourceEndpoint('usersMeMeta', configData),
+      headers: {
+        Authorization: `Bearer ${await this.getAccessToken(sessionId)}`,
+      },
+    });
+
+    return metaRes?.schema ?? null;
   }
 
   public override getStorageManager(): any {

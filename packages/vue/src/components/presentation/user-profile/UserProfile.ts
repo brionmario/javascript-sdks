@@ -1,8 +1,25 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {ThunderIDError, User, resolveResourceEndpoint, withVendorCSSClassPrefix} from '@thunderid/browser';
-import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h, ref, type Ref} from 'vue';
+import {
+  Preferences,
+  ThunderIDError,
+  User,
+  deepMerge,
+  resolveResourceEndpoint,
+  withVendorCSSClassPrefix,
+} from '@thunderid/browser';
+import {
+  type Component,
+  type PropType,
+  type SetupContext,
+  type VNode,
+  computed,
+  defineComponent,
+  h,
+  ref,
+  type Ref,
+} from 'vue';
 import BaseUserProfile from './BaseUserProfile';
 import updateMeProfile from '../../../api/updateMeProfile';
 import useI18n from '../../../composables/useI18n';
@@ -17,6 +34,7 @@ type UserProfileProps = Readonly<{
   compact: boolean;
   editable: boolean;
   hideFields: string[];
+  preferences?: Preferences;
   showAvatar: boolean;
   showFields: string[];
   title: string;
@@ -45,6 +63,11 @@ const UserProfile: Component = defineComponent({
     editable: {default: true, type: Boolean},
     /** Fields to hide by name. */
     hideFields: {default: () => [], type: Array as PropType<string[]>},
+    /** Component-level preferences to override global preferences. */
+    preferences: {
+      default: undefined,
+      type: Object as PropType<Preferences>,
+    },
     /** Whether to render the avatar hero section. */
     showAvatar: {default: true, type: Boolean},
     /** Fields to show exclusively (empty = show all). */
@@ -53,23 +76,56 @@ const UserProfile: Component = defineComponent({
     title: {default: 'Profile', type: String},
   },
   setup(props: UserProfileProps, {slots}: SetupContext): () => VNode {
-    const {baseUrl, endpoints, instanceId} = useThunderID();
-    const {flattenedProfile, profile, onUpdateProfile} = useUser();
+    const {baseUrl, endpoints, instanceId, preferences: contextPreferences} = useThunderID();
+    const {flattenedProfile, profile, onUpdateProfile, updateProfile, userSchema} = useUser();
     const {t} = useI18n();
+
+    const resolvedPreferences = computed(() => ({
+      ...contextPreferences,
+      ...props.preferences,
+      user: {
+        ...contextPreferences?.user,
+        ...props.preferences?.user,
+      },
+    }));
+
+    const isEditableProfile = computed(() =>
+      resolvedPreferences.value?.user?.fetchUserProfile === false ? false : props.editable,
+    );
 
     const error: Ref<string | null> = ref<string | null>(null);
 
     async function handleProfileUpdate(payload: any): Promise<void> {
-      if (!baseUrl) return;
-
       error.value = null;
 
       try {
+        const rawProfile = profile?.value?.profile ?? profile?.value;
+        const updatedAttributes: Record<string, unknown> = deepMerge(
+          (rawProfile?.['attributes'] as Record<string, unknown>) ?? {},
+          payload,
+        );
+
+        Object.keys(updatedAttributes).forEach((key) => {
+          if (updatedAttributes[key] === undefined || updatedAttributes[key] === null) {
+            delete updatedAttributes[key];
+          }
+        });
+
+        if (updateProfile) {
+          const res = await updateProfile({payload: updatedAttributes} as any);
+          if (res && !res.success && res.error) {
+            error.value = res.error;
+          }
+          return;
+        }
+
+        if (!baseUrl) return;
+
         const response: User = await updateMeProfile({
           baseUrl,
           url: resolveResourceEndpoint('usersMe', {endpoints}),
           instanceId,
-          payload,
+          payload: updatedAttributes,
         });
         onUpdateProfile(response);
       } catch (caughtError: unknown) {
@@ -93,15 +149,18 @@ const UserProfile: Component = defineComponent({
           class: withVendorCSSClassPrefix('user-profile--styled'),
           className: props.className,
           compact: props.compact,
-          editable: props.editable,
+          editable: isEditableProfile.value,
           error: error.value,
           flattenedProfile: flattenedProfile?.value,
           hideFields: props.hideFields,
-          onUpdate: handleProfileUpdate,
+          onUpdate: isEditableProfile.value ? handleProfileUpdate : undefined,
+          preferences: resolvedPreferences.value,
           profile: profile?.value?.profile ?? flattenedProfile?.value,
           showAvatar: props.showAvatar,
           showFields: props.showFields,
+          t: t,
           title: props.title,
+          userSchema: userSchema?.value,
         },
         slots,
       );

@@ -1,7 +1,7 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {UpdateMeProfileConfig, User, UserProfile} from '@thunderid/browser';
+import {AttributeSchema, UpdateMeProfileConfig, User, UserProfile} from '@thunderid/browser';
 import {
   computed,
   defineComponent,
@@ -34,6 +34,7 @@ interface UserProviderProps {
         sessionId?: string,
       ) => Promise<{data: {user: User}; error: string; success: boolean}>)
     | undefined;
+  userSchema?: Record<string, AttributeSchema> | null;
 }
 
 const UserProvider: Component = defineComponent({
@@ -41,11 +42,11 @@ const UserProvider: Component = defineComponent({
   props: {
     /** Callback to sync a successfully-saved profile back up to ThunderIDProvider. */
     onUpdateProfile: {default: undefined, type: Function as PropType<(payload: User) => void>},
-    /** The full user profile data (nested + flat + schemas). */
+    /** The full user profile data (nested + flat). */
     profile: {default: null, type: Object as PropType<UserProfile | null>},
     /** Re-fetch the user profile from the server. */
     revalidateProfile: {default: async () => {}, type: Function as PropType<() => Promise<void>>},
-    /** Update the user profile via PATCH. */
+    /** Update the user profile via PUT. */
     updateProfile: {
       default: undefined,
       type: Function as PropType<
@@ -55,25 +56,24 @@ const UserProvider: Component = defineComponent({
         ) => Promise<{data: {user: User}; error: string; success: boolean}>
       >,
     },
+    /** User schema metadata. */
+    userSchema: {default: null, type: Object as PropType<Record<string, AttributeSchema> | null>},
   },
   setup(props: UserProviderProps, {slots}: SetupContext): () => VNode {
-    // Derive flattenedProfile from the single profile prop,
-    // matching the same pattern as the React SDK's UserProvider.
+    // Derive flattenedProfile and userSchema from props
     const profileRef: Ref<UserProfile | null> = computed(() => props.profile);
     const flattenedProfileRef: Ref<User | null> = computed(() => props.profile?.flattenedProfile ?? null);
+    const userSchemaRef: Ref<Record<string, AttributeSchema> | null> = computed(
+      () => (props.profile as any)?.userSchema ?? props.userSchema ?? null,
+    );
 
     const context: UserContextValue = {
       flattenedProfile: flattenedProfileRef as unknown as Readonly<Ref<User | null>>,
       onUpdateProfile: props.onUpdateProfile ?? ((): void => {}),
       profile: profileRef as unknown as Readonly<Ref<UserProfile | null>>,
       revalidateProfile: props.revalidateProfile,
-      updateProfile:
-        props.updateProfile ??
-        (async (): Promise<{data: {user: User}; error: string; success: boolean}> => ({
-          data: {user: {} as User},
-          error: 'updateProfile callback not provided',
-          success: false,
-        })),
+      updateProfile: props.updateProfile,
+      userSchema: userSchemaRef as unknown as Readonly<Ref<Record<string, AttributeSchema> | null>>,
     };
 
     provide(USER_KEY, context);
