@@ -18,7 +18,7 @@
 
 import {cx} from '@emotion/css';
 import {withVendorCSSClassPrefix, bem} from '@thunderid/browser';
-import {FC, InputHTMLAttributes, ReactNode, useState} from 'react';
+import {FC, InputHTMLAttributes, ReactNode, useId, useState, KeyboardEvent} from 'react';
 import useStyles from './Tooltip.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
 
@@ -30,6 +30,7 @@ export interface Tooltiprops extends Omit<InputHTMLAttributes<HTMLInputElement>,
   helperText?: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   children?: ReactNode;
+  ariaLabel?: string;
 }
 
 /**
@@ -41,20 +42,54 @@ export interface Tooltiprops extends Omit<InputHTMLAttributes<HTMLInputElement>,
  * @param props - Props for the Tooltip component
  * @returns A JSX element representing the Tooltip
  */
-const Tooltip: FC<Tooltiprops> = ({className, helperText, style = {}, position, children, ...rest}: Tooltiprops) => {
+const Tooltip: FC<Tooltiprops> = ({
+  className,
+  helperText,
+  style = {},
+  position = 'bottom',
+  children,
+  ariaLabel = 'More Info',
+  ...rest
+}: Tooltiprops) => {
   const {theme, colorScheme}: ReturnType<typeof useTheme> = useTheme();
   const styles: Record<string, string> = useStyles(theme, colorScheme);
   const [isVisible, setIsVisible] = useState<boolean>(false);
 
+  // Unique ID to connect trigger button to tooltip box via ARIA
+  const tooltipId = useId();
+
+  // Close tooltip if user presses ESC while focused
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape' && isVisible) {
+      setIsVisible(false);
+    }
+
+    // Optional: Prevent Space key from scrolling the page
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      setIsVisible((prev) => !prev);
+    }
+  };
   return (
     <div
+      tabIndex={0}
+      role="button"
+      aria-label={ariaLabel}
+      aria-describedby={isVisible && helperText ? tooltipId : undefined}
       className={cx(withVendorCSSClassPrefix(bem('tooltip', 'container')), className, styles['container'])}
+      style={style}
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
+      onFocus={() => setIsVisible(true)} /* Trigger on Tab Focus */
+      onBlur={() => setIsVisible(false)} /* Hide on Tab Blur */
+      onKeyDown={handleKeyDown} /* Allow ESC to dismiss */
+      {...rest}
     >
       {children}
-      {isVisible && (
+      {isVisible && helperText && (
         <div
+          id={tooltipId}
+          role="tooltip"
           className={cx(
             withVendorCSSClassPrefix(bem('tooltip', 'box')),
             withVendorCSSClassPrefix(bem('tooltip', position)),

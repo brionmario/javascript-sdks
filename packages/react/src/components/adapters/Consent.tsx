@@ -16,12 +16,11 @@
  * under the License.
  */
 
-import {type ConsentPurposeData} from '@thunderid/browser';
+import {type ConsentPurposeData, PromptElement} from '@thunderid/browser';
 import {type ChangeEvent, FC, ReactNode} from 'react';
 import ConsentCheckboxList, {getConsentOptionalKey} from './ConsentCheckboxList';
 import Typography from '../primitives/Typography/Typography';
 import Toggle from '../primitives/Toggle/Toggle';
-import {PromptElement} from '../../../../javascript/dist/models/embedded-flow';
 import {Info} from '../primitives/Icons';
 import Tooltip from '../primitives/Tooltip/Tooltip';
 
@@ -42,6 +41,16 @@ export interface ConsentRenderProps {
   onInputChange: (name: string, value: string) => void;
   /** The resolved list of consent purposes parsed from `consentData`. */
   purposes: ConsentPurposeData[];
+}
+
+/**
+ * Interface for consent configuration
+ */
+export interface ConsentConfig {
+  essential?: string;
+  optional?: string;
+  essentialInfo?: string;
+  optionalInfo?: string;
 }
 
 /**
@@ -83,7 +92,7 @@ export interface ConsentProps {
   config?: Record<string, unknown>;
 }
 
-const defaultConfig = {
+const defaultConfig: Required<Pick<ConsentConfig, 'essential' | 'optional'>> = {
   essential: 'Essential Attributtes',
   optional: 'Optional Attributes',
 };
@@ -96,10 +105,13 @@ const defaultConfig = {
 const Consent: FC<ConsentProps> = ({
   consentData,
   formValues,
-  config = defaultConfig,
+  config: suppliedConfig,
   onInputChange,
   children,
 }: ConsentProps) => {
+  const config: ConsentConfig = {...defaultConfig, ...suppliedConfig};
+  const essentialInfo = typeof config.essentialInfo === 'string' ? config.essentialInfo.trim() : '';
+  const optionalInfo = typeof config.optionalInfo === 'string' ? config.optionalInfo.trim() : '';
   /**
    * Method to check whether master toggle button is checked or not
    * @param purpose Purpose object
@@ -163,8 +175,8 @@ const Consent: FC<ConsentProps> = ({
                 <Typography variant="subtitle2" fontWeight="bold">
                   {config['essential'] as string}
                 </Typography>
-                {(config['essentialInfo'] as string) !== '' && (
-                  <Tooltip position="bottom" helperText={config['essentialInfo'] as string}>
+                {essentialInfo !== '' && (
+                  <Tooltip helperText={essentialInfo}>
                     <Info width="1rem" height="1rem" />
                   </Tooltip>
                 )}
@@ -193,8 +205,8 @@ const Consent: FC<ConsentProps> = ({
                   <Typography variant="subtitle2" fontWeight="bold">
                     {purpose.type === 'permissions' ? 'Permissions' : (config['optional'] as string)}
                   </Typography>
-                  {(config['optionalInfo'] as string) !== '' && (
-                    <Tooltip position="bottom" helperText={config['optionalInfo'] as string}>
+                  {optionalInfo !== '' && (
+                    <Tooltip helperText={optionalInfo}>
                       <Info width="1rem" height="1rem" />
                     </Tooltip>
                   )}
@@ -202,6 +214,7 @@ const Consent: FC<ConsentProps> = ({
                 <Toggle
                   id={`consent_opt_${purpose.purposeId}_all`}
                   checked={checkOptValue(purpose)}
+                  aria-label="Toggle all optional attributes"
                   onChange={(e: ChangeEvent<HTMLInputElement>): void => handleChange(purpose, e.target.checked)}
                 />
               </div>
