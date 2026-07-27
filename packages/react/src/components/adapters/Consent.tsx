@@ -105,7 +105,7 @@ const defaultConfig: Required<Pick<ConsentConfig, 'essential' | 'optional'>> = {
 const Consent: FC<ConsentProps> = ({
   consentData,
   formValues,
-  config: suppliedConfig,
+  config: suppliedConfig = {},
   onInputChange,
   children,
 }: ConsentProps) => {

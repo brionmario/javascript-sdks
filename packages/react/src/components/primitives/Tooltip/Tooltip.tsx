@@ -43,11 +43,11 @@ export interface Tooltiprops extends Omit<InputHTMLAttributes<HTMLInputElement>,
  * @returns A JSX element representing the Tooltip
  */
 const Tooltip: FC<Tooltiprops> = ({
-  className,
-  helperText,
+  className = '',
+  helperText = '',
   style = {},
   position = 'bottom',
-  children,
+  children = null,
   ariaLabel = 'More Info',
   ...rest
 }: Tooltiprops) => {
