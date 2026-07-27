@@ -772,6 +772,7 @@ const createAuthComponentFromFlow = (
           consentData={consentPromptRawData as any}
           formValues={formValues}
           onInputChange={onInputChange}
+          config={component.config}
         />
       );
     }
