@@ -150,6 +150,5 @@ Thumbs.db
 # Turbo
 .turbo
 
-.nx
-__tests__
+# Vitest
 .vitest-attachments
