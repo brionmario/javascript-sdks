@@ -233,7 +233,7 @@ const createAuthComponentFromFlow = (
                     ...p.essential.map((e): ConsentAttributeElement => ({approved: !isDeny, name: e.name})),
                     ...p.optional.map(
                       (e): ConsentAttributeElement => ({
-                        approved: isDeny ? false : formValues[getConsentOptionalKey(p.purposeId, e.name)] !== 'false',
+                        approved: !isDeny && formValues[getConsentOptionalKey(p.purposeId, e.name)] === 'true',
                         name: e.name,
                       }),
                     ),

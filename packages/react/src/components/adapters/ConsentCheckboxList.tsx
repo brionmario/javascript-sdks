@@ -21,7 +21,6 @@ import {type ConsentPurposeData, withVendorCSSClassPrefix, bem} from '@thunderid
 import {type ChangeEvent, FC, ReactNode} from 'react';
 import useStyles from './ConsentCheckboxList.styles';
 import useTheme from '../../contexts/Theme/useTheme';
-import Divider from '../primitives/Divider/Divider';
 import Toggle from '../primitives/Toggle/Toggle';
 import Typography from '../primitives/Typography/Typography';
 
@@ -128,8 +127,8 @@ const ConsentCheckboxList: FC<ConsentCheckboxListProps> = ({
       return true;
     }
     const key: string = getConsentOptionalKey(purpose.purposeId, attrName);
-    // Default to opted-in (true) when there's no explicit form value
-    return formValues[key] !== 'false';
+    // Default to be false when there's no explicit form value
+    return formValues[key] === 'true';
   };
 
   const handleChange = (attrName: string, checked: boolean): void => {
@@ -172,20 +171,21 @@ const ConsentCheckboxList: FC<ConsentCheckboxListProps> = ({
                   {attr}
                 </Typography>
               </div>
-              <Toggle
-                id={inputId}
-                checked={checked}
-                disabled={isEssential}
-                onChange={
-                  isEssential
-                    ? undefined
-                    : (e: ChangeEvent<HTMLInputElement>): void => handleChange(attr, e.target.checked)
-                }
-              />
+              {isEssential ? (
+                <Typography variant="body2">Required</Typography>
+              ) : (
+                <Toggle
+                  id={inputId}
+                  checked={checked}
+                  disabled={isEssential}
+                  onChange={
+                    isEssential
+                      ? undefined
+                      : (e: ChangeEvent<HTMLInputElement>): void => handleChange(attr, e.target.checked)
+                  }
+                />
+              )}
             </div>
-            <Divider
-              className={cx(withVendorCSSClassPrefix(bem('consent-checkbox-list', 'divider')), styles['divider'])}
-            />
           </div>
         );
       })}

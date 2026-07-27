@@ -61,6 +61,7 @@ export type {
   EmbeddedFlowExecuteRequestConfig,
   FlowExecutionError,
   ConsentAttributeElement,
+  PromptElement,
   ConsentPurposeDecision,
   ConsentDecisions,
   ConsentPurposeData,

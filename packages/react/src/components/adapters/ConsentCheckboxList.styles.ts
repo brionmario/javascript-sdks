@@ -45,6 +45,7 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       `,
       listItem: css`
         padding: 0 0.25rem;
+        margin-bottom: 4px;
       `,
       listRow: css`
         display: flex;

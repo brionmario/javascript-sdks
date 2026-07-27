@@ -16,10 +16,19 @@
  * under the License.
  */
 
-import {type ConsentPurposeData} from '@thunderid/browser';
-import {FC, ReactNode} from 'react';
-import ConsentCheckboxList from './ConsentCheckboxList';
+import {
+  type ConsentPurposeData,
+  FlowMetadataResponse,
+  PromptElement,
+  resolveFlowTemplateLiterals,
+} from '@thunderid/browser';
+import {type ChangeEvent, FC, ReactNode} from 'react';
+import ConsentCheckboxList, {getConsentOptionalKey} from './ConsentCheckboxList';
 import Typography from '../primitives/Typography/Typography';
+import Toggle from '../primitives/Toggle/Toggle';
+import {Info} from '../primitives/Icons';
+import Tooltip from '../primitives/Tooltip/Tooltip';
+import {UseTranslation} from '../../hooks/useTranslation';
 
 /**
  * Backward-compatible consent purpose type exported by @thunderid/react.
@@ -38,6 +47,16 @@ export interface ConsentRenderProps {
   onInputChange: (name: string, value: string) => void;
   /** The resolved list of consent purposes parsed from `consentData`. */
   purposes: ConsentPurposeData[];
+}
+
+/**
+ * Interface for consent configuration
+ */
+export interface ConsentConfig {
+  essential?: string;
+  optional?: string;
+  essentialInfo?: string;
+  optionalInfo?: string;
 }
 
 /**
@@ -73,14 +92,80 @@ export interface ConsentProps {
    * Callback invoked when a user toggles an optional attribute.
    */
   onInputChange: (name: string, value: string) => void;
+  /**
+   * Config to modified detail in consent page
+   */
+  config?: Record<string, unknown>;
+
+  /**
+   * Config of meta response
+   */
+  meta?: FlowMetadataResponse | null;
+
+  /**
+   * translation data
+   */
+  t?: UseTranslation['t'];
 }
+
+const defaultConfig: Required<Pick<ConsentConfig, 'essential' | 'optional'>> = {
+  essential: 'Essential Attributtes',
+  optional: 'Optional Attributes',
+};
 
 /**
  * Consent component renders the list of purposes and their associated attributes (essential and optional)
  * based on the data provided by the backend. It allows users to toggle optional attributes while essential
  * attributes are displayed as read-only.
  */
-const Consent: FC<ConsentProps> = ({consentData, formValues, onInputChange, children}: ConsentProps) => {
+const Consent: FC<ConsentProps> = ({
+  consentData,
+  formValues,
+  config: suppliedConfig = {},
+  onInputChange,
+  children,
+  meta,
+  t,
+}: ConsentProps) => {
+  /** Resolve any remaining {{t()}} or {{meta()}} template expressions in a string at render time. */
+  const resolve = (text: string | undefined): string => {
+    if (!text || (!t && !meta)) {
+      return text || '';
+    }
+    return resolveFlowTemplateLiterals(text, {meta, t: t || ((k: string): string => k)});
+  };
+
+  const config: ConsentConfig = {...defaultConfig, ...suppliedConfig};
+  const essentialInfo = typeof config.essentialInfo === 'string' ? resolve(config.essentialInfo.trim()) : '';
+  const optionalInfo = typeof config.optionalInfo === 'string' ? resolve(config.optionalInfo.trim()) : '';
+  const essentialLabel = resolve(config['essential']);
+  const optionalLabel = resolve(config['optional']);
+
+  /**
+   * Method to check whether master toggle button is checked or not
+   * @param purpose Purpose object
+   * @param checked boolean variable to check, whether toggle is checked or unchecked
+   */
+  const handleChange = (purpose: ConsentPurposeData, checked: boolean): void => {
+    const checkValue = checked ? 'true' : 'false';
+    purpose.optional.map((opt: PromptElement) => {
+      const key: string = getConsentOptionalKey(purpose.purposeId, opt.name);
+      onInputChange(key, checkValue);
+    });
+  };
+
+  /**
+   * Check all optional claims are selected or not
+   * @param purpose Purpose object
+   * @returns boolean value to denote all optional claims are selected
+   */
+  const checkOptValue = (purpose: ConsentPurposeData): boolean => {
+    return purpose.optional.every((opt: PromptElement) => {
+      const key: string = getConsentOptionalKey(purpose.purposeId, opt.name);
+      return formValues[key] === 'true';
+    });
+  };
+
   if (!consentData) return null;
 
   let purposes: ConsentPurposeData[] = [];
@@ -115,9 +200,16 @@ const Consent: FC<ConsentProps> = ({consentData, formValues, onInputChange, chil
 
           {purpose.essential && purpose.essential.length > 0 && (
             <div style={{marginTop: '0.5rem'}}>
-              <Typography variant="subtitle2" fontWeight="bold">
-                Essential Attributes
-              </Typography>
+              <div style={{display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px'}}>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  {essentialLabel}
+                </Typography>
+                {essentialInfo !== '' && (
+                  <Tooltip helperText={essentialInfo}>
+                    <Info width="1rem" height="1rem" />
+                  </Tooltip>
+                )}
+              </div>
               <ConsentCheckboxList
                 variant="ESSENTIAL"
                 purpose={purpose}
@@ -129,9 +221,32 @@ const Consent: FC<ConsentProps> = ({consentData, formValues, onInputChange, chil
 
           {purpose.optional && purpose.optional.length > 0 && (
             <div style={{marginTop: '0.5rem'}}>
-              <Typography variant="subtitle2" fontWeight="bold">
-                {purpose.type === 'permissions' ? 'Permissions' : 'Optional Attributes'}
-              </Typography>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingRight: '4px',
+                  marginBottom: '10px',
+                }}
+              >
+                <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {purpose.type === 'permissions' ? 'Permissions' : optionalLabel}
+                  </Typography>
+                  {optionalInfo !== '' && (
+                    <Tooltip helperText={optionalInfo}>
+                      <Info width="1rem" height="1rem" />
+                    </Tooltip>
+                  )}
+                </div>
+                <Toggle
+                  id={`consent_opt_${purpose.purposeId}_all`}
+                  checked={checkOptValue(purpose)}
+                  aria-label="Toggle all optional attributes"
+                  onChange={(e: ChangeEvent<HTMLInputElement>): void => handleChange(purpose, e.target.checked)}
+                />
+              </div>
               <ConsentCheckboxList
                 variant="OPTIONAL"
                 purpose={purpose}
