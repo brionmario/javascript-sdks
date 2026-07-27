@@ -16,13 +16,19 @@
  * under the License.
  */
 
-import {type ConsentPurposeData, PromptElement} from '@thunderid/browser';
+import {
+  type ConsentPurposeData,
+  FlowMetadataResponse,
+  PromptElement,
+  resolveFlowTemplateLiterals,
+} from '@thunderid/browser';
 import {type ChangeEvent, FC, ReactNode} from 'react';
 import ConsentCheckboxList, {getConsentOptionalKey} from './ConsentCheckboxList';
 import Typography from '../primitives/Typography/Typography';
 import Toggle from '../primitives/Toggle/Toggle';
 import {Info} from '../primitives/Icons';
 import Tooltip from '../primitives/Tooltip/Tooltip';
+import {UseTranslation} from '../../hooks/useTranslation';
 
 /**
  * Backward-compatible consent purpose type exported by @thunderid/react.
@@ -90,6 +96,16 @@ export interface ConsentProps {
    * Config to modified detail in consent page
    */
   config?: Record<string, unknown>;
+
+  /**
+   * Config of meta response
+   */
+  meta?: FlowMetadataResponse | null;
+
+  /**
+   * translation data
+   */
+  t?: UseTranslation['t'];
 }
 
 const defaultConfig: Required<Pick<ConsentConfig, 'essential' | 'optional'>> = {
@@ -108,10 +124,23 @@ const Consent: FC<ConsentProps> = ({
   config: suppliedConfig = {},
   onInputChange,
   children,
+  meta,
+  t,
 }: ConsentProps) => {
+  /** Resolve any remaining {{t()}} or {{meta()}} template expressions in a string at render time. */
+  const resolve = (text: string | undefined): string => {
+    if (!text || (!t && !meta)) {
+      return text || '';
+    }
+    return resolveFlowTemplateLiterals(text, {meta, t: t || ((k: string): string => k)});
+  };
+
   const config: ConsentConfig = {...defaultConfig, ...suppliedConfig};
-  const essentialInfo = typeof config.essentialInfo === 'string' ? config.essentialInfo.trim() : '';
-  const optionalInfo = typeof config.optionalInfo === 'string' ? config.optionalInfo.trim() : '';
+  const essentialInfo = typeof config.essentialInfo === 'string' ? resolve(config.essentialInfo.trim()) : '';
+  const optionalInfo = typeof config.optionalInfo === 'string' ? resolve(config.optionalInfo.trim()) : '';
+  const essentialLabel = resolve(config['essential']);
+  const optionalLabel = resolve(config['optional']);
+
   /**
    * Method to check whether master toggle button is checked or not
    * @param purpose Purpose object
@@ -173,7 +202,7 @@ const Consent: FC<ConsentProps> = ({
             <div style={{marginTop: '0.5rem'}}>
               <div style={{display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px'}}>
                 <Typography variant="subtitle2" fontWeight="bold">
-                  {config['essential'] as string}
+                  {essentialLabel}
                 </Typography>
                 {essentialInfo !== '' && (
                   <Tooltip helperText={essentialInfo}>
@@ -203,7 +232,7 @@ const Consent: FC<ConsentProps> = ({
               >
                 <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
                   <Typography variant="subtitle2" fontWeight="bold">
-                    {purpose.type === 'permissions' ? 'Permissions' : (config['optional'] as string)}
+                    {purpose.type === 'permissions' ? 'Permissions' : optionalLabel}
                   </Typography>
                   {optionalInfo !== '' && (
                     <Tooltip helperText={optionalInfo}>

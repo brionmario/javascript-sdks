@@ -773,6 +773,8 @@ const createAuthComponentFromFlow = (
           formValues={formValues}
           onInputChange={onInputChange}
           config={component.config}
+          meta={options.meta}
+          t={options.t}
         />
       );
     }
