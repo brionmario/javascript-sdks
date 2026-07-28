@@ -143,6 +143,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# Vitest test attachments
+.vitest-attachments/
+
 # OS generated files
 .DS_Store
 Thumbs.db

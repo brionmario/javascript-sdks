@@ -173,3 +173,96 @@ describe('AuthOptionFactory rich-text action', () => {
     expect(() => container.querySelector<HTMLAnchorElement>('a')!.click()).not.toThrow();
   });
 });
+
+describe('AuthOptionFactory stack grid layout', () => {
+  const stackWith = (extra: Record<string, unknown>, childCount = 4): EmbeddedFlowComponent =>
+    ({
+      components: Array.from({length: childCount}, (_, index) => ({
+        id: `text_${index}`,
+        label: `<p>Option ${index}</p>`,
+        type: EmbeddedFlowComponentType.RichText,
+      })),
+      id: 'stack_1',
+      type: EmbeddedFlowComponentType.Stack,
+      ...extra,
+    }) as EmbeddedFlowComponent;
+
+  const stackElement = (component: EmbeddedFlowComponent): HTMLElement => {
+    const {container} = renderInto(component);
+    return container.querySelector<HTMLElement>('#stack_1')!;
+  };
+
+  it('renders a grid with the configured number of columns when items is 2', () => {
+    const stack = stackElement(stackWith({items: 2}));
+
+    expect(stack.style.display).toBe('grid');
+    expect(stack.style.gridTemplateColumns).toBe('repeat(2, 1fr)');
+    expect(stack.children).toHaveLength(4);
+  });
+
+  it('supports arbitrary column counts provided as a numeric string', () => {
+    const stack = stackElement(stackWith({items: '3'}, 5));
+
+    expect(stack.style.display).toBe('grid');
+    expect(stack.style.gridTemplateColumns).toBe('repeat(3, 1fr)');
+    expect(stack.children).toHaveLength(5);
+  });
+
+  it('keeps the flex layout when items is absent', () => {
+    const stack = stackElement(stackWith({direction: 'column'}));
+
+    expect(stack.style.display).toBe('flex');
+    expect(stack.style.flexDirection).toBe('column');
+  });
+
+  it('keeps the flex layout when items is 1', () => {
+    // Stacks authored in the flow builder are seeded with items 1, so a single slot
+    // must not promote them to a grid.
+    const stack = stackElement(stackWith({items: 1}));
+
+    expect(stack.style.display).toBe('flex');
+  });
+
+  it('falls back to the base axis for the reverse directions', () => {
+    expect(stackElement(stackWith({direction: 'column-reverse', items: 2})).style.gridAutoFlow).toBe('column');
+    expect(stackElement(stackWith({direction: 'row-reverse', items: 2})).style.gridAutoFlow).toBe('row');
+  });
+
+  it('uses content-sized tracks when justify has to distribute free space', () => {
+    const stack = stackElement(stackWith({items: 2, justify: 'space-between'}));
+
+    expect(stack.style.gridTemplateColumns).toBe('repeat(2, auto)');
+    expect(stack.style.justifyContent).toBe('space-between');
+  });
+
+  it('keeps equal tracks when justify is unset', () => {
+    expect(stackElement(stackWith({items: 2})).style.gridTemplateColumns).toBe('repeat(2, 1fr)');
+  });
+
+  it('clamps absurd slot counts', () => {
+    const stack = stackElement(stackWith({items: 5000}));
+
+    expect(stack.style.gridTemplateColumns).toBe('repeat(12, 1fr)');
+  });
+
+  it('treats items as the row count when direction is column', () => {
+    const stack = stackElement(stackWith({direction: 'column', items: 2}));
+
+    expect(stack.style.display).toBe('grid');
+    expect(stack.style.gridTemplateRows).toBe('repeat(2, 1fr)');
+    expect(stack.style.gridAutoFlow).toBe('column');
+    expect(stack.style.gridTemplateColumns).toBe('');
+  });
+
+  it('falls back to the flex layout when items is not numeric', () => {
+    const stack = stackElement(stackWith({items: 'garbage'}));
+
+    expect(stack.style.display).toBe('flex');
+  });
+
+  it('falls back to the flex layout when items is a malformed numeric string', () => {
+    const stack = stackElement(stackWith({items: '2invalid'}));
+
+    expect(stack.style.display).toBe('flex');
+  });
+});

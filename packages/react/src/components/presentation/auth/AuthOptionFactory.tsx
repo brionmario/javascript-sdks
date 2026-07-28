@@ -114,6 +114,9 @@ export type AuthType = 'signin' | 'signup' | 'recovery';
 /**
  * Get the appropriate FieldType for an input component.
  */
+/** Upper bound on STACK grid slots, so a mistyped `items` cannot render thousands of cells. */
+const MAX_STACK_ITEMS = 12;
+
 const getFieldType = (variant: EmbeddedFlowComponentType): FieldType => {
   switch (variant) {
     case EmbeddedFlowComponentType.EmailInput:
@@ -726,14 +729,48 @@ const createAuthComponentFromFlow = (
       const align: string = (component as any).align || 'center';
       const justify: string = (component as any).justify || 'flex-start';
 
-      const stackStyle: CSSProperties = {
-        alignItems: align,
-        display: 'flex',
-        flexDirection: direction as CSSProperties['flexDirection'],
-        flexWrap: 'wrap',
-        gap: `${gap * 0.5}rem`,
-        justifyContent: justify,
-      };
+      // `items` is the number of slots across the main axis and `direction` picks
+      // that axis: with `row` it is the column count (items: 2 with four buttons
+      // renders a 2 x 2 grid), and with `column` it is the row count and children
+      // flow into further columns. Fewer than two slots keeps the flex layout, so
+      // stacks authored before grid support are unaffected.
+      const rawItems: string | number | undefined = component.items;
+      const parsedItems: number =
+        typeof rawItems === 'string' ? Number(rawItems) : typeof rawItems === 'number' ? rawItems : NaN;
+      const items: number | null =
+        Number.isFinite(parsedItems) && Math.floor(parsedItems) >= 2
+          ? Math.min(Math.floor(parsedItems), MAX_STACK_ITEMS)
+          : null;
+      // CSS Grid has no reverse auto-flow, so the reverse variants fall back to
+      // their base axis rather than silently becoming a row.
+      const isColumn: boolean = direction.startsWith('column');
+      const gridJustify: string = component.justify ?? 'stretch';
+      // Equal `1fr` tracks fill the container, leaving `justify-content` no free
+      // space to distribute. Content-sized tracks restore it, so every justify
+      // value has a visible effect while the default stays an even split.
+      const track: string = gridJustify === 'stretch' ? '1fr' : 'auto';
+
+      const stackStyle: CSSProperties =
+        items !== null
+          ? {
+              alignItems: component.align ?? 'stretch',
+              display: 'grid',
+              gap: `${gap * 0.5}rem`,
+              gridAutoFlow: isColumn ? 'column' : 'row',
+              justifyContent: gridJustify,
+              width: '100%',
+              ...(isColumn
+                ? {gridTemplateRows: `repeat(${items}, ${track})`}
+                : {gridTemplateColumns: `repeat(${items}, ${track})`}),
+            }
+          : {
+              alignItems: align,
+              display: 'flex',
+              flexDirection: direction as CSSProperties['flexDirection'],
+              flexWrap: 'wrap',
+              gap: `${gap * 0.5}rem`,
+              justifyContent: justify,
+            };
 
       const stackChildren: (ReactElement | null)[] = component.components
         ? component.components.map((childComponent: any, index: number) =>
