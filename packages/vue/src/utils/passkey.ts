@@ -91,10 +91,10 @@ export const handlePasskeyRegistration = async (challengeData: string): Promise<
 
     if (error instanceof Error) {
       throw new ThunderIDRuntimeError(
-        `Passkey registration failed: ${error.message}`,
+        'Passkey registration failed. Please try again.',
         'browser-webauthn-registration-error',
         'browser',
-        `WebAuthn registration failed with error: ${error.name}`,
+        `WebAuthn registration failed with error: ${error.name}: ${error.message}`,
       );
     }
 
@@ -177,10 +177,10 @@ export const handlePasskeyAuthentication = async (challengeData: string): Promis
 
     if (error instanceof Error) {
       throw new ThunderIDRuntimeError(
-        `Passkey authentication failed: ${error.message}`,
+        'Passkey authentication failed. Please try again.',
         'browser-webauthn-authentication-error',
         'browser',
-        `WebAuthn authentication failed with error: ${error.name}`,
+        `WebAuthn authentication failed with error: ${error.name}: ${error.message}`,
       );
     }
 
