@@ -254,10 +254,10 @@ const handleWebAuthnAuthentication = async (challengeData: string): Promise<stri
 
         default:
           throw new ThunderIDRuntimeError(
-            `Passkey authentication failed: ${error.message}`,
+            'Passkey authentication failed. Please try again.',
             'browser-webauthn-general-error',
             'browser',
-            `WebAuthn authentication failed with error: ${error.name}`,
+            `WebAuthn authentication failed with error: ${error.name}: ${error.message}`,
           );
       }
     }
