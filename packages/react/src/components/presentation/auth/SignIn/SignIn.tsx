@@ -771,7 +771,7 @@ const SignIn: FC<SignInProps> = ({
               ...(p.optional || []).map((e: any) => {
                 const key = `__consent_opt__${p.purposeId}__${e.name}`;
                 return {
-                  approved: isDeny ? false : processedInputs[key] !== 'false',
+                  approved: !isDeny && processedInputs[key] === 'true',
                   name: e.name,
                 };
               }),
