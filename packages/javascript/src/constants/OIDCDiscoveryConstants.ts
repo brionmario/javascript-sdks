@@ -79,7 +79,7 @@ const OIDCDiscoveryConstants: {
      * End session endpoint for logout functionality.
      * Used to terminate the user's session and perform logout operations.
      */
-    END_SESSION: '/oidc/logout',
+    END_SESSION: '/oauth2/logout',
 
     /**
      * Token issuer endpoint.
