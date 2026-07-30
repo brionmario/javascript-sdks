@@ -45,6 +45,7 @@ import deepMerge from './utils/deepMerge';
 import extractPkceStorageKeyFromState from './utils/extractPkceStorageKeyFromState';
 import generatePkceStorageKey from './utils/generatePkceStorageKey';
 import getAuthorizeRequestUrlParams from './utils/getAuthorizeRequestUrlParams';
+import logger from './utils/logger';
 import processOpenIDScopes from './utils/processOpenIDScopes';
 
 const WELL_KNOWN_PATH = '/.well-known/openid-configuration';
@@ -358,9 +359,18 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
       try {
         response = await fetch(resolvedWellKnownEndpoint);
         if (!response.ok || response.status !== 200) {
+          logger.warn(
+            `ThunderIDJavaScriptClient: Discovery request to ${resolvedWellKnownEndpoint} returned ` +
+              `${response.status}; falling back to endpoints derived from the base URL.`,
+          );
           response = undefined;
         }
-      } catch {
+      } catch (error: unknown) {
+        logger.warn(
+          `ThunderIDJavaScriptClient: Discovery request to ${resolvedWellKnownEndpoint} failed; ` +
+            'falling back to endpoints derived from the base URL.',
+          error,
+        );
         response = undefined;
       }
 
@@ -371,8 +381,13 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
             await this.authHelper.resolveEndpoints(await response.json()),
           );
           discoveryResolved = true;
-        } catch {
+        } catch (error: unknown) {
           // Parsing or endpoint resolution failed; fall through to baseUrl fallback.
+          logger.warn(
+            `ThunderIDJavaScriptClient: Could not resolve endpoints from the discovery response of ` +
+              `${resolvedWellKnownEndpoint}; falling back to endpoints derived from the base URL.`,
+            error,
+          );
         }
 
         if (!discoveryResolved) {
