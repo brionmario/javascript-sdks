@@ -47,6 +47,8 @@
   },
   "devDependencies": {
     "@playwright/test": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@thunderid/browser": "workspace:^",
     "@thunderid/eslint-plugin": "catalog:",
     "@thunderid/prettier-config": "catalog:",
     "@thunderid/react": "workspace:^",
@@ -64,6 +66,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "@thunderid/browser": ">=0.1.0",
     "@thunderid/react": ">=0.1.0",
     "react": ">=16.8.0",
     "react-router": ">=6.30.1"

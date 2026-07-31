@@ -1,0 +1,234 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {cleanup, render, waitFor} from '@testing-library/react';
+import {Mock, afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import ThunderIDProvider from '../ThunderIDProvider';
+
+type Noop = Mock<() => void>;
+type SignInHookHandler = () => Promise<void>;
+type UserProfileResponse = Record<string, string>;
+
+/**
+ * Minimal stand-in for {@link ThunderIDReactClient}, covering only what {@link ThunderIDProvider}
+ * calls during mount and session sync.
+ */
+interface MockClient {
+  clearSession: Noop;
+  exchangeToken: Noop;
+  getAccessToken: Noop;
+  getConfiguration: Mock<() => Promise<{afterSignInUrl: string; baseUrl: string}>>;
+  getDecodedIdToken: Mock<() => Promise<Record<string, string>>>;
+  getDiscoveryResponse: Mock<() => Promise<null>>;
+  getIdToken: Noop;
+  getStorageManager: Noop;
+  /** Callbacks registered through `client.on(...)`, keyed by event name. */
+  handlers: Record<string, SignInHookHandler>;
+  initialize: Mock<() => Promise<boolean>>;
+  isInitialized: Mock<() => Promise<boolean>>;
+  isLoading: Mock<() => boolean>;
+  isSignedIn: Mock<() => Promise<boolean>>;
+  on: Mock<(event: string, callback: SignInHookHandler) => Promise<void>>;
+  reInitialize: Noop;
+  recover: Noop;
+  request: Noop;
+  requestAll: Noop;
+  signIn: Mock<() => Promise<Record<string, string>>>;
+  signInSilently: Noop;
+  signOut: Noop;
+  signUp: Noop;
+  /** Mutable sign-in state the mocked `isSignedIn()` reports. */
+  signedIn: boolean;
+  startAutoRefreshToken: Mock<() => Promise<void>>;
+}
+
+interface Mocks {
+  client: MockClient;
+  getUsersMe: Mock<() => Promise<UserProfileResponse>>;
+}
+
+const mocks: Mocks = vi.hoisted(() => ({}) as Mocks);
+
+vi.mock('../../../ThunderIDReactClient', () => ({
+  default: vi.fn(function MockThunderIDReactClient(): MockClient {
+    return mocks.client;
+  }),
+}));
+
+vi.mock('../../../api/getUsersMe', () => ({
+  default: (): Promise<UserProfileResponse> => mocks.getUsersMe(),
+}));
+
+interface Deferred {
+  promise: Promise<UserProfileResponse>;
+  resolve: (value: UserProfileResponse) => void;
+}
+
+function createDeferred(): Deferred {
+  let resolve!: (value: UserProfileResponse) => void;
+  const promise: Promise<UserProfileResponse> = new Promise<UserProfileResponse>(
+    (res: (value: UserProfileResponse) => void) => {
+      resolve = res;
+    },
+  );
+
+  return {promise, resolve};
+}
+
+function createMockClient(): MockClient {
+  const handlers: Record<string, SignInHookHandler> = {};
+  const client: MockClient = {
+    clearSession: vi.fn(),
+    exchangeToken: vi.fn(),
+    getAccessToken: vi.fn(),
+    getConfiguration: vi.fn(() =>
+      Promise.resolve({afterSignInUrl: window.location.origin, baseUrl: 'https://localhost:8090'}),
+    ),
+    getDecodedIdToken: vi.fn(() => Promise.resolve({sub: 'user-1'})),
+    getDiscoveryResponse: vi.fn(() => Promise.resolve(null)),
+    getIdToken: vi.fn(),
+    getStorageManager: vi.fn(),
+    handlers,
+    initialize: vi.fn(() => Promise.resolve(true)),
+    isInitialized: vi.fn(() => Promise.resolve(true)),
+    isLoading: vi.fn(() => false),
+    isSignedIn: vi.fn(() => Promise.resolve(client.signedIn)),
+    on: vi.fn((event: string, callback: SignInHookHandler) => {
+      handlers[event] = callback;
+
+      return Promise.resolve();
+    }),
+    reInitialize: vi.fn(),
+    recover: vi.fn(),
+    request: vi.fn(),
+    requestAll: vi.fn(),
+    signIn: vi.fn(() => Promise.resolve({sub: 'user-1'})),
+    signInSilently: vi.fn(),
+    signOut: vi.fn(),
+    signUp: vi.fn(),
+    signedIn: false,
+    startAutoRefreshToken: vi.fn(() => Promise.resolve()),
+  };
+
+  return client;
+}
+
+function renderProvider(): void {
+  render(
+    <ThunderIDProvider baseUrl="https://localhost:8090" clientId="test-client" preferences={{resolveFromMeta: false}}>
+      <div data-testid="child" />
+    </ThunderIDProvider>,
+  );
+}
+
+const settle = (ms = 250): Promise<void> =>
+  new Promise((resolve: () => void) => {
+    setTimeout(resolve, ms);
+  });
+
+beforeEach(() => {
+  mocks.client = createMockClient();
+  mocks.getUsersMe = vi.fn(() => Promise.resolve({sub: 'user-1', userName: 'alice'}));
+});
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+describe('ThunderIDProvider mount bootstrap', () => {
+  it('fetches the user profile exactly once when the user is already signed in', async () => {
+    mocks.client.signedIn = true;
+
+    renderProvider();
+
+    await waitFor(() => expect(mocks.getUsersMe).toHaveBeenCalled());
+    await settle();
+
+    expect(mocks.getUsersMe).toHaveBeenCalledTimes(1);
+  });
+
+  it('schedules the auto refresh timer exactly once per mount', async () => {
+    mocks.client.signedIn = true;
+
+    renderProvider();
+
+    await waitFor(() => expect(mocks.client.startAutoRefreshToken).toHaveBeenCalled());
+    await settle();
+
+    expect(mocks.client.startAutoRefreshToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('attempts the silent refresh before deciding the user is not signed in', () => {
+    // The access token expired while the refresh token is still valid: startAutoRefreshToken()
+    // refreshes it, and the sign-in check that follows must observe the refreshed state.
+    mocks.client.startAutoRefreshToken = vi.fn(() => {
+      mocks.client.signedIn = true;
+
+      return Promise.resolve();
+    });
+
+    renderProvider();
+
+    return waitFor(() => expect(mocks.getUsersMe).toHaveBeenCalled())
+      .then(() => settle())
+      .then(() => {
+        expect(mocks.client.startAutoRefreshToken).toHaveBeenCalledTimes(1);
+        expect(mocks.getUsersMe).toHaveBeenCalledTimes(1);
+      });
+  });
+});
+
+describe('ThunderIDProvider updateSession single-flight', () => {
+  it('coalesces concurrent session updates onto a single /users/me request', async () => {
+    renderProvider();
+
+    await waitFor(() => expect(mocks.client.handlers['sign-in']).toBeDefined());
+
+    const gate: Deferred = createDeferred();
+
+    mocks.getUsersMe = vi.fn(() => gate.promise);
+    mocks.client.signedIn = true;
+
+    const first: Promise<void> = mocks.client.handlers['sign-in']();
+    const second: Promise<void> = mocks.client.handlers['sign-in']();
+
+    await settle(50);
+    expect(mocks.getUsersMe).toHaveBeenCalledTimes(1);
+
+    gate.resolve({sub: 'user-1', userName: 'alice'});
+
+    await Promise.all([first, second]);
+
+    expect(mocks.getUsersMe).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-fetches for a session update issued after the previous one settled', async () => {
+    renderProvider();
+
+    await waitFor(() => expect(mocks.client.handlers['sign-in']).toBeDefined());
+
+    mocks.client.signedIn = true;
+
+    await mocks.client.handlers['sign-in']();
+    expect(mocks.getUsersMe).toHaveBeenCalledTimes(1);
+
+    await mocks.client.handlers['sign-in']();
+    expect(mocks.getUsersMe).toHaveBeenCalledTimes(2);
+  });
+});

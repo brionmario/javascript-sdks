@@ -16,9 +16,15 @@
  * under the License.
  */
 
+import {createPackageComponentLogger} from '@thunderid/browser';
 import {ThunderIDRuntimeError, navigate, useThunderID} from '@thunderid/react';
-import {FC, ReactElement, ReactNode} from 'react';
+import {FC, ReactElement, ReactNode, RefObject, useEffect, useRef} from 'react';
 import {Navigate} from 'react-router';
+
+const logger: ReturnType<typeof createPackageComponentLogger> = createPackageComponentLogger(
+  '@thunderid/react-router',
+  'ProtectedRoute',
+);
 
 /**
  * Props for the ProtectedRoute component.
@@ -46,10 +52,13 @@ export interface ProtectedRouteProps {
    * @param defaultSignIn - The default signIn method from useThunderID hook
    * @param signInOptions - Merged sign-in options (context + component props)
    */
-  onSignIn?: (defaultSignIn: (options?: Record<string, any>) => void, signInOptions?: Record<string, any>) => void;
+  onSignIn?: (
+    defaultSignIn: (options?: Record<string, any>) => Promise<void>,
+    signInOptions?: Record<string, any>,
+  ) => void | Promise<void>;
   /**
    * URL to redirect to when the user is not authenticated.
-   * Required unless a fallback element is provided.
+   * When neither this nor a fallback element is provided, sign-in is initiated instead.
    */
   redirectTo?: string;
   /**
@@ -92,8 +101,8 @@ export interface ProtectedRouteProps {
  * It checks authentication status and either renders the protected content,
  * shows a loading state, redirects, or shows a fallback.
  *
- * Either a `redirectTo` prop or a `fallback` prop must be provided to handle
- * unauthenticated users.
+ * For unauthenticated users it renders the `fallback`, redirects to `redirectTo`, or, when neither
+ * is provided, initiates sign-in and renders the `loader` until the redirect happens.
  *
  * @example Basic usage with redirect
  * ```tsx
@@ -161,6 +170,76 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({
 }: ProtectedRouteProps) => {
   const {isSignedIn, isLoading, signIn, signInOptions, tokenRequest, signInUrl} = useThunderID();
 
+  const hasInitiatedSignInRef: RefObject<boolean> = useRef<boolean>(false);
+
+  const needsSignIn: boolean = !isSignedIn && !fallback && !redirectTo;
+  const shouldInitiateSignIn: boolean = !isLoading && needsSignIn;
+
+  // Sign-in must be initiated from an effect, never from render: it updates the provider's state,
+  // and a render-phase update makes React discard the render and retry it, re-running the sign-in
+  // on every retry.
+  useEffect(() => {
+    if (!needsSignIn) {
+      // Reset so a later sign-out initiates sign-in again instead of rendering the loader forever.
+      // Keyed off `needsSignIn`, not `shouldInitiateSignIn`: the in-flight sign-in toggles the
+      // provider's loading state, and resetting on that would re-arm the guard and sign in twice.
+      hasInitiatedSignInRef.current = false;
+      return;
+    }
+
+    if (!shouldInitiateSignIn || hasInitiatedSignInRef.current) {
+      return;
+    }
+
+    hasInitiatedSignInRef.current = true;
+
+    // Logged rather than thrown: a rejection here cannot reach React, and CallbackRoute treats
+    // async auth failures the same way.
+    const reportSignInFailure = (error: unknown): void => {
+      const signInError: ThunderIDRuntimeError = new ThunderIDRuntimeError(
+        'Sign-in failed in ProtectedRoute.',
+        'ProtectedRoute-SignInError-001',
+        'react-router',
+        error,
+      );
+
+      logger.error(signInError.message, signInError);
+    };
+
+    if (signInUrl) {
+      navigate(signInUrl);
+      return;
+    }
+    if (onSignIn) {
+      // onSignIn may be async; wrapping the call in Promise.resolve().then() catches both a
+      // synchronous throw and a rejected Promise through the same error path as default sign-in.
+      Promise.resolve()
+        .then(() => onSignIn(signIn, overriddenSignInOptions))
+        .catch(reportSignInFailure);
+      return;
+    }
+
+    const mergedParams: Record<string, unknown> | undefined = (overriddenTokenRequest ?? tokenRequest)?.params;
+
+    signIn(
+      overriddenSignInOptions ?? signInOptions,
+      undefined,
+      undefined,
+      undefined,
+      mergedParams && Object.keys(mergedParams).length > 0 ? {params: mergedParams} : undefined,
+    ).catch(reportSignInFailure);
+  }, [
+    needsSignIn,
+    shouldInitiateSignIn,
+    signInUrl,
+    onSignIn,
+    signIn,
+    signInOptions,
+    overriddenSignInOptions,
+    tokenRequest,
+    overriddenTokenRequest,
+  ]);
+
   // Always wait for loading to finish before making authentication decisions
   if (isLoading) {
     return loader;
@@ -178,40 +257,8 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({
     return <Navigate to={redirectTo} replace />;
   }
 
-  if (!isSignedIn) {
-    if (signInUrl) {
-      navigate(signInUrl);
-    } else if (onSignIn) {
-      onSignIn(signIn, overriddenSignInOptions);
-    } else {
-      (async (): Promise<void> => {
-        try {
-          const mergedParams = (overriddenTokenRequest ?? tokenRequest)?.params;
-          await signIn(
-            overriddenSignInOptions ?? signInOptions,
-            undefined,
-            undefined,
-            undefined,
-            mergedParams && Object.keys(mergedParams).length > 0 ? {params: mergedParams} : undefined,
-          );
-        } catch (error) {
-          throw new ThunderIDRuntimeError(
-            'Sign-in failed in ProtectedRoute.',
-            'ProtectedRoute-SignInError-001',
-            'react-router',
-            `An error occurred during sign-in: ${(error as Error).message}`,
-          );
-        }
-      })();
-    }
-  }
-
-  throw new ThunderIDRuntimeError(
-    'ProtectedRoute misconfiguration.',
-    'ProtectedRoute-Misconfiguration-001',
-    'react-router',
-    'The internal handler failed to process the state. Please try with a fallback or redirectTo prop.',
-  );
+  // The effect above is taking the user to sign-in; render the loader until that resolves.
+  return loader;
 };
 
 export default ProtectedRoute;

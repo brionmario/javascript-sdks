@@ -103,6 +103,10 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   const [isUpdatingSession, setIsUpdatingSession] = useState<boolean>(false);
   const [wellKnown, setWellKnown] = useState<OIDCDiscoveryApiResponse | null>(null);
 
+  // Holds the in-flight `updateSession()` promise so concurrent callers coalesce onto a single
+  // `/users/me` request instead of issuing one each.
+  const pendingSessionUpdateRef: RefObject<Promise<void> | null> = useRef<Promise<void> | null>(null);
+
   useEffect(() => {
     setBaseUrl(initialBaseUrl ?? '');
   }, [initialBaseUrl]);
@@ -116,7 +120,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
     })();
   }, []);
 
-  async function updateSession(): Promise<void> {
+  async function performSessionUpdate(): Promise<void> {
     try {
       // Set flag to prevent loading state tracking from interfering
       setIsUpdatingSession(true);
@@ -162,6 +166,25 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       setIsUpdatingSession(false);
       setIsLoadingSync(client.isLoading());
     }
+  }
+
+  /**
+   * Single-flight wrapper around {@link performSessionUpdate}.
+   *
+   * Concurrent callers share the in-flight request instead of each issuing their own `/users/me`.
+   * This is not a cache: once the request settles the ref is cleared, so a later caller (e.g.
+   * revalidation after a profile update) fetches again.
+   */
+  async function updateSession(): Promise<void> {
+    if (pendingSessionUpdateRef.current) {
+      return pendingSessionUpdateRef.current;
+    }
+
+    pendingSessionUpdateRef.current = performSessionUpdate().finally(() => {
+      pendingSessionUpdateRef.current = null;
+    });
+
+    return pendingSessionUpdateRef.current;
   }
 
   async function signIn(...args: any): Promise<User | EmbeddedSignInFlowResponse> {
@@ -216,35 +239,20 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
         await updateSession();
       });
 
-      // User is already authenticated. Skip...
-      const isAlreadySignedIn: boolean = await client.isSignedIn();
-
-      // Start auto-refresh with a soft failure.
-      const scheduleAutoRefresh = async (): Promise<void> => {
-        try {
-          await client.startAutoRefreshToken();
-        } catch (error) {
-          logger.warn('Failed to schedule automatic token refresh.', error);
-        }
-      };
-
-      // Restore session state and kick off the refresh timer.
-      const resumeSession = async (): Promise<void> => {
-        await updateSession();
-        await scheduleAutoRefresh();
-      };
-
-      if (isAlreadySignedIn) {
-        await resumeSession();
+      // Start auto-refresh with a soft failure. This also covers the case where the access token
+      // expired while the refresh token is still valid — startAutoRefreshToken() calls
+      // refreshAccessToken() immediately when timeUntilRefresh <= 0 — so the sign-in check below
+      // sees the refreshed state.
+      try {
+        await client.startAutoRefreshToken();
+      } catch (error) {
+        logger.warn('Failed to schedule automatic token refresh.', error);
       }
 
-      // The access token may have expired while the refresh token is still valid.
-      // Attempt a silent refresh — startAutoRefreshToken() calls refreshAccessToken()
-      // immediately when timeUntilRefresh <= 0, then re-check sign-in status.
-      await scheduleAutoRefresh();
-
+      // User is already authenticated. Restore the session and skip the sign-in path.
       if (await client.isSignedIn()) {
-        await resumeSession();
+        await updateSession();
+
         return;
       }
 
