@@ -177,4 +177,20 @@ describe('ThunderIDAPIError — structured response body parsing', (): void => {
     const error: ThunderIDAPIError = new ThunderIDAPIError(errorText, 'CODE', 'javascript', 401);
     expect(error.message).toBe('Invalid credentials provided');
   });
+
+  it('should never surface a raw expired-flow response body to consumers', (): void => {
+    const errorText: string = JSON.stringify({
+      code: 'FES-1004',
+      description: {
+        defaultValue: 'Invalid flow execution ID provided in the request',
+        key: 'error.flowexecservice.invalid_execution_id_description',
+      },
+      message: {defaultValue: 'Invalid request', key: 'error.flowexecservice.invalid_execution_id'},
+    });
+    const error: ThunderIDAPIError = new ThunderIDAPIError(errorText, 'FES-1004', 'react', 400, 'Bad Request');
+
+    expect(error.message).not.toContain('FES-1004');
+    expect(error.message).not.toContain('error.flowexecservice');
+    expect(error.code).toBe('FES-1004');
+  });
 });

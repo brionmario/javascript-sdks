@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {ThunderIDAPIError} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode, useMemo} from 'react';
 import BaseAcceptInvite, {BaseAcceptInviteRenderProps, AcceptInviteFlowResponse} from './BaseAcceptInvite';
 
@@ -189,7 +190,7 @@ const AcceptInvite: FC<AcceptInviteProps> = ({
    * Makes an unauthenticated request to /flow/execute endpoint.
    */
   const handleSubmit = async (payload: Record<string, any>): Promise<AcceptInviteFlowResponse> => {
-    const response: any = await fetch(`${apiBaseUrl}/flow/execute`, {
+    const response: Response = await fetch(`${apiBaseUrl}/flow/execute`, {
       body: JSON.stringify({
         ...payload,
         verbose: true,
@@ -202,8 +203,15 @@ const AcceptInvite: FC<AcceptInviteProps> = ({
     });
 
     if (!response.ok) {
-      const errorText: any = await response.text();
-      throw new Error(`Request failed: ${errorText}`);
+      const errorText: string = await response.text();
+      // ThunderIDAPIError resolves the raw API body into a readable message instead of leaking it.
+      throw new ThunderIDAPIError(
+        errorText,
+        'AcceptInvite-ResponseError-001',
+        'react',
+        response.status,
+        response.statusText,
+      );
     }
 
     return response.json();

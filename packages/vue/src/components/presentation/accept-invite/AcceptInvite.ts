@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {ThunderIDAPIError} from '@thunderid/browser';
 import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
 import BaseAcceptInvite from './BaseAcceptInvite';
 import type {AcceptInviteFlowResponse, BaseAcceptInviteRenderProps} from './BaseAcceptInvite';
@@ -78,7 +79,14 @@ const AcceptInvite: Component = defineComponent({
 
       if (!response.ok) {
         const errorText: string = await response.text();
-        throw new Error(`Request failed: ${errorText}`);
+        // ThunderIDAPIError resolves the raw API body into a readable message instead of leaking it.
+        throw new ThunderIDAPIError(
+          errorText,
+          'AcceptInvite-ResponseError-001',
+          'vue',
+          response.status,
+          response.statusText,
+        );
       }
 
       return response.json();
