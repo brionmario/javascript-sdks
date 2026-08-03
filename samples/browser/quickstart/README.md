@@ -1,6 +1,6 @@
 # ThunderID Browser Quickstart
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/browser/quickstart)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/browser/quickstart?file=.env&terminal=dev)
 
 A minimal Vite + vanilla JS app demonstrating sign-in and sign-out with the ThunderID JavaScript SDK (`@thunderid/browser`).
 
@@ -8,22 +8,7 @@ A minimal Vite + vanilla JS app demonstrating sign-in and sign-out with the Thun
 
 - Node.js 18+
 - A running ThunderID instance (default: `https://localhost:8090`)
-- A configured application with an authorized redirect URI set to your app's origin (see [Import ThunderID Resources](#import-thunderid-resources) below)
-
-## Import ThunderID Resources
-
-This sample ships with a `thunderid-config/` directory containing a declarative YAML file that creates the required user type and application in one step.
-
-1. Open `thunderid-config/thunderid.env` and set your preferred values:
-   ```bash
-   BROWSER_QUICKSTART_CLIENT_ID=BROWSER_QUICKSTART
-   BROWSER_QUICKSTART_REDIRECT_URIS=["http://localhost:5173"]
-   ```
-2. Import via the ThunderID Console (https://localhost:8090/console):
-   - **First-time login**: a welcome screen appears with an **Open** button to upload the YAML file directly.
-   - **Later**: access the same welcome screen from the user profile menu in the top-right corner of the console.
-
-This creates the `Customer` user type and the `browser-quickstart` application under the default organization unit.
+- A configured application with an authorized redirect URI set to your app's origin
 
 ## Getting started
 

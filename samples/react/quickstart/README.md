@@ -1,6 +1,6 @@
 # ThunderID React Quickstart
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/react/quickstart)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/react/quickstart?file=.env&terminal=dev)
 
 A minimal React + Vite application demonstrating ThunderID authentication with OAuth 2.0, PKCE, and JWT support using the `@thunderid/react` SDK.
 
@@ -8,22 +8,7 @@ A minimal React + Vite application demonstrating ThunderID authentication with O
 
 - Node.js 18+
 - pnpm
-- A ThunderID application (see [Import ThunderID Resources](#import-thunderid-resources) below)
-
-## Import ThunderID Resources
-
-This sample ships with a `thunderid-config/` directory containing a declarative YAML file that creates the required user type and application in one step.
-
-1. Open `thunderid-config/thunderid.env` and set your preferred values:
-   ```bash
-   REACT_QUICKSTART_CLIENT_ID=REACT_QUICKSTART
-   REACT_QUICKSTART_REDIRECT_URIS=["http://localhost:5173"]
-   ```
-2. Import via the ThunderID Console (https://localhost:8090/console):
-   - **First-time login**: a welcome screen appears with an **Open** button to upload the YAML file directly.
-   - **Later**: access the same welcome screen from the user profile menu in the top-right corner of the console.
-
-This creates the `Customer` user type and the `react-quickstart` application under the default organization unit.
+- A ThunderID application
 
 ## Setup
 

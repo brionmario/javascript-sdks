@@ -1,6 +1,6 @@
 # ThunderID Next.js Quickstart
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/nextjs/quickstart)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/nextjs/quickstart?file=.env.local&terminal=dev)
 
 A minimal Next.js 15 App Router application demonstrating ThunderID authentication with OAuth 2.0, PKCE, and JWT out of the box.
 
@@ -8,26 +8,7 @@ A minimal Next.js 15 App Router application demonstrating ThunderID authenticati
 
 - Node.js 18+
 - pnpm
-- A ThunderID application (see [Import ThunderID Resources](#import-thunderid-resources) below)
-
-## Import ThunderID Resources
-
-This sample ships with a `thunderid-config/` directory containing a declarative YAML file that creates the required user type and application in one step.
-
-1. Open `thunderid-config/thunderid.env` and set your preferred values:
-
-   ```bash
-   NEXTJS_QUICKSTART_APPLICATION_ID=<uuid, e.g. generate with: uuidgen>
-   NEXTJS_QUICKSTART_CLIENT_ID=NEXTJS_QUICKSTART
-   NEXTJS_QUICKSTART_CLIENT_SECRET=<a strong secret>
-   NEXTJS_QUICKSTART_REDIRECT_URIS=["http://localhost:3000"]
-   ```
-
-2. Import via the ThunderID Console ([https://localhost:8090/console](https://localhost:8090/console)):
-   - **First-time login**: a welcome screen appears with an **Open** button to upload the YAML file directly.
-   - **Later**: access the same welcome screen from the user profile menu in the top-right corner of the console.
-
-This creates the `Customer` user type and the `nextjs-quickstart` application under the default organization unit. Note the `NEXTJS_QUICKSTART_APPLICATION_ID` value — unlike the client ID, this is a fixed id (not server-assigned) because it also drives the embedded sign-in/sign-up UI, so you'll copy it verbatim into `.env.local` below.
+- A ThunderID application
 
 ## Getting started
 

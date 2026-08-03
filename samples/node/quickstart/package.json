@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prepare-dev": "node scripts/prepare-dev.cjs",
     "start": "node --env-file-if-exists=.env index.mjs",
     "dev": "node --env-file-if-exists=.env --watch index.mjs"
   },
