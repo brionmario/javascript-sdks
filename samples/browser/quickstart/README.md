@@ -1,5 +1,7 @@
 # ThunderID Browser Quickstart
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/browser/quickstart)
+
 A minimal Vite + vanilla JS app demonstrating sign-in and sign-out with the ThunderID JavaScript SDK (`@thunderid/browser`).
 
 ## Prerequisites

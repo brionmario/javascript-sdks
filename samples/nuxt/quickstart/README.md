@@ -1,5 +1,7 @@
 # ThunderID Nuxt Quickstart
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/nuxt/quickstart)
+
 A minimal Nuxt 3 application demonstrating ThunderID authentication with OAuth 2.0, PKCE, and JWT out of the box.
 
 ## Prerequisites

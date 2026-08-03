@@ -42,14 +42,14 @@ const NEXT_STEPS = [
     title: 'Learn about flows',
     body: 'Understand how authorization code, PKCE, client credentials, and device flows work.',
     cta: 'Read guide',
-    href: 'https://thunderid.dev/docs/next/guides/guides/flows/what-are-flows/',
+    href: 'https://thunderid.dev/docs/next/guides/flows/what-are-flows/',
   },
   {
     n: '03',
     title: 'Style your experience',
     body: 'Customize the login UI, branding, and email templates to match your product.',
     cta: 'Design guide',
-    href: 'https://thunderid.dev/docs/next/guides/guides/design/overview/',
+    href: 'https://thunderid.dev/docs/next/guides/design/overview/',
   },
   {
     n: '04',

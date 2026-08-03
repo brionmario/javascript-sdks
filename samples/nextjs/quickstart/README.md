@@ -1,5 +1,7 @@
 # ThunderID Next.js Quickstart
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/nextjs/quickstart)
+
 A minimal Next.js 15 App Router application demonstrating ThunderID authentication with OAuth 2.0, PKCE, and JWT out of the box.
 
 ## Prerequisites
