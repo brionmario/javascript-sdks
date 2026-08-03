@@ -1,6 +1,6 @@
 # ThunderID Express Quickstart
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/express/quickstart)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/express/quickstart?file=.env&terminal=dev)
 
 A minimal Express.js **API** protected by ThunderID access tokens, using the ThunderID JavaScript
 SDK (`@thunderid/express`). Unlike the browser-focused quickstarts, this sample doesn't have a
@@ -16,23 +16,7 @@ Protected routes validate the `Authorization: Bearer <token>` header against Thu
 
 - Node.js 18+
 - A running ThunderID instance (default: `https://localhost:8090`)
-- A configured application with `http://localhost:3000/login` added as an authorized redirect URI (see [Import ThunderID Resources](#import-thunderid-resources) below)
-
-## Import ThunderID Resources
-
-This sample ships with a `thunderid-config/` directory containing a declarative YAML file that creates the required user type and application in one step.
-
-1. Open `thunderid-config/thunderid.env` and set your preferred values:
-   ```bash
-   EXPRESS_QUICKSTART_CLIENT_ID=EXPRESS_QUICKSTART
-   EXPRESS_QUICKSTART_CLIENT_SECRET=<a strong secret>
-   EXPRESS_QUICKSTART_REDIRECT_URIS=["http://localhost:3000/login"]
-   ```
-2. Import via the ThunderID Console (https://localhost:8090/console):
-   - **First-time login**: a welcome screen appears with an **Open** button to upload the YAML file directly.
-   - **Later**: access the same welcome screen from the user profile menu in the top-right corner of the console.
-
-This creates the `Customer` user type and the `express-quickstart` application under the default organization unit.
+- A configured application with `http://localhost:3000/login` added as an authorized redirect URI
 
 ## Getting started
 

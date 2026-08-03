@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
+    "prepare-dev": "node scripts/prepare-dev.cjs",
     "dev": "TMPDIR=/tmp/nuxt-tmp/ nuxt dev",
     "build": "nuxt build",
     "generate": "nuxt generate",
