@@ -28,6 +28,7 @@ import {
   EmbeddedSignInFlowResponse,
   createPackageComponentLogger,
   getVendorPrefix,
+  resolveResourceEndpoint,
 } from '@thunderid/browser';
 import {FC, RefObject, PropsWithChildren, ReactElement, useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import ThunderIDContext from './ThunderIDContext';
@@ -143,7 +144,11 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
 
       if (currentSignInStatus && shouldFetchProfile) {
         try {
-          const fetchedProfile = await getUsersMe({baseUrl: resolvedBaseUrl, instanceId});
+          const fetchedProfile = await getUsersMe({
+            baseUrl: resolvedBaseUrl,
+            url: resolveResourceEndpoint('usersMe', config),
+            instanceId,
+          });
           profileData = {...claims, ...fetchedProfile};
         } catch (err) {
           logger.warn('Failed to fetch user profile from /users/me:', err);
@@ -447,7 +452,18 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   );
 
   const reInitialize: (reInitConfig: any) => Promise<any> = useCallback(
-    async (reInitConfig: any): Promise<any> => client.reInitialize(reInitConfig),
+    async (reInitConfig: any): Promise<any> => {
+      const result: any = await client.reInitialize(reInitConfig);
+
+      // Refresh React state from the reinitialized client so the context (config.endpoints,
+      // baseUrl, discovery) reflects the new configuration instead of the pre-reinitialization state.
+      const reinitializedConfig: ThunderIDReactConfig = await client.getConfiguration();
+      setConfig(reinitializedConfig);
+      setBaseUrl(reinitializedConfig.baseUrl ?? '');
+      setWellKnown(await client.getDiscoveryResponse());
+
+      return result;
+    },
     [client],
   );
 
@@ -456,6 +472,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       afterSignInUrl: config.afterSignInUrl,
       applicationId: config.applicationId,
       baseUrl,
+      endpoints: config.endpoints,
       scopes: config.scopes,
       clearSession,
       clientId,
@@ -497,6 +514,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       config?.organizationHandle,
       config.vendor,
       config.afterSignInUrl,
+      config.endpoints,
       config.scopes,
       signInUrl,
       signUpUrl,

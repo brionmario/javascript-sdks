@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {ThunderIDError, User, withVendorCSSClassPrefix} from '@thunderid/browser';
+import {ThunderIDError, User, resolveResourceEndpoint, withVendorCSSClassPrefix} from '@thunderid/browser';
 import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h, ref, type Ref} from 'vue';
 import BaseUserProfile from './BaseUserProfile';
 import updateMeProfile from '../../../api/updateMeProfile';
@@ -68,7 +68,7 @@ const UserProfile: Component = defineComponent({
     title: {default: 'Profile', type: String},
   },
   setup(props: UserProfileProps, {slots}: SetupContext): () => VNode {
-    const {baseUrl, instanceId} = useThunderID();
+    const {baseUrl, endpoints, instanceId} = useThunderID();
     const {flattenedProfile, profile, onUpdateProfile} = useUser();
     const {t} = useI18n();
 
@@ -80,7 +80,12 @@ const UserProfile: Component = defineComponent({
       error.value = null;
 
       try {
-        const response: User = await updateMeProfile({baseUrl, instanceId, payload});
+        const response: User = await updateMeProfile({
+          baseUrl,
+          url: resolveResourceEndpoint('usersMe', {endpoints}),
+          instanceId,
+          payload,
+        });
         onUpdateProfile(response);
       } catch (caughtError: unknown) {
         let message: string = t('user.profile.update.generic.error') || 'Failed to update profile. Please try again.';

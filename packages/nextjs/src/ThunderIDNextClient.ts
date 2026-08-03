@@ -35,6 +35,7 @@ import {
   generateFlattenedUserProfile,
   getUsersMe,
   updateMeProfile,
+  resolveResourceEndpoint,
 } from '@thunderid/node';
 import {ThunderIDNextConfig} from './models/config';
 import getClientOrigin from './server/actions/getClientOrigin';
@@ -127,6 +128,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
 
       const profile: User = await getUsersMe({
         baseUrl,
+        url: resolveResourceEndpoint('usersMe', configData),
         headers: {
           Authorization: `Bearer ${await this.getAccessToken(userId)}`,
         },
@@ -147,6 +149,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
 
       const profile: User = await getUsersMe({
         baseUrl,
+        url: resolveResourceEndpoint('usersMe', configData),
         headers: {
           Authorization: `Bearer ${await this.getAccessToken(userId)}`,
         },
@@ -173,6 +176,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
 
       return updateMeProfile({
         baseUrl,
+        url: resolveResourceEndpoint('usersMe', configData),
         headers: {
           Authorization: `Bearer ${await this.getAccessToken(userId)}`,
         },
@@ -244,7 +248,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
         baseUrl: configData?.baseUrl,
         flowSecret: arg2?.flowSecret,
         payload: arg1,
-        url: arg2?.url,
+        url: resolveResourceEndpoint('flowExecute', configData, arg2?.url),
       }) as unknown as Promise<EmbeddedSignInFlowResponse>;
     }
 

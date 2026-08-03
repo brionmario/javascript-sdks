@@ -36,6 +36,8 @@ import {
   EmbeddedSignInFlowStatus,
   EmbeddedSignUpFlowStatus,
   StorageManager,
+  AuthClientConfig,
+  resolveResourceEndpoint,
 } from '@thunderid/browser';
 import getUsersMe from './api/getUsersMe';
 import {ThunderIDVueConfig} from './models/config';
@@ -95,16 +97,19 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
     throw new Error('Not implemented');
   }
 
-  override async getUser(options?: any): Promise<User> {
+  // The param is a supertype of the base `getUser(userId?: string)` so the override stays valid,
+  // while still typing the options object this client actually accepts.
+  override async getUser(options?: string | {baseUrl?: string; url?: string}): Promise<User> {
     try {
-      let baseUrl: string = options?.baseUrl;
+      const opts: {baseUrl?: string; url?: string} | undefined =
+        typeof options === 'object' && options !== null ? options : undefined;
+      const configData: AuthClientConfig<T> = await this.getStorageManager().getConfigData();
+      const baseUrl: string | undefined = opts?.baseUrl ?? configData?.baseUrl;
 
-      if (!baseUrl) {
-        const configData: any = await this.getStorageManager().getConfigData();
-        baseUrl = configData?.baseUrl;
-      }
-
-      const profile: User = await getUsersMe({baseUrl});
+      const profile: User = await getUsersMe({
+        baseUrl,
+        url: resolveResourceEndpoint('usersMe', configData, opts?.url),
+      });
 
       return profile;
     } catch (error) {
@@ -120,17 +125,17 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
     return this.withLoading(async () => super.getIdToken());
   }
 
-  override async getUserProfile(options?: any): Promise<UserProfile> {
+  override async getUserProfile(options?: {baseUrl?: string; url?: string}): Promise<UserProfile> {
     return this.withLoading(async () => {
       try {
-        let baseUrl: string = options?.baseUrl;
+        const configData: AuthClientConfig<T> = await this.getStorageManager().getConfigData();
+        const baseUrl: string | undefined = options?.baseUrl ?? configData?.baseUrl;
 
-        if (!baseUrl) {
-          const configData: any = await this.getStorageManager().getConfigData();
-          baseUrl = configData?.baseUrl;
-        }
-
-        const profile: User = await getUsersMe({baseUrl, instanceId: this.getInstanceId()});
+        const profile: User = await getUsersMe({
+          baseUrl,
+          instanceId: this.getInstanceId(),
+          url: resolveResourceEndpoint('usersMe', configData, options?.url),
+        });
 
         const output: UserProfile = {
           flattenedProfile: generateFlattenedUserProfile(profile),
@@ -192,7 +197,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
           authId,
           baseUrl,
           payload: arg1,
-          url: arg2?.url,
+          url: resolveResourceEndpoint('flowExecute', configData, arg2?.url),
         });
 
         if (
@@ -251,6 +256,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
       authId,
       baseUrl,
       payload: typeof firstArg === 'object' && 'flowType' in firstArg ? {...firstArg, verbose: true} : firstArg,
+      url: resolveResourceEndpoint('flowExecute', configData),
     });
 
     if (

@@ -36,6 +36,7 @@ import {
   executeEmbeddedRecoveryFlow,
   EmbeddedSignInFlowStatus,
   EmbeddedSignUpFlowStatus,
+  resolveResourceEndpoint,
 } from '@thunderid/browser';
 import {ThunderIDReactConfig} from './models/config';
 
@@ -138,7 +139,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
       const arg1: any = args[0];
       const arg2: any = args[1];
 
-      const config: ThunderIDReactConfig | undefined = (await this.getStorageManager().getConfigData()) as
+      let config: ThunderIDReactConfig | undefined = (await this.getStorageManager().getConfigData()) as
         | ThunderIDReactConfig
         | undefined;
 
@@ -147,6 +148,9 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
       // Hence, we need to check if the client is initialized but the config object is empty, and reinitialize.
       if (!config || Object.keys(config).length === 0) {
         await this.initialize(this._initializeConfig!);
+        // Reload the config persisted by initialization so downstream endpoint resolution
+        // (baseUrl and the flowExecute override) uses the recovered values, not the stale empty config.
+        config = (await this.getStorageManager().getConfigData()) as ThunderIDReactConfig | undefined;
       }
 
       if (typeof arg1 === 'object' && arg1 !== null && arg1.callOnlyOnRedirect === true) {
@@ -169,7 +173,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
           authId,
           baseUrl,
           payload: arg1,
-          url: arg2?.url,
+          url: resolveResourceEndpoint('flowExecute', config, arg2?.url),
         });
 
         if (
@@ -230,6 +234,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
       authId,
       baseUrl,
       payload: typeof firstArg === 'object' && 'flowType' in firstArg ? {...firstArg, verbose: true} : firstArg,
+      url: resolveResourceEndpoint('flowExecute', config),
     });
 
     if (
@@ -275,6 +280,7 @@ class ThunderIDReactClient<T extends ThunderIDReactConfig = ThunderIDReactConfig
     return executeEmbeddedRecoveryFlow({
       baseUrl: config?.baseUrl,
       payload: {...payload, verbose: true},
+      url: resolveResourceEndpoint('flowExecute', config),
     }) as any;
   }
 
