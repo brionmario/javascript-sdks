@@ -21,6 +21,7 @@ import {
   FlowMetaType,
   getFlowMeta,
   I18nBundle,
+  resolveResourceEndpoint,
   TranslationBundleConstants,
 } from '@thunderid/browser';
 import {
@@ -74,6 +75,9 @@ const FlowMetaProvider: Component = defineComponent({
 
     const baseUrl: string | undefined = thunderIDContext?.baseUrl;
     const applicationId: string | undefined = thunderIDContext?.applicationId;
+    const flowMetaUrl: string | undefined = resolveResourceEndpoint('flowMeta', {
+      endpoints: thunderIDContext?.endpoints,
+    });
 
     const fetchFlowMeta = async (): Promise<void> => {
       if (!props.enabled) {
@@ -87,6 +91,7 @@ const FlowMetaProvider: Component = defineComponent({
       try {
         const result: FlowMetadataResponse = await getFlowMeta({
           baseUrl,
+          url: flowMetaUrl,
           ...(applicationId ? {id: applicationId, type: FlowMetaType.App} : {}),
         });
         meta.value = result;
@@ -106,6 +111,7 @@ const FlowMetaProvider: Component = defineComponent({
       try {
         const result: FlowMetadataResponse = await getFlowMeta({
           baseUrl,
+          url: flowMetaUrl,
           ...(applicationId ? {id: applicationId, type: FlowMetaType.App} : {}),
           language,
         });

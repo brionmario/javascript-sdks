@@ -16,7 +16,12 @@
  * under the License.
  */
 
-import {EmbeddedFlowType, getOrganizationUnitChildren, OrganizationUnitListResponse} from '@thunderid/browser';
+import {
+  EmbeddedFlowType,
+  getOrganizationUnitChildren,
+  OrganizationUnitListResponse,
+  resolveResourceEndpoint,
+} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode, useCallback} from 'react';
 // eslint-disable-next-line import/no-named-as-default
 import BaseInviteUser, {BaseInviteUserRenderProps, InviteUserFlowResponse} from './BaseInviteUser';
@@ -123,7 +128,11 @@ const InviteUser: FC<InviteUserProps> = ({
   showTitle = true,
   showSubtitle = true,
 }: InviteUserProps): ReactElement => {
-  const {http, baseUrl, getAccessToken, isInitialized} = useThunderID();
+  const {http, baseUrl, endpoints, getAccessToken, isInitialized} = useThunderID();
+
+  // The user-onboarding flow runs on the resource server, which may differ from `baseUrl` (the
+  // authorization server) in a trusted-issuer setup. Honor the `flowExecute` endpoint override.
+  const flowExecuteUrl: string = resolveResourceEndpoint('flowExecute', {endpoints}) ?? `${baseUrl}/flow/execute`;
 
   /**
    * Initialize the invite user flow.
@@ -141,7 +150,7 @@ const InviteUser: FC<InviteUserProps> = ({
         'Content-Type': 'application/json',
       },
       method: 'POST',
-      url: `${baseUrl}/flow/execute`,
+      url: flowExecuteUrl,
     } as any);
 
     return response.data as InviteUserFlowResponse;
@@ -162,7 +171,7 @@ const InviteUser: FC<InviteUserProps> = ({
         'Content-Type': 'application/json',
       },
       method: 'POST',
-      url: `${baseUrl}/flow/execute`,
+      url: flowExecuteUrl,
     } as any);
 
     return response.data as InviteUserFlowResponse;

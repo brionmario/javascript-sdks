@@ -217,18 +217,37 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
   };
 
   /**
-   * Optional overrides for the OIDC protocol endpoints.
-   * By default, the SDK derives all endpoint URLs from the well-known discovery document
-   * located at `{baseUrl}/oauth2/token/.well-known/openid-configuration`.
-   * Use this when your authorization server exposes endpoints at non-standard paths,
-   * or when a custom domain differs from `baseUrl`.
+   * Optional overrides for the endpoint URLs the SDK talks to.
    *
-   * Individual overrides take precedence over values resolved from the discovery document.
+   * Two independent groups live here:
+   *
+   * - **OIDC/OAuth endpoints** (`authorization`, `token`, `userInfo`, `jwks`, `introspection`,
+   *   `endSession`, `wellKnown`) — by default derived from the well-known discovery document at
+   *   `{baseUrl}/oauth2/token/.well-known/openid-configuration`. Individual overrides take
+   *   precedence over values resolved from the discovery document.
+   * - **Resource-server endpoints** (`flowExecute`, `flowMeta`, `usersMe`) —
+   *   by default derived by concatenating `baseUrl` with a fixed path (e.g. `{baseUrl}/flow/execute`).
+   *   These do not participate in OIDC discovery.
+   *
+   * Split these two groups when the OAuth authorization server (IdP) and the Thunder resource
+   * server are different hosts — for example, when two Thunder instances are connected as trusted
+   * issuers. Point `baseUrl` (and hence the OAuth/discovery endpoints) at the authorization server,
+   * and override the resource-server endpoints to target the resource server that actually owns the
+   * users and flows.
    *
    * @example
    * endpoints: {
    *   wellKnown: "https://custom-domain.example.com/.well-known/openid-configuration",
    *   authorization: "https://custom-domain.example.com/oauth2/authorize",
+   * }
+   *
+   * @example
+   * // Trusted-issuer setup: OAuth on the authorization server, resource APIs on the resource server.
+   * baseUrl: "https://idp.example.com",
+   * endpoints: {
+   *   flowExecute: "https://rs.example.com/flow/execute",
+   *   flowMeta: "https://rs.example.com/flow/meta",
+   *   usersMe: "https://rs.example.com/users/me",
    * }
    */
   endpoints?: {
@@ -242,6 +261,17 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
      * If not provided, resolved from the well-known discovery document.
      */
     endSession?: string;
+    /**
+     * The flow execution endpoint URL used by the embedded sign-in, sign-up, recovery, and user
+     * onboarding flows.
+     * If not provided, defaults to `{baseUrl}/flow/execute`.
+     */
+    flowExecute?: string;
+    /**
+     * The flow metadata endpoint URL used to resolve flow/branding metadata.
+     * If not provided, defaults to `{baseUrl}/flow/meta`.
+     */
+    flowMeta?: string;
     /**
      * The introspection endpoint URL.
      * If not provided, resolved from the well-known discovery document.
@@ -262,6 +292,11 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
      * If not provided, resolved from the well-known discovery document.
      */
     userInfo?: string;
+    /**
+     * The current-user profile endpoint URL used to fetch and update the signed-in user's profile.
+     * If not provided, defaults to `{baseUrl}/users/me`.
+     */
+    usersMe?: string;
     /**
      * The OpenID Connect discovery document URL.
      * Defaults to `{baseUrl}/oauth2/token/.well-known/openid-configuration`.

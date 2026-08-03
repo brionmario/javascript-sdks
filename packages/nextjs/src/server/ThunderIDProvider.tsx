@@ -27,6 +27,7 @@ import {
   UserProfile,
   getFlowMeta,
   extractUserClaimsFromIdToken,
+  resolveResourceEndpoint,
 } from '@thunderid/node';
 import {ThunderIDProviderProps} from '@thunderid/react';
 import {FC, PropsWithChildren, ReactElement} from 'react';
@@ -122,6 +123,7 @@ const ThunderIDServerProvider: FC<PropsWithChildren<ThunderIDServerProviderProps
   try {
     flowMeta = await getFlowMeta({
       baseUrl: config?.baseUrl,
+      url: resolveResourceEndpoint('flowMeta', config),
       ...(config?.applicationId ? {id: config.applicationId, type: FlowMetaType.App} : {}),
     });
   } catch (error) {

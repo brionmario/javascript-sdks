@@ -39,6 +39,11 @@ export type ThunderIDContextProps = {
   applicationId: string | undefined;
   baseUrl: string | undefined;
   clientId: string | undefined;
+  /**
+   * Optional endpoint URL overrides from the client config. Used to resolve resource-server
+   * endpoints (e.g. flow/user-management) independently of `baseUrl` — see `resolveResourceEndpoint`.
+   */
+  endpoints?: ThunderIDReactConfig['endpoints'];
   preferences?: ThunderIDReactConfig['preferences'];
   scopes: string | string[] | undefined;
   /**

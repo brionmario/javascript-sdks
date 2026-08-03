@@ -184,6 +184,8 @@ export {default as get} from './utils/get';
 export {default as startCase} from './utils/startCase';
 export {default as removeTrailingSlash} from './utils/removeTrailingSlash';
 export {default as resolveFieldName} from './utils/resolveFieldName';
+export {default as resolveResourceEndpoint} from './utils/resolveResourceEndpoint';
+export type {ResourceEndpointKey, ResourceEndpointConfig} from './utils/resolveResourceEndpoint';
 export {default as resolveMeta} from './utils/resolveMeta';
 export {default as resolveFlowTemplateLiterals} from './utils/resolveFlowTemplateLiterals';
 export {default as countryCodeToFlagEmoji} from './utils/countryCodeToFlagEmoji';

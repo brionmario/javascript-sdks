@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {executeEmbeddedSignInFlow, logger as Logger} from '@thunderid/node';
+import {executeEmbeddedSignInFlow, resolveResourceEndpoint, logger as Logger} from '@thunderid/node';
 import express from 'express';
 import ThunderIDExpressClient from '../ThunderIDExpressClient';
 
@@ -86,6 +86,7 @@ const handleFlow = (): express.RequestHandler => {
         authId: resolvedAuthId,
         baseUrl: baseUrl,
         payload,
+        url: resolveResourceEndpoint('flowExecute', config),
       });
 
       if (flowResponse.redirectUrl) {

@@ -62,6 +62,7 @@ interface ThunderIDProviderProps {
   applicationId: string | undefined;
   baseUrl: string;
   clientId: string;
+  endpoints: ThunderIDVueConfig['endpoints'];
   instanceId: number;
   organizationChain: object | undefined;
   organizationHandle: string | undefined;
@@ -128,6 +129,11 @@ const ThunderIDProvider: Component = defineComponent({
     clientId: {
       required: true,
       type: String,
+    },
+    /** Optional endpoint URL overrides (OIDC/OAuth and resource-server endpoints). */
+    endpoints: {
+      default: undefined,
+      type: Object as PropType<ThunderIDVueConfig['endpoints']>,
     },
     /** Instance ID for multi-instance support. */
     instanceId: {
@@ -208,6 +214,7 @@ const ThunderIDProvider: Component = defineComponent({
         applicationId: props.applicationId,
         baseUrl: props.baseUrl,
         clientId: props.clientId,
+        endpoints: props.endpoints,
         organizationChain: props.organizationChain,
         organizationHandle: props.organizationHandle,
         scopes: props.scopes,
@@ -314,6 +321,7 @@ const ThunderIDProvider: Component = defineComponent({
       afterSignInUrl: props.afterSignInUrl,
       applicationId: props.applicationId,
       baseUrl: props.baseUrl,
+      endpoints: props.endpoints,
       clearSession: async (...args: any[]): Promise<void> => {
         await client.clearSession(...args);
       },

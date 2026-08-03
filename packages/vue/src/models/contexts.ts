@@ -47,6 +47,11 @@ export interface ThunderIDContext {
   applicationId: string | undefined;
   /** The base URL of the ThunderID tenant. */
   baseUrl: string | undefined;
+  /**
+   * Optional endpoint URL overrides from the config. Used to resolve resource-server endpoints
+   * (e.g. flow/user-management) independently of `baseUrl` — see `resolveResourceEndpoint`.
+   */
+  endpoints?: ThunderIDVueConfig['endpoints'];
   clearSession: (...args: any[]) => void;
   /** The OAuth2 client ID. */
   clientId: string | undefined;

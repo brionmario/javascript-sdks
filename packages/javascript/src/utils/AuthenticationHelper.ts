@@ -18,6 +18,7 @@
 
 import extractUserClaimsFromIdToken from './extractUserClaimsFromIdToken';
 import processOpenIDScopes from './processOpenIDScopes';
+import {RESOURCE_ENDPOINT_KEYS} from './resolveResourceEndpoint';
 import OIDCDiscoveryConstants from '../constants/OIDCDiscoveryConstants';
 import TokenExchangeConstants from '../constants/TokenExchangeConstants';
 import {ThunderIDAuthException} from '../errors/exception';
@@ -60,6 +61,34 @@ class AuthenticationHelper<T> {
   }
 
   /**
+   * Maps the config-defined OIDC endpoint overrides to their discovery-metadata form.
+   *
+   * Endpoint names are converted from camelCase to snake_case, and resource-server endpoints
+   * (`RESOURCE_ENDPOINT_KEYS`) are excluded — those are resolved separately via
+   * `resolveResourceEndpoint` and must not leak into the OIDC provider metadata.
+   *
+   * @param configData - The resolved auth client config.
+   * @returns A snake_cased map of the OIDC endpoint overrides (empty when none are configured).
+   */
+  private mapConfiguredOidcEndpoints(configData: AuthClientConfig<T>): OIDCDiscoveryApiResponse {
+    const endpoints: OIDCDiscoveryApiResponse = {};
+
+    if (!configData.endpoints) {
+      return endpoints;
+    }
+
+    Object.keys(configData.endpoints)
+      .filter((endpointName: string) => !RESOURCE_ENDPOINT_KEYS.includes(endpointName as never))
+      .forEach((endpointName: string) => {
+        const snakeCasedName: string = endpointName.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
+
+        endpoints[snakeCasedName] = configData.endpoints ? configData.endpoints[endpointName] : '';
+      });
+
+    return endpoints;
+  }
+
+  /**
    * Merges explicit endpoint overrides from config into the discovery response.
    * Config-defined endpoint names (camelCase) are converted to snake_case before merging.
    *
@@ -67,18 +96,9 @@ class AuthenticationHelper<T> {
    * @returns The discovery response with any config-specified endpoint overrides applied.
    */
   public async resolveEndpoints(response: OIDCDiscoveryApiResponse): Promise<OIDCDiscoveryApiResponse> {
-    const oidcProviderMetaData: OIDCDiscoveryApiResponse = {};
     const configData: AuthClientConfig<T> = await this.config();
 
-    if (configData.endpoints) {
-      Object.keys(configData.endpoints).forEach((endpointName: string) => {
-        const snakeCasedName: string = endpointName.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
-
-        oidcProviderMetaData[snakeCasedName] = configData?.endpoints ? configData.endpoints[endpointName] : '';
-      });
-    }
-
-    return {...response, ...oidcProviderMetaData};
+    return {...response, ...this.mapConfiguredOidcEndpoints(configData)};
   }
 
   /**
@@ -89,7 +109,6 @@ class AuthenticationHelper<T> {
    * @throws {ThunderIDAuthException} When required endpoints are absent from the config.
    */
   public async resolveEndpointsExplicitly(): Promise<OIDCDiscoveryEndpointsApiResponse> {
-    const oidcProviderMetaData: OIDCDiscoveryApiResponse = {};
     const configData: AuthClientConfig<T> = await this.config();
 
     const requiredEndpoints: string[] = [
@@ -127,15 +146,7 @@ class AuthenticationHelper<T> {
       );
     }
 
-    if (configData.endpoints) {
-      Object.keys(configData.endpoints).forEach((endpointName: string) => {
-        const snakeCasedName: string = endpointName.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
-
-        oidcProviderMetaData[snakeCasedName] = configData?.endpoints ? configData.endpoints[endpointName] : '';
-      });
-    }
-
-    return {...oidcProviderMetaData};
+    return {...this.mapConfiguredOidcEndpoints(configData)};
   }
 
   /**
@@ -147,7 +158,6 @@ class AuthenticationHelper<T> {
    * @throws {ThunderIDAuthException} When `baseUrl` is not defined in the config.
    */
   public async resolveEndpointsByBaseURL(): Promise<OIDCDiscoveryEndpointsApiResponse> {
-    const oidcProviderMetaData: OIDCDiscoveryEndpointsApiResponse = {};
     const configData: AuthClientConfig<T> = await this.config();
 
     const {baseUrl} = configData as any;
@@ -160,13 +170,7 @@ class AuthenticationHelper<T> {
       );
     }
 
-    if (configData.endpoints) {
-      Object.keys(configData.endpoints).forEach((endpointName: string) => {
-        const snakeCasedName: string = endpointName.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
-
-        oidcProviderMetaData[snakeCasedName] = configData?.endpoints ? configData.endpoints[endpointName] : '';
-      });
-    }
+    const oidcProviderMetaData: OIDCDiscoveryApiResponse = this.mapConfiguredOidcEndpoints(configData);
 
     const endpointKeys: typeof OIDCDiscoveryConstants.Storage.StorageKeys.Endpoints =
       OIDCDiscoveryConstants.Storage.StorageKeys.Endpoints;
