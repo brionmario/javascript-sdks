@@ -1,5 +1,7 @@
 # ThunderID Node.js Service Quickstart
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/node/quickstart)
+
 A minimal machine-to-machine (service-to-service) client, using the ThunderID Node.js SDK
 (`@thunderid/node`). Unlike the other quickstarts, there's no user and no browser sign-in: this
 service authenticates as **itself** with the OAuth 2.0 `client_credentials` grant, then uses the

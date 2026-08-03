@@ -1,5 +1,7 @@
 # ThunderID Vue Quickstart
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/vue/quickstart)
+
 A minimal Vue 3 + Vite application demonstrating ThunderID authentication with OAuth 2.0, PKCE, and JWT support using the `@thunderid/vue` SDK.
 
 ## Prerequisites
