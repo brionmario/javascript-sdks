@@ -47,9 +47,10 @@ const envTarget = path.join(root, '.env');
 if (fs.existsSync(envExample) && (flowExplicitlyRequested || !fs.existsSync(envTarget))) {
   const envSource = fs.existsSync(envTarget) ? envTarget : envExample;
   const envContent = applyFlow(fs.readFileSync(envSource, 'utf8'), flow)
-    // Blank placeholder values (e.g. `your-client-id-here`) so the copied .env
-    // still trips the app's missing-env-var check until real values are filled in.
-    .replace(/^([A-Z0-9_]+)=(your-\S*|generate-with-\S*)$/gm, '$1=');
+    // Blank placeholder values (e.g. `your-client-id-here`, the sample base URL)
+    // so the copied .env still trips the app's missing-env-var check until real
+    // values are filled in.
+    .replace(/^([A-Z0-9_]+)=(your-\S*|generate-with-\S*|https:\/\/localhost:8090)$/gm, '$1=');
   fs.writeFileSync(envTarget, envContent);
 }
 
