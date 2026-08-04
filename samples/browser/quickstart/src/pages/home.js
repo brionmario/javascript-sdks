@@ -139,6 +139,8 @@ export function attachSignedOutHandlers({ auth }) {
 }
 
 export function renderConfigNeeded(missing) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+
   return `
     <section class="hero">
       <div class="hero-inner">
@@ -150,18 +152,86 @@ export function renderConfigNeeded(missing) {
         </div>
         <h1 class="hero-title">Configuration needed</h1>
         <p class="hero-subtitle">
-          This quickstart can't reach ThunderID yet. Set the following
-          environment variable(s), then restart the dev server.
+          This quickstart can't reach ThunderID yet. Follow the steps below,
+          then restart the dev server.
         </p>
-        <ul class="config-list">
-          ${missing.map(key => `<li class="config-list-item">${escapeHtml(key)}</li>`).join('')}
-        </ul>
-        <p class="config-hint">
-          Copy <code>.env.example</code> to <code>.env.local</code>, fill in the
-          values from your ThunderID application, then run <code>npm run dev</code> again.
+
+        <div class="config-step">
+          <div class="config-step-label">Step 1 &middot; Set environment variables</div>
+          <ul class="config-list">
+            ${missing.map(key => `<li class="config-list-item">${escapeHtml(key)}</li>`).join('')}
+          </ul>
+          <p class="config-hint">
+            Copy <code>.env.example</code> to <code>.env</code>, fill in the
+            values from your ThunderID application, then run <code>npm run dev</code> again.
+          </p>
+        </div>
+
+        <div class="config-step">
+          <div class="config-step-label">Step 2 &middot; Allow this origin for CORS</div>
+          <div class="config-box">
+            <p class="config-box-body">
+              Sign-in requests from this origin will be blocked by the browser
+              until it's added to your ThunderID deployment's allowed CORS
+              origins. In the <strong>ThunderID Console</strong>, go to
+              <strong> Settings &rarr; CORS &rarr; Allowed origins</strong> and
+              add it.
+            </p>
+            <div class="config-value-row">
+              <code class="config-value">${escapeHtml(origin)}</code>
+              <button class="token-copy-btn config-copy-btn" data-copy="${escapeHtml(origin)}">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-step">
+          <div class="config-step-label">Step 3 &middot; Register redirect URIs</div>
+          <div class="config-box">
+            <p class="config-box-body">
+              This origin also doubles as this app's Authorized redirect URI
+              and Post-Logout Redirect URI. In the <strong>ThunderID
+              Console</strong>, open this application and go to
+              <strong> Advanced Settings &rarr; OAuth2 Configuration</strong>,
+              then add it to both fields below.
+            </p>
+            <div class="config-value-group">
+              <div>
+                <div class="config-value-label">Authorized redirect URI</div>
+                <div class="config-value-row">
+                  <code class="config-value">${escapeHtml(origin)}</code>
+                  <button class="token-copy-btn config-copy-btn" data-copy="${escapeHtml(origin)}">Copy</button>
+                </div>
+              </div>
+              <div>
+                <div class="config-value-label">Post-Logout Redirect URI</div>
+                <div class="config-value-row">
+                  <code class="config-value">${escapeHtml(origin)}</code>
+                  <button class="token-copy-btn config-copy-btn" data-copy="${escapeHtml(origin)}">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="config-docs-note">
+          Need more info? Take a look at the
+          <a href="https://thunderid.dev/docs/next/getting-started/connect-your-application/browser/" target="_blank" rel="noopener noreferrer">Browser quickstart guide.</a>
         </p>
       </div>
     </section>`
+}
+
+export function attachConfigNeededHandlers() {
+  if (!navigator.clipboard) return
+  document.querySelectorAll('.config-copy-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(btn.getAttribute('data-copy') || '').then(() => {
+        const original = btn.textContent
+        btn.textContent = 'Copied!'
+        setTimeout(() => { btn.textContent = original }, 1500)
+      })
+    })
+  })
 }
 
 export function renderHome({ user, idToken }) {
