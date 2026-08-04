@@ -1,6 +1,6 @@
 # ThunderID Express Quickstart
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/express/quickstart?file=.env&terminal=dev)
+<a href="https://stackblitz.com/fork/github/thunder-id/javascript-sdks/tree/main/samples/express/quickstart?file=.env&terminal=dev" target="_blank"><img src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" alt="Open in StackBlitz" /></a>
 
 A minimal Express.js **API** protected by ThunderID access tokens, using the ThunderID JavaScript
 SDK (`@thunderid/express`). Unlike the browser-focused quickstarts, this sample doesn't have a

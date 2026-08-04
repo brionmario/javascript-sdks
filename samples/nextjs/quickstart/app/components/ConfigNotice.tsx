@@ -23,7 +23,7 @@ function SunIcon() {
   )
 }
 
-export default function ConfigNotice({ missing }: { missing: string[] }) {
+export default function ConfigNotice({ missing, isRedirectFlow }: { missing: string[]; isRedirectFlow: boolean }) {
   const [dark, setDark] = useState(false)
 
   const toggle = () => {
@@ -62,19 +62,57 @@ export default function ConfigNotice({ missing }: { missing: string[] }) {
           <h1 className="hero-title">Configuration needed</h1>
 
           <p className="hero-subtitle">
-            This quickstart can&apos;t reach ThunderID yet. Set the following
-            environment variable(s), then restart the dev server.
+            This quickstart can&apos;t reach ThunderID yet. Follow the steps
+            below, then restart the dev server.
           </p>
 
-          <ul className="config-list">
-            {missing.map((key) => (
-              <li key={key} className="config-list-item">{key}</li>
-            ))}
-          </ul>
+          <div className="config-step">
+            <div className="config-step-label">Step 1 &middot; Set environment variables</div>
 
-          <p className="config-hint">
-            Copy <code>.env.example</code> to <code>.env.local</code>, fill in the
-            values from your ThunderID application, then run <code>npm run dev</code> again.
+            <ul className="config-list">
+              {missing.map((key) => (
+                <li key={key} className="config-list-item">{key}</li>
+              ))}
+            </ul>
+
+            <p className="config-hint">
+              Copy <code>.env.example</code> to <code>.env</code>, fill in the
+              values from your ThunderID application, then run <code>npm run dev</code> again.
+            </p>
+          </div>
+
+          {isRedirectFlow && (
+            <div className="config-step">
+              <div className="config-step-label">Step 2 &middot; Register redirect URIs</div>
+
+              <div className="config-box">
+                <p className="config-box-body">
+                  Sign-in and sign-out are handled by this app&apos;s server, so
+                  no CORS configuration is needed. In the{' '}
+                  <strong>ThunderID Console</strong>, open this application and go
+                  to <strong>Advanced Settings &rarr; OAuth2 Configuration</strong>,
+                  then add the exact URIs below.
+                </p>
+
+                <div className="config-value-group">
+                  <div>
+                    <div className="config-value-label">Authorized redirect URI</div>
+                    <code className="config-value">http://localhost:3000</code>
+                  </div>
+                  <div>
+                    <div className="config-value-label">Post-Logout Redirect URI</div>
+                    <code className="config-value">http://localhost:3000</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="config-docs-note">
+            Need more info? Take a look at the{' '}
+            <a href="https://thunderid.dev/docs/next/getting-started/connect-your-application/nextjs/" target="_blank" rel="noopener noreferrer">
+              Next.js quickstart guide.
+            </a>
           </p>
         </div>
       </section>

@@ -10,11 +10,19 @@ export const metadata: Metadata = {
   description: 'ThunderID authentication with Next.js',
 }
 
+// Redirect-based flow (NEXT_PUBLIC_THUNDERID_CLIENT_ID set) sends the user to
+// ThunderID's hosted pages and needs a registered redirect URI. The default,
+// native flow renders sign-in/sign-up inline via the app's own routes and
+// needs an application ID instead — no redirect URI or CORS setup required.
+const isRedirectFlow = Boolean(process.env.NEXT_PUBLIC_THUNDERID_CLIENT_ID)
+
 const REQUIRED_ENV_VARS = [
   'NEXT_PUBLIC_THUNDERID_BASE_URL',
-  'NEXT_PUBLIC_THUNDERID_CLIENT_ID',
   'THUNDERID_CLIENT_SECRET',
   'THUNDERID_SECRET',
+  ...(isRedirectFlow
+    ? ['NEXT_PUBLIC_THUNDERID_CLIENT_ID']
+    : ['NEXT_PUBLIC_THUNDERID_APPLICATION_ID', 'NEXT_PUBLIC_THUNDERID_SIGN_IN_URL', 'NEXT_PUBLIC_THUNDERID_SIGN_UP_URL']),
 ]
 
 export default function RootLayout({
@@ -28,7 +36,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {missingEnvVars.length > 0 ? (
-          <ConfigNotice missing={missingEnvVars} />
+          <ConfigNotice missing={missingEnvVars} isRedirectFlow={isRedirectFlow} />
         ) : (
           <ThunderIDProvider>
             {children}

@@ -69,13 +69,39 @@ function renderConfigNeeded() {
         <div class="hero-mark">${thunderMark(40)}</div>
         <div class="hero-badge config-badge"><span class="hero-badge-line"></span><span>Setup required</span><span class="hero-badge-line"></span></div>
         <h1 class="hero-title">Configuration needed</h1>
-        <p class="hero-subtitle">This quickstart can't reach ThunderID yet. Set the following environment
-        variable(s), then restart the server.</p>
-        <ul class="config-list">
-          ${missingEnvVars.map((key) => `<li class="config-list-item">${esc(key)}</li>`).join('')}
-        </ul>
-        <p class="config-hint">Copy <code>.env.example</code> to <code>.env</code>, fill in the values from
-        your ThunderID application, then run <code>npm run dev</code> again.</p>
+        <p class="hero-subtitle">This quickstart can't reach ThunderID yet. Follow the steps below, then
+        restart the server.</p>
+
+        <div class="config-step">
+          <div class="config-step-label">Step 1 &middot; Set environment variables</div>
+          <ul class="config-list">
+            ${missingEnvVars.map((key) => `<li class="config-list-item">${esc(key)}</li>`).join('')}
+          </ul>
+          <p class="config-hint">Copy <code>.env.example</code> to <code>.env</code>, fill in the values from
+          your ThunderID application, then run <code>npm run dev</code> again.</p>
+        </div>
+
+        <div class="config-step">
+          <div class="config-step-label">Step 2 &middot; Register redirect URIs</div>
+          <div class="config-box">
+            <p class="config-box-body">Sign-in and sign-out are handled by this app's server, so no CORS
+            configuration is needed. In the <strong>ThunderID Console</strong>, open this application and go to
+            <strong> Advanced Settings &rarr; OAuth2 Configuration</strong>, then add the exact URIs below.</p>
+            <div class="config-value-group">
+              <div>
+                <div class="config-value-label">Authorized redirect URI</div>
+                <code class="config-value">http://localhost:3000/login</code>
+              </div>
+              <div>
+                <div class="config-value-label">Post-Logout Redirect URI</div>
+                <code class="config-value">http://localhost:3000/logout</code>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="config-docs-note">Need more info? Take a look at the
+        <a href="https://thunderid.dev/docs/next/getting-started/connect-your-application/express/" target="_blank" rel="noopener noreferrer">Express quickstart guide.</a></p>
       </div>
     </section>`,
   });

@@ -24,11 +24,23 @@ function SunIcon() {
 
 export default function ConfigNotice({ missing }) {
   const [dark, setDark] = useState(false)
+  const [copiedField, setCopiedField] = useState(null)
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
   const toggleDark = () => {
     const next = !dark
     setDark(next)
     document.documentElement.setAttribute('data-theme', next ? 'dark' : '')
+  }
+
+  const handleCopy = async (field) => {
+    try {
+      await navigator.clipboard.writeText(origin)
+      setCopiedField(field)
+      setTimeout(() => setCopiedField(null), 1500)
+    } catch {
+      // Clipboard API unavailable (e.g. insecure context) — ignore.
+    }
   }
 
   return (
@@ -64,19 +76,86 @@ export default function ConfigNotice({ missing }) {
           <h1 className="hero-title">Configuration needed</h1>
 
           <p className="hero-subtitle">
-            This quickstart can't reach ThunderID yet. Set the following
-            environment variable(s), then restart the dev server.
+            This quickstart can't reach ThunderID yet. Follow the steps below,
+            then restart the dev server.
           </p>
 
-          <ul className="config-list">
-            {missing.map((key) => (
-              <li key={key} className="config-list-item">{key}</li>
-            ))}
-          </ul>
+          <div className="config-step">
+            <div className="config-step-label">Step 1 &middot; Set environment variables</div>
 
-          <p className="config-hint">
-            Copy <code>.env.example</code> to <code>.env.local</code>, fill in the
-            values from your ThunderID application, then run <code>npm run dev</code> again.
+            <ul className="config-list">
+              {missing.map((key) => (
+                <li key={key} className="config-list-item">{key}</li>
+              ))}
+            </ul>
+
+            <p className="config-hint">
+              Copy <code>.env.example</code> to <code>.env</code>, fill in the
+              values from your ThunderID application, then run <code>npm run dev</code> again.
+            </p>
+          </div>
+
+          <div className="config-step">
+            <div className="config-step-label">Step 2 &middot; Allow this origin for CORS</div>
+
+            <div className="config-box">
+              <p className="config-box-body">
+                Sign-in requests from this origin will be blocked by the browser
+                until it's added to your ThunderID deployment's allowed CORS
+                origins. In the <strong>ThunderID Console</strong>, go to
+                <strong> Settings &rarr; CORS &rarr; Allowed origins</strong> and
+                add it.
+              </p>
+
+              <div className="config-value-row">
+                <code className="config-value">{origin}</code>
+                <button className="token-copy-btn" onClick={() => handleCopy('cors')}>
+                  {copiedField === 'cors' ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="config-step">
+            <div className="config-step-label">Step 3 &middot; Register redirect URIs</div>
+
+            <div className="config-box">
+              <p className="config-box-body">
+                This origin also doubles as this app's Authorized redirect URI
+                and Post-Logout Redirect URI. In the <strong>ThunderID
+                Console</strong>, open this application and go to
+                <strong> Advanced Settings &rarr; OAuth2 Configuration</strong>,
+                then add it to both fields below.
+              </p>
+
+              <div className="config-value-group">
+                <div>
+                  <div className="config-value-label">Authorized redirect URI</div>
+                  <div className="config-value-row">
+                    <code className="config-value">{origin}</code>
+                    <button className="token-copy-btn" onClick={() => handleCopy('redirect')}>
+                      {copiedField === 'redirect' ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <div className="config-value-label">Post-Logout Redirect URI</div>
+                  <div className="config-value-row">
+                    <code className="config-value">{origin}</code>
+                    <button className="token-copy-btn" onClick={() => handleCopy('logout')}>
+                      {copiedField === 'logout' ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="config-docs-note">
+            Need more info? Take a look at the{' '}
+            <a href="https://thunderid.dev/docs/next/getting-started/connect-your-application/react/" target="_blank" rel="noopener noreferrer">
+              React quickstart guide.
+            </a>
           </p>
         </div>
       </div>

@@ -59,6 +59,13 @@ export function printConfigNeeded(missingEnvVars) {
     ),
   );
   console.log();
+  console.log(
+    indent(
+      pc.dim('Need more info? Take a look at the Node quickstart guide: ') +
+        pc.cyan('https://thunderid.dev/docs/next/getting-started/connect-your-application/node/'),
+    ),
+  );
+  console.log();
 }
 
 export function printAuthenticated({baseUrl, clientId, scope}) {

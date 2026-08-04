@@ -6,9 +6,21 @@ defineProps({
 })
 
 const dark = ref(false)
+const copiedField = ref(null)
+const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
 function toggleDark() {
   dark.value = !dark.value
+}
+
+async function handleCopy(field) {
+  try {
+    await navigator.clipboard.writeText(origin)
+    copiedField.value = field
+    setTimeout(() => { copiedField.value = null }, 1500)
+  } catch {
+    // Clipboard API unavailable (e.g. insecure context) — ignore.
+  }
 }
 </script>
 
@@ -62,17 +74,82 @@ function toggleDark() {
         <h1 class="hero-title">Configuration needed</h1>
 
         <p class="hero-subtitle">
-          This quickstart can't reach ThunderID yet. Set the following
-          environment variable(s), then restart the dev server.
+          This quickstart can't reach ThunderID yet. Follow the steps below,
+          then restart the dev server.
         </p>
 
-        <ul class="config-list">
-          <li v-for="key in missing" :key="key" class="config-list-item">{{ key }}</li>
-        </ul>
+        <div class="config-step">
+          <div class="config-step-label">Step 1 &middot; Set environment variables</div>
 
-        <p class="config-hint">
-          Copy <code>.env.example</code> to <code>.env.local</code>, fill in the
-          values from your ThunderID application, then run <code>npm run dev</code> again.
+          <ul class="config-list">
+            <li v-for="key in missing" :key="key" class="config-list-item">{{ key }}</li>
+          </ul>
+
+          <p class="config-hint">
+            Copy <code>.env.example</code> to <code>.env</code>, fill in the
+            values from your ThunderID application, then run <code>npm run dev</code> again.
+          </p>
+        </div>
+
+        <div class="config-step">
+          <div class="config-step-label">Step 2 &middot; Allow this origin for CORS</div>
+
+          <div class="config-box">
+            <p class="config-box-body">
+              Sign-in requests from this origin will be blocked by the browser
+              until it's added to your ThunderID deployment's allowed CORS
+              origins. In the <strong>ThunderID Console</strong>, go to
+              <strong> Settings &rarr; CORS &rarr; Allowed origins</strong> and
+              add it.
+            </p>
+
+            <div class="config-value-row">
+              <code class="config-value">{{ origin }}</code>
+              <button class="token-copy-btn" @click="handleCopy('cors')">
+                {{ copiedField === 'cors' ? 'Copied!' : 'Copy' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-step">
+          <div class="config-step-label">Step 3 &middot; Register redirect URIs</div>
+
+          <div class="config-box">
+            <p class="config-box-body">
+              This origin also doubles as this app's Authorized redirect URI
+              and Post-Logout Redirect URI. In the <strong>ThunderID
+              Console</strong>, open this application and go to
+              <strong> Advanced Settings &rarr; OAuth2 Configuration</strong>,
+              then add it to both fields below.
+            </p>
+
+            <div class="config-value-group">
+              <div>
+                <div class="config-value-label">Authorized redirect URI</div>
+                <div class="config-value-row">
+                  <code class="config-value">{{ origin }}</code>
+                  <button class="token-copy-btn" @click="handleCopy('redirect')">
+                    {{ copiedField === 'redirect' ? 'Copied!' : 'Copy' }}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <div class="config-value-label">Post-Logout Redirect URI</div>
+                <div class="config-value-row">
+                  <code class="config-value">{{ origin }}</code>
+                  <button class="token-copy-btn" @click="handleCopy('logout')">
+                    {{ copiedField === 'logout' ? 'Copied!' : 'Copy' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="config-docs-note">
+          Need more info? Take a look at the
+          <a href="https://thunderid.dev/docs/next/getting-started/connect-your-application/vue/" target="_blank" rel="noopener noreferrer">Vue quickstart guide.</a>
         </p>
       </div>
     </div>
