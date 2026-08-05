@@ -1,20 +1,5 @@
-/**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
- *
- * WSO2 LLC. licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
+// Copyright 2025 The ThunderID Authors
+// SPDX-License-Identifier: Apache-2.0
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 
@@ -34,13 +19,13 @@ describe('withVendorCSSClassPrefix', () => {
   });
 
   it('should prefix a simple class name with the vendor prefix', async () => {
-    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('wso2');
-    expect(withVendorCSSClassPrefix('sign-in-button')).toBe('wso2-sign-in-button');
+    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('custom');
+    expect(withVendorCSSClassPrefix('sign-in-button')).toBe('custom-sign-in-button');
   });
 
   it('should work with BEM-style class names unchanged after the hyphen', async () => {
-    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('wso2');
-    expect(withVendorCSSClassPrefix('card__title--large')).toBe('wso2-card__title--large');
+    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('custom');
+    expect(withVendorCSSClassPrefix('card__title--large')).toBe('custom-card__title--large');
   });
 
   it('should respect different vendor prefixes', async () => {
@@ -49,15 +34,15 @@ describe('withVendorCSSClassPrefix', () => {
   });
 
   it('should handle an empty class name by returning just the prefix and hyphen', async () => {
-    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('wso2');
-    expect(withVendorCSSClassPrefix('')).toBe('wso2-');
+    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('custom');
+    expect(withVendorCSSClassPrefix('')).toBe('custom-');
   });
 
   it('should not mutate or trim the provided class name (preserve spaces/characters as-is)', async () => {
-    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('wso2');
+    const withVendorCSSClassPrefix: (className: string) => string = await loadWithPrefix('custom');
     const original = '  spaced name  ';
     const result: string = withVendorCSSClassPrefix(original);
-    expect(result).toBe('wso2-  spaced name  ');
+    expect(result).toBe('custom-  spaced name  ');
     expect(original).toBe('  spaced name  ');
   });
 });
