@@ -321,9 +321,14 @@ const SignIn: FC<SignInProps> = ({
    * Clear all flow-related storage and state.
    */
   const clearFlowState = async (): Promise<void> => {
+    // Clear the expired flow state to prevent rendering a stale form with a null executionId.
+    // Kept before the first await so callers that do not await this function still apply the
+    // reset in one batch, ahead of the setError that follows.
     setExecutionId(null);
-    await setChallengeToken(null);
+    setComponents([]);
+    setAdditionalData({});
     setIsFlowInitialized(false);
+    await setChallengeToken(null);
     try {
       const storageManager: any = await getStorageManager();
       await storageManager?.removeHybridDataParameter?.('authId');
