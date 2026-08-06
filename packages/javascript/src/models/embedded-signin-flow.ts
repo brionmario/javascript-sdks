@@ -159,6 +159,12 @@ export interface EmbeddedSignInFlowResponse extends ExtendedEmbeddedSignInFlowRe
   assertion?: string;
 
   /**
+   * JWT error assertion returned when the flow terminates in failure on the V2 platform.
+   * Relayed to the OAuth2 auth callback so the waiting authorization request is failed.
+   */
+  errorAssertion?: string;
+
+  /**
    * Per-step challenge token for replay protection.
    * Must be included in the next request to continue this flow.
    */

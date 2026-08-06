@@ -5,6 +5,71 @@ import ThunderIDAPIError from '../errors/ThunderIDAPIError';
 import {EmbeddedFlowExecuteRequestConfig} from '../models/embedded-flow';
 import {EmbeddedSignInFlowResponse, EmbeddedSignInFlowStatus} from '../models/embedded-signin-flow';
 import injectRequestedPermissions from '../utils/injectRequestedPermissions';
+import logger from '../utils/logger';
+
+const readErrorAssertion = (body: string): string | undefined => {
+  try {
+    return (JSON.parse(body) as {errorAssertion?: string}).errorAssertion;
+  } catch {
+    return undefined;
+  }
+};
+
+const postAuthCallback = async (
+  baseUrl: string | undefined,
+  body: Record<string, string>,
+  headers: HeadersInit | undefined,
+): Promise<Record<string, unknown>> => {
+  const oauth2Response: Response = await fetch(`${baseUrl}/oauth2/auth/callback`, {
+    body: JSON.stringify(body),
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...headers,
+    } as HeadersInit,
+    method: 'POST',
+  });
+
+  if (!oauth2Response.ok) {
+    const oauth2ErrorText: string = await oauth2Response.text();
+
+    logger.error(
+      `OAuth2 authorization failed. The callback responded ` + `${oauth2Response.status} ${oauth2Response.statusText}:`,
+      oauth2ErrorText,
+    );
+
+    throw new ThunderIDAPIError(
+      'OAuth2 authorization failed',
+      'executeEmbeddedSignInFlow-OAuth2Error-002',
+      'javascript',
+      oauth2Response.status,
+      oauth2Response.statusText,
+    );
+  }
+
+  return oauth2Response.json();
+};
+
+const relayFailure = async (
+  baseUrl: string | undefined,
+  authId: string,
+  errorAssertion: string,
+  headers?: HeadersInit,
+  flowResponse?: EmbeddedSignInFlowResponse,
+): Promise<EmbeddedSignInFlowResponse> => {
+  const oauth2Result: Record<string, unknown> = await postAuthCallback(
+    baseUrl,
+    {assertion: errorAssertion, authId},
+    headers,
+  );
+
+  return {
+    ...flowResponse,
+    flowStatus: EmbeddedSignInFlowStatus.Error,
+    redirectUrl: oauth2Result['redirect_uri'],
+  } as any;
+};
 
 const executeEmbeddedSignInFlow = async ({
   url,
@@ -71,6 +136,12 @@ const executeEmbeddedSignInFlow = async ({
   if (!response.ok) {
     const errorText: string = await response.text();
 
+    const errorAssertion: string | undefined = readErrorAssertion(errorText);
+
+    if (authId && errorAssertion) {
+      return await relayFailure(baseUrl, authId, errorAssertion, requestConfig.headers);
+    }
+
     throw new ThunderIDAPIError(
       errorText,
       'executeEmbeddedSignInFlow-ResponseError-001',
@@ -87,34 +158,11 @@ const executeEmbeddedSignInFlow = async ({
   // Check if the flow is complete and has an assertion and authId is provided, then call OAuth2 auth callback.
   if (flowResponse.flowStatus === EmbeddedSignInFlowStatus.Complete && flowResponse.assertion && authId) {
     try {
-      const oauth2Response: Response = await fetch(`${baseUrl}/oauth2/auth/callback`, {
-        body: JSON.stringify({
-          assertion: flowResponse.assertion,
-          authId,
-        }),
-        credentials: 'include',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...requestConfig.headers,
-        } as HeadersInit,
-        method: 'POST',
-      });
-
-      if (!oauth2Response.ok) {
-        const oauth2ErrorText: string = await oauth2Response.text();
-
-        throw new ThunderIDAPIError(
-          oauth2ErrorText,
-          'executeEmbeddedSignInFlow-OAuth2Error-002',
-          'javascript',
-          oauth2Response.status,
-          oauth2Response.statusText,
-          'OAuth2 authorization failed',
-        );
-      }
-
-      const oauth2Result: Record<string, unknown> = await oauth2Response.json();
+      const oauth2Result: Record<string, unknown> = await postAuthCallback(
+        baseUrl,
+        {assertion: flowResponse.assertion, authId},
+        requestConfig.headers,
+      );
 
       return {
         flowStatus: flowResponse.flowStatus,
@@ -134,6 +182,10 @@ const executeEmbeddedSignInFlow = async ({
         'OAuth2 authorization failed',
       );
     }
+  }
+
+  if (flowResponse.flowStatus === EmbeddedSignInFlowStatus.Error && flowResponse.errorAssertion && authId) {
+    return relayFailure(baseUrl, authId, flowResponse.errorAssertion, requestConfig.headers, flowResponse);
   }
 
   return flowResponse;
