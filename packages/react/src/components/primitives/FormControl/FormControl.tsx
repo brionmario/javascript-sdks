@@ -1,11 +1,11 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {bem, withVendorCSSClassPrefix} from '@thunderid/browser';
 import {CSSProperties, FC, ReactNode} from 'react';
 import useStyles from './FormControl.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 import Typography from '../Typography/Typography';
 
 export type FormControlHelperTextAlign = 'left' | 'center';

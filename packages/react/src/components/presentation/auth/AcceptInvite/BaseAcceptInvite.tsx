@@ -1,7 +1,6 @@
 // Copyright 2025-2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {
   ConsentConstants,
   FieldError,
@@ -19,6 +18,7 @@ import useTheme from '../../../../contexts/Theme/useTheme';
 import useThunderID from '../../../../contexts/ThunderID/useThunderID';
 import {useOAuthCallback} from '../../../../hooks/useOAuthCallback';
 import useTranslation from '../../../../hooks/useTranslation';
+import {cx} from '../../../../styles/emotion';
 import {normalizeFlowResponse, extractErrorMessage} from '../../../../utils/flowTransformer';
 import {initiateOAuthRedirect} from '../../../../utils/oauth';
 import AlertPrimitive from '../../../primitives/Alert/Alert';
@@ -805,7 +805,7 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
     return (
       <CardPrimitive className={cx(className, styles.card)} variant={variant}>
         <CardPrimitive.Content>
-          <div style={{alignItems: 'center', display: 'flex', flexDirection: 'column', gap: '1rem', padding: '2rem'}}>
+          <div className={(styles as Record<string, string>)['tokenValidationContainer']}>
             <Spinner size="medium" />
             <Typography variant="body1">Validating your invite link...</Typography>
           </div>
@@ -832,7 +832,7 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
             </AlertPrimitive.Description>
           </AlertPrimitive>
           {onGoToSignIn && (
-            <div style={{display: 'flex', justifyContent: 'center', marginTop: '1.5rem'}}>
+            <div className={(styles as Record<string, string>)['goToSignInContainer']}>
               <Button variant="outline" onClick={onGoToSignIn}>
                 Go to Sign In
               </Button>
@@ -862,7 +862,7 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
       )}
       <CardPrimitive.Content>
         {apiError && (
-          <div style={{marginBottom: '1rem'}}>
+          <div className={(styles as Record<string, string>)['errorContainer']}>
             <AlertPrimitive variant="error">
               <AlertPrimitive.Description>{apiError.message}</AlertPrimitive.Description>
             </AlertPrimitive>
@@ -894,16 +894,20 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
                 </AlertPrimitive>
               )}
           {isLoading && (
-            <div style={{display: 'flex', justifyContent: 'center', padding: '1rem'}}>
+            <div className={(styles as Record<string, string>)['centeredSpinnerContainerSmall']}>
               <Spinner size="small" />
             </div>
           )}
         </div>
         {onGoToSignIn && (
-          <div style={{marginTop: '1.5rem', textAlign: 'center'}}>
+          <div className={(styles as Record<string, string>)['alreadyHaveAccountContainer']}>
             <Typography variant="body2">
               Already have an account?{' '}
-              <Button variant="text" onClick={onGoToSignIn} style={{minWidth: 'auto', padding: 0}}>
+              <Button
+                variant="text"
+                onClick={onGoToSignIn}
+                className={(styles as Record<string, string>)['signInInlineButton']}
+              >
                 Sign In
               </Button>
             </Typography>

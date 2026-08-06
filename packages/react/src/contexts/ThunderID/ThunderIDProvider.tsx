@@ -19,6 +19,7 @@ import {FC, RefObject, PropsWithChildren, ReactElement, useEffect, useMemo, useR
 import ThunderIDContext from './ThunderIDContext';
 import useBrowserUrl from '../../hooks/useBrowserUrl';
 import {ThunderIDReactConfig} from '../../models/config';
+import {configureEmotionNonce} from '../../styles/emotion';
 import ThunderIDReactClient from '../../ThunderIDReactClient';
 import ComponentRendererProvider from '../ComponentRenderer/ComponentRendererProvider';
 import FlowProvider from '../Flow/FlowProvider';
@@ -56,8 +57,15 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   syncSession,
   instanceId = 0,
   organizationChain,
+  cspNonce,
+  vendor,
   ...rest
 }: PropsWithChildren<ThunderIDProviderProps>): ReactElement => {
+  // Must run synchronously here, in the render body, before any descendant's css()/cx()/
+  // keyframes() calls execute during this same render pass - see the doc comment on
+  // `configureEmotionNonce` for why a `useEffect` would be too late.
+  configureEmotionNonce(cspNonce, vendor);
+
   const reRenderCheckRef: RefObject<boolean> = useRef(false);
   const client: ThunderIDReactClient = useMemo(() => new ThunderIDReactClient(instanceId), [instanceId]);
   const storageManagerRef: any = useRef<any>(null);
@@ -83,6 +91,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
     signInUrl,
     signUpUrl,
     syncSession,
+    vendor,
     ...rest,
   });
 

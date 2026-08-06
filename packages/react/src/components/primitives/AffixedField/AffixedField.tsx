@@ -1,11 +1,11 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {PrefixOption, bem, withVendorCSSClassPrefix} from '@thunderid/browser';
 import {ChangeEvent, FC, InputHTMLAttributes, ReactElement, useId} from 'react';
 import useStyles from './AffixedField.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 import FormControl from '../FormControl/FormControl';
 import InputLabel from '../InputLabel/InputLabel';
 

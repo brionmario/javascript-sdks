@@ -14,6 +14,7 @@ import Toggle from '../primitives/Toggle/Toggle';
 import {Info} from '../primitives/Icons';
 import Tooltip from '../primitives/Tooltip/Tooltip';
 import {UseTranslation} from '../../hooks/useTranslation';
+import {css} from '../../styles/emotion';
 
 /**
  * Backward-compatible consent purpose type exported by @thunderid/react.
@@ -112,6 +113,28 @@ const Consent: FC<ConsentProps> = ({
   meta,
   t,
 }: ConsentProps) => {
+  // Computed per render (not at module scope): a CSP nonce configured on <ThunderIDProvider>
+  // isn't known until the provider renders, and Emotion needs it applied before any style
+  // insertion happens. These are static, so Emotion's own cache dedupes the repeat calls to a
+  // no-op after the first render — this isn't a real per-render cost.
+  const purposesContainerClass: string = css({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    marginTop: '0.25rem',
+  });
+  const purposeItemClass: string = css({paddingBottom: '1rem'});
+  const sectionClass: string = css({marginTop: '0.5rem'});
+  const sectionHeaderClass: string = css({alignItems: 'center', display: 'flex', gap: '4px', marginBottom: '10px'});
+  const optionalSectionHeaderClass: string = css({
+    alignItems: 'center',
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: '10px',
+    paddingRight: '4px',
+  });
+  const optionalSectionLabelClass: string = css({alignItems: 'center', display: 'flex', gap: '4px'});
+
   /** Resolve any remaining {{t()}} or {{meta()}} template expressions in a string at render time. */
   const resolve = (text: string | undefined): string => {
     if (!text || (!t && !meta)) {
@@ -172,9 +195,9 @@ const Consent: FC<ConsentProps> = ({
   }
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.25rem'}}>
+    <div className={purposesContainerClass}>
       {purposes.map((purpose: ConsentPurposeData, purposeIndex: number) => (
-        <div key={purpose.purposeId || purposeIndex} style={{paddingBottom: '1rem'}}>
+        <div key={purpose.purposeId || purposeIndex} className={purposeItemClass}>
           {/* TODO: Uncomment when the backend supports multiple purposes for a application */}
           {/* <Typography variant="h6" fontWeight={600} gutterBottom color="inherit">
             {purpose.purposeName}
@@ -184,8 +207,8 @@ const Consent: FC<ConsentProps> = ({
           </Typography> */}
 
           {purpose.essential && purpose.essential.length > 0 && (
-            <div style={{marginTop: '0.5rem'}}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px'}}>
+            <div className={sectionClass}>
+              <div className={sectionHeaderClass}>
                 <Typography variant="subtitle2" fontWeight="bold">
                   {essentialLabel}
                 </Typography>
@@ -205,17 +228,9 @@ const Consent: FC<ConsentProps> = ({
           )}
 
           {purpose.optional && purpose.optional.length > 0 && (
-            <div style={{marginTop: '0.5rem'}}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingRight: '4px',
-                  marginBottom: '10px',
-                }}
-              >
-                <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+            <div className={sectionClass}>
+              <div className={optionalSectionHeaderClass}>
+                <div className={optionalSectionLabelClass}>
                   <Typography variant="subtitle2" fontWeight="bold">
                     {purpose.type === 'permissions' ? 'Permissions' : optionalLabel}
                   </Typography>

@@ -1,7 +1,6 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {
   useFloating,
   useClick,
@@ -41,6 +40,7 @@ import {
 } from 'react';
 import useStyles from './Dialog.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 import Button from '../Button/Button';
 import {X} from '../Icons';
 

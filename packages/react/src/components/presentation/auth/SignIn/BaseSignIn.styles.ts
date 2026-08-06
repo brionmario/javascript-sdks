@@ -1,9 +1,9 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {css} from '@emotion/css';
 import {Theme} from '@thunderid/browser';
 import {useMemo} from 'react';
+import {css} from '../../../../styles/emotion';
 
 /**
  * Creates styles for the BaseSignIn component
@@ -71,6 +71,12 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       flex-direction: column;
       align-items: center;
       padding: calc(${theme.vars.spacing.unit} * 4);
+    `;
+
+    const centeredSpinnerContainer: string = css`
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
     `;
 
     const loadingText: string = css`
@@ -143,6 +149,7 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       authenticatorSection,
       card,
       centeredContainer,
+      centeredSpinnerContainer,
       contentContainer,
       divider,
       errorAlert,

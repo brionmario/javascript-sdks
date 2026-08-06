@@ -49,6 +49,7 @@
     "@thunderid/eslint-plugin": "catalog:",
     "@thunderid/prettier-config": "catalog:",
     "@types/node": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
     "@vue/test-utils": "2.4.6",
     "eslint": "catalog:",
     "prettier": "catalog:",

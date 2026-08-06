@@ -1,11 +1,11 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {type ConsentPurposeData, withVendorCSSClassPrefix, bem} from '@thunderid/browser';
 import {type ChangeEvent, FC, ReactNode} from 'react';
 import useStyles from './ConsentCheckboxList.styles';
 import useTheme from '../../contexts/Theme/useTheme';
+import {cx} from '../../styles/emotion';
 import Toggle from '../primitives/Toggle/Toggle';
 import Typography from '../primitives/Typography/Typography';
 

@@ -1,9 +1,9 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {css} from '@emotion/css';
 import {Theme, withVendorCSSClassPrefix} from '@thunderid/browser';
 import {useMemo} from 'react';
+import {css} from '../../../styles/emotion';
 
 /**
  * Creates styles for the BaseUserProfile component

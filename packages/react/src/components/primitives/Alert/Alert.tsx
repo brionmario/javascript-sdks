@@ -1,7 +1,6 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {withVendorCSSClassPrefix, bem} from '@thunderid/browser';
 import {
   Context,
@@ -18,6 +17,7 @@ import {
 } from 'react';
 import useStyles from './Alert.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 import CircleAlert from '../Icons/CircleAlert';
 import CircleCheck from '../Icons/CircleCheck';
 import Info from '../Icons/Info';

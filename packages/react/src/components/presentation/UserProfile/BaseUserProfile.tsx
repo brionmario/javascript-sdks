@@ -1,12 +1,12 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {User, withVendorCSSClassPrefix, bem, Preferences, startCase} from '@thunderid/browser';
 import {FC, ReactElement, useState, useCallback, useEffect} from 'react';
 import useStyles from './BaseUserProfile.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
 import useTranslation from '../../../hooks/useTranslation';
+import {cx} from '../../../styles/emotion';
 import getDisplayName from '../../../utils/getDisplayName';
 import getMappedUserProfileValue from '../../../utils/getMappedUserProfileValue';
 import AlertPrimitive from '../../primitives/Alert/Alert';

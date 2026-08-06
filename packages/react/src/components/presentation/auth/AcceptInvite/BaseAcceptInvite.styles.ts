@@ -1,9 +1,9 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {css} from '@emotion/css';
 import {Theme} from '@thunderid/browser';
 import {useMemo} from 'react';
+import {css} from '../../../../styles/emotion';
 
 /**
  * Creates styles for the BaseAcceptInvite component
@@ -36,11 +36,51 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       color: ${theme.vars.colors.text.secondary};
     `;
 
+    const tokenValidationContainer: string = css`
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 2rem;
+    `;
+
+    const goToSignInContainer: string = css`
+      display: flex;
+      justify-content: center;
+      margin-top: 1.5rem;
+    `;
+
+    const errorContainer: string = css`
+      margin-bottom: 1rem;
+    `;
+
+    const centeredSpinnerContainerSmall: string = css`
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+    `;
+
+    const alreadyHaveAccountContainer: string = css`
+      margin-top: 1.5rem;
+      text-align: center;
+    `;
+
+    const signInInlineButton: string = css`
+      min-width: auto;
+      padding: 0;
+    `;
+
     return {
+      alreadyHaveAccountContainer,
       card,
+      centeredSpinnerContainerSmall,
+      errorContainer,
+      goToSignInContainer,
       header,
+      signInInlineButton,
       subtitle,
       title,
+      tokenValidationContainer,
     };
   }, [
     theme.vars.colors.background.surface,

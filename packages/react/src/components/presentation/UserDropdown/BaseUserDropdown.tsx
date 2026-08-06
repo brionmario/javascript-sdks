@@ -1,7 +1,6 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {
   useFloating,
   autoUpdate,
@@ -19,6 +18,7 @@ import {withVendorCSSClassPrefix} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode, useState} from 'react';
 import useStyles from './BaseUserDropdown.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {css, cx} from '../../../styles/emotion';
 import getDisplayName from '../../../utils/getDisplayName';
 import getMappedUserProfileValue from '../../../utils/getMappedUserProfileValue';
 import {Avatar} from '../../primitives/Avatar/Avatar';
@@ -216,13 +216,19 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
           <FloatingFocusManager context={context} modal={false} initialFocus={-1}>
             <div
               ref={refs.setFloating}
-              className={cx(withVendorCSSClassPrefix('user-dropdown__content'), styles['dropdownContent'])}
-              style={{
-                ...floatingStyles,
-                // Floating UI doesn't set a z-index by default, so we set a high value to ensure the dropdown appears above other elements.
-                // https://floating-ui.com/docs/misc#z-index-stacking
-                zIndex: 9999,
-              }}
+              className={cx(
+                withVendorCSSClassPrefix('user-dropdown__content'),
+                styles['dropdownContent'],
+                // Floating UI recomputes the position on every render, so this class is generated
+                // fresh each time rather than memoized - Emotion still injects it into the shared,
+                // nonce-tagged `<style>` element, so no inline `style` attribute is needed.
+                css({
+                  ...floatingStyles,
+                  // Floating UI doesn't set a z-index by default, so we set a high value to ensure the dropdown appears above other elements.
+                  // https://floating-ui.com/docs/misc#z-index-stacking
+                  zIndex: 9999,
+                }),
+              )}
               {...getFloatingProps()}
             >
               <div className={cx(withVendorCSSClassPrefix('user-dropdown__header'), styles['dropdownHeader'])}>
@@ -267,13 +273,10 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
                         return (
                           <a
                             href={item.href}
-                            style={{
-                              backgroundColor:
-                                hoveredItemIndex === index ? theme.vars.colors.action?.hover : 'transparent',
-                            }}
                             className={cx(
                               withVendorCSSClassPrefix('user-dropdown__menu-item'),
                               styles['menuItemAnchor'],
+                              hoveredItemIndex === index && styles['menuItemHighlighted'],
                             )}
                             onMouseEnter={(): void => setHoveredItemIndex(index)}
                             onMouseLeave={(): void => setHoveredItemIndex(null)}
@@ -288,11 +291,11 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
                       return (
                         <Button
                           onClick={(): void => handleMenuItemClick(item)}
-                          style={{
-                            backgroundColor:
-                              hoveredItemIndex === index ? theme.vars.colors.action?.hover : 'transparent',
-                          }}
-                          className={cx(withVendorCSSClassPrefix('user-dropdown__menu-item'), styles['menuItem'])}
+                          className={cx(
+                            withVendorCSSClassPrefix('user-dropdown__menu-item'),
+                            styles['menuItem'],
+                            hoveredItemIndex === index && styles['menuItemHighlighted'],
+                          )}
                           color="tertiary"
                           variant="text"
                           size="small"

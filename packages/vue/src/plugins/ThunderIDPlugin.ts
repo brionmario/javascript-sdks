@@ -35,6 +35,12 @@ export interface ThunderIDPluginOptions {
    * Should match the `vendor` passed to `<ThunderIDProvider>`. Defaults to `VendorConstants.VENDOR_PREFIX`.
    */
   vendor?: string;
+
+  /**
+   * CSP nonce applied to the SDK's runtime-injected `<style>` tag, for apps that enforce
+   * a strict `style-src` Content-Security-Policy directive (i.e. without `'unsafe-inline'`).
+   */
+  cspNonce?: string;
 }
 
 /**
@@ -65,7 +71,7 @@ export interface ThunderIDPluginOptions {
  */
 const ThunderIDPlugin: Plugin<[ThunderIDPluginOptions?]> = {
   install(app: App, options?: ThunderIDPluginOptions): void {
-    injectStyles(options?.vendor);
+    injectStyles(options?.vendor, options?.cspNonce);
 
     if (options?.mode === 'delegated') {
       // In delegated mode the host framework is responsible for providing all

@@ -1,11 +1,11 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {withVendorCSSClassPrefix, bem} from '@thunderid/browser';
 import {ChangeEvent, FC, SVGProps, useState} from 'react';
 import useStyles from './PasswordField.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 import Eye from '../Icons/Eye';
 import EyeOff from '../Icons/EyeOff';
 import TextField, {TextFieldProps} from '../TextField/TextField';
