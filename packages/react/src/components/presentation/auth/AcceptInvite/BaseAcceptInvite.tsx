@@ -3,6 +3,7 @@
 
 import {cx} from '@emotion/css';
 import {
+  ConsentConstants,
   FieldError,
   FlowExecutionError,
   FlowMetadataResponse,
@@ -553,6 +554,7 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
             const isDeny = component?.variant?.toLowerCase() !== 'primary';
             const decisions = {
               approved: !isDeny,
+              ...(isDeny ? {reason: ConsentConstants.REASON_USER_DENIED} : {}),
               purposes: purposes.map((p: any) => ({
                 approved: !isDeny,
                 purposeName: p.purposeName,

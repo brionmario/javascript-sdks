@@ -4,6 +4,7 @@
 import {
   ThunderIDRuntimeError,
   ThunderIDAPIError,
+  ConsentConstants,
   EmbeddedFlowComponent,
   EmbeddedFlowType,
   EmbeddedSignInFlowResponse,
@@ -156,12 +157,6 @@ interface PasskeyState {
  */
 const CONSENT_REASON_KEY = '__consent_reason__';
 
-/**
- * Reason recorded when a consent prompt is submitted because it expired rather than because the
- * user chose anything.
- */
-const CONSENT_REASON_TIMEOUT = 'timeout';
-
 /** Flattens a component tree into a single list, parents before their children. */
 const flattenComponents = (comps: EmbeddedFlowComponent[] | undefined): EmbeddedFlowComponent[] =>
   (comps ?? []).flatMap((comp: EmbeddedFlowComponent) => [comp, ...flattenComponents(comp.components)]);
@@ -284,6 +279,13 @@ const SignIn: FC<SignInProps> = ({
   // Deadline this component has already auto-submitted for, so a re-run of the timeout effect
   // cannot submit the same expired step twice.
   const timeoutSubmittedForRef = useRef<number | null>(null);
+  // The timeout effect is keyed on the deadline alone, so a step that arrives carrying the same
+  // deadline would otherwise leave the pending timer holding the previous step's context.
+  const timeoutContextRef = useRef<{
+    components: EmbeddedFlowComponent[];
+    hasConsentPrompt: boolean;
+    submit: (payload: EmbeddedSignInFlowRequest) => Promise<void>;
+  } | null>(null);
   /**
    * Sets executionId between sessionStorage and state.
    * This ensures both are always in sync.
@@ -760,13 +762,16 @@ const SignIn: FC<SignInProps> = ({
         }
 
         // An expired prompt is never an approval, whichever action carried the submission
-        if (consentReason === CONSENT_REASON_TIMEOUT) {
+        if (consentReason === ConsentConstants.REASON_TIMEOUT) {
           isDeny = true;
         }
 
+        // An explicit denial carries a reason too, so the server never has to infer one
+        const reason: string | undefined = consentReason ?? (isDeny ? ConsentConstants.REASON_USER_DENIED : undefined);
+
         const decisions: any = {
           approved: !isDeny,
-          ...(consentReason ? {reason: consentReason} : {}),
+          ...(reason ? {reason} : {}),
           purposes: purposes.map((p: any) => ({
             approved: !isDeny,
             elements: [
@@ -903,6 +908,12 @@ const SignIn: FC<SignInProps> = ({
    * server discards those decisions and records nothing. Every other kind of step surfaces the
    * expiry error instead.
    */
+  timeoutContextRef.current = {
+    components,
+    hasConsentPrompt: Boolean(additionalData?.['consentPrompt']),
+    submit: handleSubmit,
+  };
+
   useEffect(() => {
     const timeoutMs: number = Number(additionalData?.['stepTimeout']) || 0;
     if (timeoutMs <= 0 || !isFlowInitialized) {
@@ -916,16 +927,18 @@ const SignIn: FC<SignInProps> = ({
       const expiredError = (): Error =>
         new Error(t('errors.signin.timeout') || 'Time allowed to complete the step has expired.');
 
-      const actionId: string | undefined = additionalData?.['consentPrompt']
-        ? findConsentSubmitActionId(components)
+      // Read through the ref so the timer always sees the step that is on screen when it fires
+      const context = timeoutContextRef.current;
+      const actionId: string | undefined = context?.hasConsentPrompt
+        ? findConsentSubmitActionId(context.components)
         : undefined;
 
       // Without an action the prompt node cannot be routed, so there is nothing to submit
-      if (actionId && timeoutSubmittedForRef.current !== timeoutMs) {
+      if (actionId && context && timeoutSubmittedForRef.current !== timeoutMs) {
         timeoutSubmittedForRef.current = timeoutMs;
-        handleSubmit({action: actionId, inputs: {[CONSENT_REASON_KEY]: CONSENT_REASON_TIMEOUT}}).catch(() =>
-          setError(expiredError()),
-        );
+        context
+          .submit({action: actionId, inputs: {[CONSENT_REASON_KEY]: ConsentConstants.REASON_TIMEOUT}})
+          .catch(() => setError(expiredError()));
         return;
       }
 

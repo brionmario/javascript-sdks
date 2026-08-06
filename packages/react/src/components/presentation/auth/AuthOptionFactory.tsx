@@ -3,6 +3,7 @@
 
 import {css, cx} from '@emotion/css';
 import {
+  ConsentConstants,
   FieldType,
   FlowMetadataResponse,
   EmbeddedFlowComponent,
@@ -376,6 +377,7 @@ const createAuthComponentFromFlow = (
             const isDeny: boolean = componentVariant.toLowerCase() !== 'primary';
             const decisions: ConsentDecisions = {
               approved: !isDeny,
+              ...(isDeny ? {reason: ConsentConstants.REASON_USER_DENIED} : {}),
               purposes: consentPrompt.purposes.map(
                 (p: ConsentPurposeData): ConsentPurposeDecision => ({
                   approved: !isDeny,

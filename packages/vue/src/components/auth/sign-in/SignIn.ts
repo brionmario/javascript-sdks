@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  ConsentConstants,
   ThunderIDRuntimeError,
   type ConsentPurposeData,
   EmbeddedFlowComponent,
@@ -312,13 +313,15 @@ const SignIn: Component = defineComponent({
           }
 
           const decisions: Record<string, unknown> = {
+            approved: !isDeny,
+            ...(isDeny ? {reason: ConsentConstants.REASON_USER_DENIED} : {}),
             purposes: purposes.map((p) => ({
               approved: !isDeny,
               elements: [
                 ...(p.essential ?? []).map((e) => ({approved: !isDeny, name: e.name})),
                 ...(p.optional ?? []).map((e) => {
                   const key = `__consent_opt__${p.purposeId}__${e.name}`;
-                  return {approved: isDeny ? false : processedInputs[key] !== 'false', name: e.name};
+                  return {approved: !isDeny && processedInputs[key] === 'true', name: e.name};
                 }),
               ],
               purposeName: p.purposeName,

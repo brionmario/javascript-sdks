@@ -25,6 +25,7 @@ export {default as ApplicationNativeAuthenticationConstants} from './constants/A
 export {default as TokenConstants} from './constants/TokenConstants';
 export {default as OIDCRequestConstants} from './constants/OIDCRequestConstants';
 export {default as VendorConstants} from './constants/VendorConstants';
+export {default as ConsentConstants} from './constants/ConsentConstants';
 
 export {default as ThunderIDError} from './errors/ThunderIDError';
 export {default as ThunderIDAPIError} from './errors/ThunderIDAPIError';

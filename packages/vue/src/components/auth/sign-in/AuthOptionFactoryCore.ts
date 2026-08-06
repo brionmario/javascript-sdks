@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  ConsentConstants,
   FieldType,
   FlowMetadataResponse,
   EmbeddedFlowComponent,
@@ -211,12 +212,15 @@ const createAuthComponentFromFlow = (
           if (consentPrompt && eventType.toUpperCase() === EmbeddedFlowEventType.Submit) {
             const isDeny: boolean = componentVariant.toLowerCase() !== 'primary';
             const decisions: ConsentDecisions = {
+              approved: !isDeny,
+              ...(isDeny ? {reason: ConsentConstants.REASON_USER_DENIED} : {}),
               purposes: consentPrompt.purposes.map(
                 (p: ConsentPurposeData): ConsentPurposeDecision => ({
                   approved: !isDeny,
                   elements: [
-                    ...p.essential.map((e): ConsentAttributeElement => ({approved: !isDeny, name: e.name})),
-                    ...p.optional.map(
+                    // Permission purposes carry no essential elements, so the server sends null here
+                    ...(p.essential ?? []).map((e): ConsentAttributeElement => ({approved: !isDeny, name: e.name})),
+                    ...(p.optional ?? []).map(
                       (e): ConsentAttributeElement => ({
                         approved: !isDeny && formValues[getConsentOptionalKey(p.purposeId, e.name)] === 'true',
                         name: e.name,

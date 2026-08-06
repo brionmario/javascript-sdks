@@ -3,6 +3,7 @@
 
 import {render} from '@testing-library/react';
 import {
+  ConsentConstants,
   createTheme,
   ConsentDecisions,
   EmbeddedFlowComponent,
@@ -349,6 +350,18 @@ describe('AuthOptionFactory consent decisions', () => {
 
     expect(elements.find((e) => e.name === 'email')?.approved).toBe(true);
     expect(elements.find((e) => e.name === 'phone')?.approved).toBe(false);
+  });
+
+  it('records a user_denied reason when a non-primary action submits', () => {
+    const decisions = submitConsent('SECONDARY', [attributesPurpose]);
+
+    expect(decisions.reason).toBe(ConsentConstants.REASON_USER_DENIED);
+  });
+
+  it('omits the reason when the user approves', () => {
+    const decisions = submitConsent('PRIMARY', [attributesPurpose]);
+
+    expect(decisions.reason).toBeUndefined();
   });
 
   it('compiles permission purposes that carry no essential elements', () => {
