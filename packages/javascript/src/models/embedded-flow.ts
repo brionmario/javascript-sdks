@@ -690,8 +690,16 @@ export interface ConsentPurposeDecision {
  * @experimental This interface may change in future versions
  */
 export interface ConsentDecisions {
+  /**
+   * Whether the user approved the consent as a whole. Approval is hierarchical: a denial here
+   * denies every purpose and element below it, while an approval leaves their own decisions
+   * intact.
+   */
+  approved: boolean;
   /** Array of per-purpose decisions */
   purposes: ConsentPurposeDecision[];
+  /** Why the decision was made, when it was not a direct user choice, e.g. the prompt expired */
+  reason?: string;
 }
 
 /**

@@ -2,8 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {render} from '@testing-library/react';
-import {EmbeddedFlowComponent, EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@thunderid/browser';
+import {
+  ConsentConstants,
+  createTheme,
+  ConsentDecisions,
+  EmbeddedFlowComponent,
+  EmbeddedFlowComponentType,
+  EmbeddedFlowEventType,
+} from '@thunderid/browser';
 import {describe, expect, it, vi} from 'vitest';
+import ThemeContext, {ThemeContextValue} from '../../../../contexts/Theme/ThemeContext';
 import {renderSignInComponents} from '../AuthOptionFactory';
 
 const richTextWithLink = (label: string, action?: {ref: string; eventType?: string}): EmbeddedFlowComponent => ({
@@ -249,5 +257,119 @@ describe('AuthOptionFactory stack grid layout', () => {
     const stack = stackElement(stackWith({items: '2invalid'}));
 
     expect(stack.style.display).toBe('flex');
+  });
+});
+
+describe('AuthOptionFactory consent decisions', () => {
+  const attributesPurpose = {
+    essential: [{name: 'email'}],
+    optional: [{name: 'phone'}],
+    purposeId: 'p1',
+    purposeName: 'attributes:app1',
+    type: 'attributes',
+  };
+
+  // The server builds permission purposes at request time, so they carry no id and a null essential
+  const permissionsPurpose = {
+    essential: null,
+    optional: [{name: 'system'}],
+    purposeId: '',
+    purposeName: 'permissions:app1',
+    type: 'permissions',
+  };
+
+  const themeContextValue: ThemeContextValue = {
+    colorScheme: 'light',
+    direction: 'ltr',
+    theme: createTheme(),
+    toggleTheme: vi.fn(),
+  };
+
+  const consentAction = (variant: string): EmbeddedFlowComponent =>
+    ({
+      eventType: EmbeddedFlowEventType.Submit,
+      id: `action_${variant}`,
+      label: variant,
+      type: EmbeddedFlowComponentType.Action,
+      variant,
+    }) as unknown as EmbeddedFlowComponent;
+
+  const submitConsent = (
+    variant: string,
+    purposes: unknown[],
+    formValues: Record<string, string> = {},
+  ): ConsentDecisions => {
+    const onSubmit = vi.fn();
+    const elements = renderSignInComponents(
+      [consentAction(variant)],
+      formValues,
+      {},
+      {},
+      false,
+      true,
+      () => undefined,
+      () => undefined,
+      {additionalData: {consentPrompt: {purposes}}, onSubmit},
+    );
+    const {container} = render(
+      <ThemeContext.Provider value={themeContextValue}>
+        <div>{elements}</div>
+      </ThemeContext.Provider>,
+    );
+    container.querySelector('button')!.click();
+
+    expect(onSubmit).toHaveBeenCalled();
+    const submitted = onSubmit.mock.calls[0][1] as Record<string, string>;
+
+    return JSON.parse(submitted['consent_decisions']) as ConsentDecisions;
+  };
+
+  it('marks the whole consent approved when the primary action submits', () => {
+    const decisions = submitConsent('PRIMARY', [attributesPurpose], {__consent_opt__p1__phone: 'true'});
+
+    expect(decisions.approved).toBe(true);
+  });
+
+  it('marks the whole consent denied when a non-primary action submits', () => {
+    const decisions = submitConsent('SECONDARY', [attributesPurpose], {__consent_opt__p1__phone: 'true'});
+
+    expect(decisions.approved).toBe(false);
+  });
+
+  it('denies every element when the consent is denied as a whole', () => {
+    const decisions = submitConsent('SECONDARY', [attributesPurpose], {__consent_opt__p1__phone: 'true'});
+    const purpose = decisions.purposes[0];
+
+    expect(purpose.approved).toBe(false);
+    expect(purpose.elements.every((e) => !e.approved)).toBe(true);
+  });
+
+  it('approves only the optional elements the user turned on', () => {
+    const decisions = submitConsent('PRIMARY', [attributesPurpose], {});
+    const {elements} = decisions.purposes[0];
+
+    expect(elements.find((e) => e.name === 'email')?.approved).toBe(true);
+    expect(elements.find((e) => e.name === 'phone')?.approved).toBe(false);
+  });
+
+  it('records a user_denied reason when a non-primary action submits', () => {
+    const decisions = submitConsent('SECONDARY', [attributesPurpose]);
+
+    expect(decisions.reason).toBe(ConsentConstants.REASON_USER_DENIED);
+  });
+
+  it('omits the reason when the user approves', () => {
+    const decisions = submitConsent('PRIMARY', [attributesPurpose]);
+
+    expect(decisions.reason).toBeUndefined();
+  });
+
+  it('compiles permission purposes that carry no essential elements', () => {
+    const decisions = submitConsent('PRIMARY', [permissionsPurpose], {__consent_opt____system: 'true'});
+    const purpose = decisions.purposes[0];
+
+    expect(purpose.purposeName).toBe('permissions:app1');
+    expect(purpose.elements).toHaveLength(1);
+    expect(purpose.elements[0]).toEqual({approved: true, name: 'system'});
   });
 });
