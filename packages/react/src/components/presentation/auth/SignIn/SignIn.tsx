@@ -151,6 +151,38 @@ interface PasskeyState {
 }
 
 /**
+ * Sentinel input key carrying the reason a consent prompt was submitted. It is folded into the
+ * compiled `consent_decisions` payload and stripped from the inputs, like `__consent_opt__` keys.
+ */
+const CONSENT_REASON_KEY = '__consent_reason__';
+
+/**
+ * Reason recorded when a consent prompt is submitted because it expired rather than because the
+ * user chose anything.
+ */
+const CONSENT_REASON_TIMEOUT = 'timeout';
+
+/** Flattens a component tree into a single list, parents before their children. */
+const flattenComponents = (comps: EmbeddedFlowComponent[] | undefined): EmbeddedFlowComponent[] =>
+  (comps ?? []).flatMap((comp: EmbeddedFlowComponent) => [comp, ...flattenComponents(comp.components)]);
+
+/**
+ * Finds the action to submit an expired consent prompt with. A non-primary submit action is
+ * preferred so the payload reads as a denial, falling back to any submit action because the server
+ * needs an action to route the prompt node. Returns undefined when the view has neither.
+ */
+const findConsentSubmitActionId = (comps: EmbeddedFlowComponent[] | undefined): string | undefined => {
+  const submitActions: EmbeddedFlowComponent[] = flattenComponents(comps).filter(
+    (comp: EmbeddedFlowComponent) => comp.id && comp.eventType?.toUpperCase() === 'SUBMIT',
+  );
+  const denyAction: EmbeddedFlowComponent | undefined = submitActions.find(
+    (comp: EmbeddedFlowComponent) => comp.variant?.toLowerCase() !== 'primary',
+  );
+
+  return (denyAction ?? submitActions[0])?.id;
+};
+
+/**
  * A component-driven SignIn component that provides authentication flow with pre-built styling.
  * This component handles the flow API calls for authentication and delegates UI logic to BaseSignIn.
  * It automatically transforms simple input-based responses into component-driven UI format.
@@ -249,6 +281,9 @@ const SignIn: FC<SignInProps> = ({
   const initializationAttemptedRef: any = useRef(false);
   const oauthCodeProcessedRef: any = useRef(false);
   const passkeyProcessedRef: any = useRef(false);
+  // Deadline this component has already auto-submitted for, so a re-run of the timeout effect
+  // cannot submit the same expired step twice.
+  const timeoutSubmittedForRef = useRef<number | null>(null);
   /**
    * Sets executionId between sessionStorage and state.
    * This ensures both are always in sync.
@@ -675,36 +710,6 @@ const SignIn: FC<SignInProps> = ({
   }, [isInitialized, isStorageReady, isLoading, isFlowInitialized, currentExecutionId]);
 
   /**
-   * Handle step timeout if configured in additionalData.
-   */
-  useEffect(() => {
-    const timeoutMs: number = Number(additionalData?.['stepTimeout']) || 0;
-    if (timeoutMs <= 0 || !isFlowInitialized) {
-      setIsTimeoutDisabled(false);
-      return undefined;
-    }
-
-    const remaining: number = Math.max(0, Math.floor((timeoutMs - Date.now()) / 1000));
-
-    const handleTimeout = (): void => {
-      const errorMessage: string = t('errors.signin.timeout') || 'Time allowed to complete the step has expired.';
-      setError(new Error(errorMessage));
-      setIsTimeoutDisabled(true);
-    };
-
-    if (remaining <= 0) {
-      handleTimeout();
-      return undefined;
-    }
-
-    const timerId: any = setTimeout(() => {
-      handleTimeout();
-    }, remaining * 1000);
-
-    return () => clearTimeout(timerId);
-  }, [additionalData?.['stepTimeout'], isFlowInitialized, t]);
-
-  /**
    * Handle form submission from BaseSignIn or render props.
    */
   const handleSubmit = async (payload: EmbeddedSignInFlowRequest): Promise<void> => {
@@ -716,6 +721,10 @@ const SignIn: FC<SignInProps> = ({
     }
 
     const processedInputs: Record<string, any> = {...payload.inputs};
+
+    // Read and strip the sentinel up front so it can never reach the wire as an input
+    const consentReason: string | undefined = processedInputs[CONSENT_REASON_KEY];
+    delete processedInputs[CONSENT_REASON_KEY];
 
     // Auto-compile consent decisions if we are currently on a consent prompt step
     if (additionalData?.['consentPrompt']) {
@@ -750,7 +759,14 @@ const SignIn: FC<SignInProps> = ({
           }
         }
 
+        // An expired prompt is never an approval, whichever action carried the submission
+        if (consentReason === CONSENT_REASON_TIMEOUT) {
+          isDeny = true;
+        }
+
         const decisions: any = {
+          approved: !isDeny,
+          ...(consentReason ? {reason: consentReason} : {}),
           purposes: purposes.map((p: any) => ({
             approved: !isDeny,
             elements: [
@@ -878,6 +894,48 @@ const SignIn: FC<SignInProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  /**
+   * Handle step timeout if configured in additionalData.
+   *
+   * An expired consent prompt is auto-submitted as a denial carrying the timeout reason, because its
+   * actions no longer lead anywhere and the user would otherwise be stranded on the prompt. The
+   * server discards those decisions and records nothing. Every other kind of step surfaces the
+   * expiry error instead.
+   */
+  useEffect(() => {
+    const timeoutMs: number = Number(additionalData?.['stepTimeout']) || 0;
+    if (timeoutMs <= 0 || !isFlowInitialized) {
+      setIsTimeoutDisabled(false);
+      return undefined;
+    }
+
+    const handleTimeout = (): void => {
+      setIsTimeoutDisabled(true);
+
+      const expiredError = (): Error =>
+        new Error(t('errors.signin.timeout') || 'Time allowed to complete the step has expired.');
+
+      const actionId: string | undefined = additionalData?.['consentPrompt']
+        ? findConsentSubmitActionId(components)
+        : undefined;
+
+      // Without an action the prompt node cannot be routed, so there is nothing to submit
+      if (actionId && timeoutSubmittedForRef.current !== timeoutMs) {
+        timeoutSubmittedForRef.current = timeoutMs;
+        handleSubmit({action: actionId, inputs: {[CONSENT_REASON_KEY]: CONSENT_REASON_TIMEOUT}}).catch(() =>
+          setError(expiredError()),
+        );
+        return;
+      }
+
+      setError(expiredError());
+    };
+
+    const timerId: ReturnType<typeof setTimeout> = setTimeout(handleTimeout, Math.max(0, timeoutMs - Date.now()));
+
+    return () => clearTimeout(timerId);
+  }, [additionalData?.['stepTimeout'], isFlowInitialized, t]);
 
   /**
    * Handle authentication errors.

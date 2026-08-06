@@ -552,6 +552,7 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
             const purposes: any[] = typeof raw === 'string' ? JSON.parse(raw) : raw.purposes || raw;
             const isDeny = component?.variant?.toLowerCase() !== 'primary';
             const decisions = {
+              approved: !isDeny,
               purposes: purposes.map((p: any) => ({
                 approved: !isDeny,
                 purposeName: p.purposeName,
@@ -559,7 +560,7 @@ const BaseAcceptInvite: FC<BaseAcceptInviteProps> = ({
                   ...(p.essential || []).map((e: any) => ({approved: !isDeny, name: e.name})),
                   ...(p.optional || []).map((e: any) => {
                     const key = `__consent_opt__${p.purposeId}__${e.name}`;
-                    return {approved: isDeny ? false : inputs[key] !== 'false', name: e.name};
+                    return {approved: !isDeny && inputs[key] === 'true', name: e.name};
                   }),
                 ],
               })),
