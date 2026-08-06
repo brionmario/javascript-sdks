@@ -450,6 +450,16 @@ const SignIn: FC<SignInProps> = ({
    */
   const handleTerminalResponse = async (response: EmbeddedSignInFlowResponse): Promise<boolean> => {
     if (response.flowStatus === EmbeddedSignInFlowStatus.Error) {
+      // Propagate OAuth error to the client
+      if (response.redirectUrl && window?.location) {
+        setIsSubmitting(false);
+        await clearFlowState();
+        cleanupOAuthUrlParams(true);
+        window.location.href = response.redirectUrl;
+
+        return true;
+      }
+
       if (response.executionId) {
         // Recoverable: session still alive. Show inline error without firing onError.
         setExecutionId(response.executionId);
