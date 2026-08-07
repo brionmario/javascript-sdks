@@ -28,6 +28,7 @@ const thunderIDContext: ThunderIDContextProps = {
   isLoading: false,
   signIn: mockSignIn,
   signUp: mockSignUp,
+  vendor: 'thunderid',
 } as unknown as ThunderIDContextProps;
 
 describe('TokenCallback', () => {

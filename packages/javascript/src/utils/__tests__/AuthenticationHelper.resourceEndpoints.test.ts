@@ -19,7 +19,16 @@ const createHelper = (config: any): AuthenticationHelper<any> => {
 
 // Resource-server override keys in both camelCase (config form) and snake_case (metadata form);
 // none of these should ever appear in the resolved OIDC provider metadata.
-const RESOURCE_KEY_FORMS: string[] = ['flowExecute', 'flowMeta', 'usersMe', 'flow_execute', 'flow_meta', 'users_me'];
+const RESOURCE_KEY_FORMS: string[] = [
+  'flowExecute',
+  'flowMeta',
+  'usersMe',
+  'usersMeMeta',
+  'flow_execute',
+  'flow_meta',
+  'users_me',
+  'users_me_meta',
+];
 
 describe('AuthenticationHelper resource-endpoint filtering', (): void => {
   it('keeps resource-server endpoint overrides out of the OIDC provider metadata', async (): Promise<void> => {
@@ -32,6 +41,7 @@ describe('AuthenticationHelper resource-endpoint filtering', (): void => {
         flowExecute: 'https://rs.example.com/flow/execute',
         flowMeta: 'https://rs.example.com/flow/meta',
         usersMe: 'https://rs.example.com/users/me',
+        usersMeMeta: 'https://rs.example.com/users/me/meta',
       },
     });
 
@@ -54,6 +64,7 @@ describe('AuthenticationHelper resource-endpoint filtering', (): void => {
         flowExecute: 'https://rs.example.com/flow/execute',
         flowMeta: 'https://rs.example.com/flow/meta',
         usersMe: 'https://rs.example.com/users/me',
+        usersMeMeta: 'https://rs.example.com/users/me/meta',
       },
     });
 
@@ -83,6 +94,7 @@ describe('AuthenticationHelper resource-endpoint filtering', (): void => {
         flowExecute: 'https://rs.example.com/flow/execute',
         flowMeta: 'https://rs.example.com/flow/meta',
         usersMe: 'https://rs.example.com/users/me',
+        usersMeMeta: 'https://rs.example.com/users/me/meta',
       },
     });
 

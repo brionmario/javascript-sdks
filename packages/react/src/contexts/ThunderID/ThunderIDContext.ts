@@ -11,6 +11,7 @@ import {
   TokenExchangeRequestConfig,
   TokenResponse,
   VendorConstants,
+  AttributeSchema,
 } from '@thunderid/browser';
 import {Context, createContext} from 'react';
 import {ThunderIDReactConfig} from '../../models/config';
@@ -202,6 +203,11 @@ export type ThunderIDContextProps = {
   user: any;
 
   /**
+   * Schema metadata for the user type returned by GET /users/me/meta.
+   */
+  userSchema: Record<string, AttributeSchema> | null;
+
+  /**
    * Vendor/brand namespace used to prefix storage keys, cookie names, and CSS class names.
    * Resolved from the `vendor` config option, defaulting to `'thunderid'`.
    */
@@ -248,6 +254,7 @@ const ThunderIDContext: Context<ThunderIDContextProps | null> = createContext<nu
   signUp: () => Promise.resolve({} as any),
   signUpUrl: undefined,
   user: null,
+  userSchema: null,
   vendor: VendorConstants.VENDOR_PREFIX,
 });
 

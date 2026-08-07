@@ -233,6 +233,7 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
    *   flowExecute: "https://rs.example.com/flow/execute",
    *   flowMeta: "https://rs.example.com/flow/meta",
    *   usersMe: "https://rs.example.com/users/me",
+   *   usersMeMeta: "https://rs.example.com/users/me/meta",
    * }
    */
   endpoints?: {
@@ -282,6 +283,11 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
      * If not provided, defaults to `{baseUrl}/users/me`.
      */
     usersMe?: string;
+    /**
+     * The user profile schema metadata endpoint URL used to fetch profile schema attributes.
+     * If not provided, defaults to `{baseUrl}/users/me/meta`.
+     */
+    usersMeMeta?: string;
     /**
      * The OpenID Connect discovery document URL.
      * Defaults to `{baseUrl}/oauth2/token/.well-known/openid-configuration`.

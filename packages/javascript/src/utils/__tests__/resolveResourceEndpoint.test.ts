@@ -23,12 +23,14 @@ describe('resolveResourceEndpoint', (): void => {
         flowExecute: 'https://rs.example.com/flow/execute',
         flowMeta: 'https://rs.example.com/flow/meta',
         usersMe: 'https://rs.example.com/users/me',
+        usersMeMeta: 'https://rs.example.com/users/me/meta',
       },
     };
 
     expect(resolveResourceEndpoint('flowExecute', config)).toBe('https://rs.example.com/flow/execute');
     expect(resolveResourceEndpoint('flowMeta', config)).toBe('https://rs.example.com/flow/meta');
     expect(resolveResourceEndpoint('usersMe', config)).toBe('https://rs.example.com/users/me');
+    expect(resolveResourceEndpoint('usersMeMeta', config)).toBe('https://rs.example.com/users/me/meta');
   });
 
   it('prefers an explicit per-call URL over the config override', (): void => {
@@ -46,6 +48,6 @@ describe('resolveResourceEndpoint', (): void => {
   });
 
   it('exposes the resource endpoint keys for filtering OIDC metadata', (): void => {
-    expect([...RESOURCE_ENDPOINT_KEYS].sort()).toEqual(['flowExecute', 'flowMeta', 'usersMe']);
+    expect([...RESOURCE_ENDPOINT_KEYS].sort()).toEqual(['flowExecute', 'flowMeta', 'usersMe', 'usersMeMeta']);
   });
 });
