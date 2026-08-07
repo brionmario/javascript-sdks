@@ -1,11 +1,11 @@
 // Copyright 2024 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {bem, withVendorCSSClassPrefix} from '@thunderid/browser';
 import {CSSProperties, FC, LabelHTMLAttributes, ReactNode} from 'react';
 import useStyles from './InputLabel.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 
 export type InputLabelVariant = 'block' | 'inline';
 

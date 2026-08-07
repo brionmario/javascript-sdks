@@ -185,27 +185,54 @@ describe('AuthOptionFactory stack grid layout', () => {
     return container.querySelector<HTMLElement>('#stack_1')!;
   };
 
+  /**
+   * The stack's layout is applied via a generated Emotion class (not an inline `style`
+   * attribute) so it participates in the shared CSP nonce. Reads the *declared* CSSOM rule
+   * for that class - as opposed to `getComputedStyle`, which resolves shorthand values like
+   * `repeat(2, 1fr)` into browser-computed pixel track lists and is not a useful comparison
+   * target here.
+   */
+  const declaredStyleFor = (element: HTMLElement): CSSStyleDeclaration => {
+    const generatedClass = element.className.split(' ').pop()!;
+
+    for (const sheet of Array.from(document.styleSheets)) {
+      let rules: CSSRuleList;
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue;
+      }
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSStyleRule && rule.selectorText === `.${generatedClass}`) {
+          return rule.style;
+        }
+      }
+    }
+
+    throw new Error(`No generated stylesheet rule found for class "${generatedClass}"`);
+  };
+
   it('renders a grid with the configured number of columns when items is 2', () => {
     const stack = stackElement(stackWith({items: 2}));
 
-    expect(stack.style.display).toBe('grid');
-    expect(stack.style.gridTemplateColumns).toBe('repeat(2, 1fr)');
+    expect(declaredStyleFor(stack).display).toBe('grid');
+    expect(declaredStyleFor(stack).gridTemplateColumns).toBe('repeat(2, 1fr)');
     expect(stack.children).toHaveLength(4);
   });
 
   it('supports arbitrary column counts provided as a numeric string', () => {
     const stack = stackElement(stackWith({items: '3'}, 5));
 
-    expect(stack.style.display).toBe('grid');
-    expect(stack.style.gridTemplateColumns).toBe('repeat(3, 1fr)');
+    expect(declaredStyleFor(stack).display).toBe('grid');
+    expect(declaredStyleFor(stack).gridTemplateColumns).toBe('repeat(3, 1fr)');
     expect(stack.children).toHaveLength(5);
   });
 
   it('keeps the flex layout when items is absent', () => {
     const stack = stackElement(stackWith({direction: 'column'}));
 
-    expect(stack.style.display).toBe('flex');
-    expect(stack.style.flexDirection).toBe('column');
+    expect(declaredStyleFor(stack).display).toBe('flex');
+    expect(declaredStyleFor(stack).flexDirection).toBe('column');
   });
 
   it('keeps the flex layout when items is 1', () => {
@@ -213,50 +240,52 @@ describe('AuthOptionFactory stack grid layout', () => {
     // must not promote them to a grid.
     const stack = stackElement(stackWith({items: 1}));
 
-    expect(stack.style.display).toBe('flex');
+    expect(declaredStyleFor(stack).display).toBe('flex');
   });
 
   it('falls back to the base axis for the reverse directions', () => {
-    expect(stackElement(stackWith({direction: 'column-reverse', items: 2})).style.gridAutoFlow).toBe('column');
-    expect(stackElement(stackWith({direction: 'row-reverse', items: 2})).style.gridAutoFlow).toBe('row');
+    expect(declaredStyleFor(stackElement(stackWith({direction: 'column-reverse', items: 2}))).gridAutoFlow).toBe(
+      'column',
+    );
+    expect(declaredStyleFor(stackElement(stackWith({direction: 'row-reverse', items: 2}))).gridAutoFlow).toBe('row');
   });
 
   it('uses content-sized tracks when justify has to distribute free space', () => {
     const stack = stackElement(stackWith({items: 2, justify: 'space-between'}));
 
-    expect(stack.style.gridTemplateColumns).toBe('repeat(2, auto)');
-    expect(stack.style.justifyContent).toBe('space-between');
+    expect(declaredStyleFor(stack).gridTemplateColumns).toBe('repeat(2, auto)');
+    expect(declaredStyleFor(stack).justifyContent).toBe('space-between');
   });
 
   it('keeps equal tracks when justify is unset', () => {
-    expect(stackElement(stackWith({items: 2})).style.gridTemplateColumns).toBe('repeat(2, 1fr)');
+    expect(declaredStyleFor(stackElement(stackWith({items: 2}))).gridTemplateColumns).toBe('repeat(2, 1fr)');
   });
 
   it('clamps absurd slot counts', () => {
     const stack = stackElement(stackWith({items: 5000}));
 
-    expect(stack.style.gridTemplateColumns).toBe('repeat(12, 1fr)');
+    expect(declaredStyleFor(stack).gridTemplateColumns).toBe('repeat(12, 1fr)');
   });
 
   it('treats items as the row count when direction is column', () => {
     const stack = stackElement(stackWith({direction: 'column', items: 2}));
 
-    expect(stack.style.display).toBe('grid');
-    expect(stack.style.gridTemplateRows).toBe('repeat(2, 1fr)');
-    expect(stack.style.gridAutoFlow).toBe('column');
-    expect(stack.style.gridTemplateColumns).toBe('');
+    expect(declaredStyleFor(stack).display).toBe('grid');
+    expect(declaredStyleFor(stack).gridTemplateRows).toBe('repeat(2, 1fr)');
+    expect(declaredStyleFor(stack).gridAutoFlow).toBe('column');
+    expect(declaredStyleFor(stack).gridTemplateColumns).toBe('');
   });
 
   it('falls back to the flex layout when items is not numeric', () => {
     const stack = stackElement(stackWith({items: 'garbage'}));
 
-    expect(stack.style.display).toBe('flex');
+    expect(declaredStyleFor(stack).display).toBe('flex');
   });
 
   it('falls back to the flex layout when items is a malformed numeric string', () => {
     const stack = stackElement(stackWith({items: '2invalid'}));
 
-    expect(stack.style.display).toBe('flex');
+    expect(declaredStyleFor(stack).display).toBe('flex');
   });
 });
 

@@ -80,8 +80,11 @@ const STYLES: string = [
  *
  * @param vendor - Vendor/brand namespace used to derive the dedupe `<style>` element id
  * (e.g. `${vendor}-vue-styles`). Defaults to `VendorConstants.VENDOR_PREFIX`.
+ * @param nonce - CSP nonce applied to the injected `<style>` element via a `nonce` attribute,
+ * so consuming apps can enforce a strict `style-src` Content-Security-Policy (i.e. without
+ * `'unsafe-inline'`) for this runtime-injected stylesheet.
  */
-export function injectStyles(vendor?: string): void {
+export function injectStyles(vendor?: string, nonce?: string): void {
   if (typeof document === 'undefined') return;
 
   const styleId: string = `${getVendorPrefix(vendor)}-vue-styles`;
@@ -90,6 +93,9 @@ export function injectStyles(vendor?: string): void {
 
   const style: HTMLStyleElement = document.createElement('style');
   style.id = styleId;
+  if (nonce) {
+    style.setAttribute('nonce', nonce);
+  }
   style.textContent = STYLES;
   document.head.appendChild(style);
 }

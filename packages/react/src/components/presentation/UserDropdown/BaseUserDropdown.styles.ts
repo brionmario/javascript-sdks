@@ -1,9 +1,9 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {css} from '@emotion/css';
 import {Theme} from '@thunderid/browser';
 import {useMemo} from 'react';
+import {css} from '../../../styles/emotion';
 
 /**
  * Creates styles for the BaseUserDropdown component
@@ -72,6 +72,10 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       display: flex;
       flex-direction: column;
       width: 100%;
+    `;
+
+    const menuItemHighlighted: string = css`
+      background-color: ${theme.vars.colors.action?.hover || 'rgba(0, 0, 0, 0.05)'};
     `;
 
     const menuItem: string = css`
@@ -195,6 +199,7 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       loadingText,
       menuItem,
       menuItemAnchor,
+      menuItemHighlighted,
       trigger,
       userName,
     };

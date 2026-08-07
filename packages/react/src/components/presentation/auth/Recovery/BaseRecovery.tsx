@@ -1,7 +1,6 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {
   EmbeddedRecoveryFlowRequest,
   EmbeddedRecoveryFlowResponse,
@@ -24,6 +23,7 @@ import useTheme from '../../../../contexts/Theme/useTheme';
 import useThunderID from '../../../../contexts/ThunderID/useThunderID';
 import {useForm, FormField} from '../../../../hooks/useForm';
 import useTranslation from '../../../../hooks/useTranslation';
+import {cx} from '../../../../styles/emotion';
 import composeAffixedInputs from '../../../../utils/composeAffixedInputs';
 import {normalizeFlowResponse, extractErrorMessage} from '../../../../utils/flowTransformer';
 import getAuthComponentHeadings from '../../../../utils/getAuthComponentHeadings';

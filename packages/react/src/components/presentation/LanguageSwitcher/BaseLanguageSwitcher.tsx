@@ -1,7 +1,6 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {
   autoUpdate,
   flip,
@@ -18,6 +17,7 @@ import {
 import {FC, ReactElement, ReactNode, useEffect, useState} from 'react';
 import useStyles from './BaseLanguageSwitcher.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 import Check from '../../primitives/Icons/Check';
 import ChevronDown from '../../primitives/Icons/ChevronDown';
 

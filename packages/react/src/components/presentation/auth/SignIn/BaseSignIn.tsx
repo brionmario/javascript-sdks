@@ -1,7 +1,6 @@
 // Copyright 2025-2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {
   withVendorCSSClassPrefix,
   EmbeddedSignInFlowRequest,
@@ -23,6 +22,7 @@ import useTheme from '../../../../contexts/Theme/useTheme';
 import useThunderID from '../../../../contexts/ThunderID/useThunderID';
 import {FormField, useForm} from '../../../../hooks/useForm';
 import useTranslation from '../../../../hooks/useTranslation';
+import {cx} from '../../../../styles/emotion';
 import composeAffixedInputs from '../../../../utils/composeAffixedInputs';
 import {extractErrorMessage} from '../../../../utils/flowTransformer';
 import AlertPrimitive from '../../../primitives/Alert/Alert';
@@ -596,7 +596,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
         variant={variant}
       >
         <CardPrimitive.Content>
-          <div style={{display: 'flex', justifyContent: 'center', padding: '2rem'}}>
+          <div className={(styles as Record<string, string>)['centeredSpinnerContainer']}>
             <Spinner />
           </div>
         </CardPrimitive.Content>

@@ -44,6 +44,7 @@ interface MockClient {
 
 interface Mocks {
   client: MockClient;
+  configureEmotionNonce: Mock<(nonce?: string) => void>;
   getUsersMe: Mock<() => Promise<UserProfileResponse>>;
 }
 
@@ -57,6 +58,10 @@ vi.mock('../../../ThunderIDReactClient', () => ({
 
 vi.mock('../../../api/getUsersMe', () => ({
   default: (): Promise<UserProfileResponse> => mocks.getUsersMe(),
+}));
+
+vi.mock('../../../styles/emotion', () => ({
+  configureEmotionNonce: (nonce?: string): void => mocks.configureEmotionNonce(nonce),
 }));
 
 interface Deferred {
@@ -129,11 +134,38 @@ const settle = (ms = 250): Promise<void> =>
 beforeEach(() => {
   mocks.client = createMockClient();
   mocks.getUsersMe = vi.fn(() => Promise.resolve({sub: 'user-1', userName: 'alice'}));
+  mocks.configureEmotionNonce = vi.fn();
 });
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+describe('ThunderIDProvider CSP nonce configuration', () => {
+  it('configures the shared Emotion instance with cspNonce synchronously on first render', () => {
+    render(
+      <ThunderIDProvider
+        baseUrl="https://localhost:8090"
+        clientId="test-client"
+        cspNonce="test-nonce"
+        preferences={{resolveFromMeta: false}}
+      >
+        <div data-testid="child" />
+      </ThunderIDProvider>,
+    );
+
+    // No `waitFor`/async flush here on purpose: configureEmotionNonce is called as the
+    // first statement in the component's render body, so it must already have been
+    // invoked with the right value by the time render() returns synchronously.
+    expect(mocks.configureEmotionNonce).toHaveBeenCalledWith('test-nonce');
+  });
+
+  it('configures the shared Emotion instance with undefined when cspNonce is not provided', () => {
+    renderProvider();
+
+    expect(mocks.configureEmotionNonce).toHaveBeenCalledWith(undefined);
+  });
 });
 
 describe('ThunderIDProvider mount bootstrap', () => {

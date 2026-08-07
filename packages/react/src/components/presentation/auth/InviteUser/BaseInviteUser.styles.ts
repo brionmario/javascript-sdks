@@ -1,9 +1,9 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {css} from '@emotion/css';
 import {Theme} from '@thunderid/browser';
 import {useMemo} from 'react';
+import {css} from '../../../../styles/emotion';
 
 /**
  * Creates styles for the BaseInviteUser component
@@ -36,8 +36,27 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       color: ${theme.vars.colors.text.secondary};
     `;
 
+    const centeredSpinnerContainer: string = css`
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+    `;
+
+    const centeredSpinnerContainerSmall: string = css`
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+    `;
+
+    const errorContainer: string = css`
+      margin-bottom: 1rem;
+    `;
+
     return {
       card,
+      centeredSpinnerContainer,
+      centeredSpinnerContainerSmall,
+      errorContainer,
       header,
       subtitle,
       title,

@@ -1,7 +1,6 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {FlowMetadataResponse, WithPreferences, withVendorCSSClassPrefix} from '@thunderid/browser';
 import {
   ButtonHTMLAttributes,
@@ -12,6 +11,7 @@ import {
   Ref,
   RefAttributes,
 } from 'react';
+import {cx} from '../../../styles/emotion';
 import Button from '../../primitives/Button/Button';
 
 /**

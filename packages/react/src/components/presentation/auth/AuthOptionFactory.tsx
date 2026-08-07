@@ -1,7 +1,7 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {css, cx} from '@emotion/css';
+import type {CSSInterpolation} from '@emotion/css/create-instance';
 import {
   ConsentConstants,
   FieldType,
@@ -30,6 +30,7 @@ import {
   ComponentRendererMap,
 } from '../../../contexts/ComponentRenderer/ComponentRendererContext';
 import {UseTranslation} from '../../../hooks/useTranslation';
+import {css, cx} from '../../../styles/emotion';
 import Consent from '../../adapters/Consent';
 import {getConsentOptionalKey} from '../../adapters/ConsentCheckboxList';
 import FacebookButton from '../../adapters/FacebookButton';
@@ -67,33 +68,51 @@ const logger: ReturnType<typeof createPackageComponentLogger> = createPackageCom
  *   - Any remaining `emoji:X` text occurrences → `X`
  */
 
+// This module's functions (renderSignInComponents, etc.) are called imperatively from a
+// component's render, not React components/hooks themselves — so these classes can't be computed
+// at module scope: that runs at import time, before <ThunderIDProvider> has had a chance to
+// configure Emotion's CSP nonce, which would insert them into an un-nonced <style> tag. Instead
+// they're computed lazily, on first actual use (still just once — Emotion's own cache dedupes any
+// further calls to a no-op after that).
+let richTextClassCache: string | undefined;
+
 /** Ensures rich-text content (including all inner elements from the server) always word-wraps. */
-const richTextClass: string = css`
-  overflow-wrap: anywhere;
-  & * {
+function getRichTextClass(): string {
+  richTextClassCache ??= css`
     overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-  & .rich-text-align-left {
-    text-align: left;
-  }
-  & .rich-text-align-center {
-    text-align: center;
-  }
-  & .rich-text-align-right {
-    text-align: right;
-  }
-  & .rich-text-align-justify {
-    text-align: justify;
-  }
-  & a,
-  & .rich-text-link {
-    text-decoration: underline;
-  }
-  & span[role='img'] {
-    display: inline-block;
-  }
-`;
+    & * {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    & .rich-text-align-left {
+      text-align: left;
+    }
+    & .rich-text-align-center {
+      text-align: center;
+    }
+    & .rich-text-align-right {
+      text-align: right;
+    }
+    & .rich-text-align-justify {
+      text-align: justify;
+    }
+    & a,
+    & .rich-text-link {
+      text-decoration: underline;
+    }
+    & span[role='img'] {
+      display: inline-block;
+    }
+  `;
+  return richTextClassCache;
+}
+
+let authOptionIconClassCache: string | undefined;
+
+function getAuthOptionIconClass(): string {
+  authOptionIconClassCache ??= css({height: '1.25em', objectFit: 'contain', width: '1.25em'});
+  return authOptionIconClassCache;
+}
 
 export type AuthType = 'signin' | 'signup' | 'recovery';
 
@@ -442,21 +461,11 @@ const createAuthComponentFromFlow = (
       }
 
       const startIconEl: ReactElement | null = component.startIcon ? (
-        <img
-          src={component.startIcon}
-          alt=""
-          aria-hidden="true"
-          style={{height: '1.25em', objectFit: 'contain', width: '1.25em'}}
-        />
+        <img src={component.startIcon} alt="" aria-hidden="true" className={getAuthOptionIconClass()} />
       ) : null;
 
       const endIconEl: ReactElement | null = component.endIcon ? (
-        <img
-          src={component.endIcon}
-          alt=""
-          aria-hidden="true"
-          style={{height: '1.25em', objectFit: 'contain', width: '1.25em'}}
-        />
+        <img src={component.endIcon} alt="" aria-hidden="true" className={getAuthOptionIconClass()} />
       ) : null;
 
       return (
@@ -486,18 +495,13 @@ const createAuthComponentFromFlow = (
 
     case EmbeddedFlowComponentType.Text: {
       const variant: any = getTypographyVariant(component.variant!);
+      const textAlignClass: string = css({
+        marginBottom: 2,
+        textAlign:
+          typeof component?.align === 'string' ? (component.align as React.CSSProperties['textAlign']) : 'left',
+      });
       return (
-        <Typography
-          key={key}
-          id={component.id}
-          className={component.classes}
-          variant={variant}
-          style={{
-            marginBottom: 2,
-            textAlign:
-              typeof component?.align === 'string' ? (component.align as React.CSSProperties['textAlign']) : 'left',
-          }}
-        >
+        <Typography key={key} id={component.id} className={cx(component.classes, textAlignClass)} variant={variant}>
           {resolve(component.label)}
         </Typography>
       );
@@ -568,11 +572,11 @@ const createAuthComponentFromFlow = (
 
     case EmbeddedFlowComponentType.Block: {
       if (component.components && component.components.length > 0) {
-        const formStyles: CSSProperties = {
+        const formClass: string = css({
           display: 'flex',
           flexDirection: 'column',
           gap: `calc(${theme?.vars?.spacing?.unit ?? '4px'} * 2)`,
-        };
+        });
 
         const blockComponents: any = component.components
           .map((childComponent: any, index: any) =>
@@ -595,7 +599,7 @@ const createAuthComponentFromFlow = (
           .filter(Boolean);
 
         return (
-          <form id={component.id} key={key} className={component.classes} style={formStyles}>
+          <form id={component.id} key={key} className={cx(component.classes, formClass)}>
             {blockComponents}
           </form>
         );
@@ -664,7 +668,7 @@ const createAuthComponentFromFlow = (
         // eslint-disable-next-line jsx-a11y/no-static-element-interactions
         <div
           key={key}
-          className={richTextClass}
+          className={getRichTextClass()}
           onClick={handleRichTextClick}
           onKeyDown={handleRichTextKeyDown}
           // Manually sanitizes with `DOMPurify`.
@@ -761,6 +765,8 @@ const createAuthComponentFromFlow = (
               justifyContent: justify,
             };
 
+      const stackClass: string = css(stackStyle as CSSInterpolation);
+
       const stackChildren: (ReactElement | null)[] = component.components
         ? component.components.map((childComponent: any, index: number) =>
             createAuthComponentFromFlow(
@@ -783,7 +789,7 @@ const createAuthComponentFromFlow = (
         : [];
 
       return (
-        <div key={key} id={component.id} className={component.classes} style={stackStyle}>
+        <div key={key} id={component.id} className={cx(component.classes, stackClass)}>
           {stackChildren}
         </div>
       );

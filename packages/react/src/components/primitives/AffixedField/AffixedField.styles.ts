@@ -1,9 +1,9 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {css} from '@emotion/css';
 import {Theme} from '@thunderid/browser';
 import {useMemo} from 'react';
+import {css} from '../../../styles/emotion';
 
 /**
  * Creates styles for the AffixedField component. The container is a horizontal flex

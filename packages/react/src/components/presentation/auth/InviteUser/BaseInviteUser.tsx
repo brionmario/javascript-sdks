@@ -1,7 +1,6 @@
 // Copyright 2025-2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {
   EmbeddedFlowType,
   FieldError,
@@ -20,6 +19,7 @@ import ComponentRendererContext, {
 import useTheme from '../../../../contexts/Theme/useTheme';
 import useThunderID from '../../../../contexts/ThunderID/useThunderID';
 import useTranslation from '../../../../hooks/useTranslation';
+import {cx} from '../../../../styles/emotion';
 import {normalizeFlowResponse, extractErrorMessage} from '../../../../utils/flowTransformer';
 import AlertPrimitive from '../../../primitives/Alert/Alert';
 // eslint-disable-next-line import/no-named-as-default
@@ -711,7 +711,7 @@ const BaseInviteUser: FC<BaseInviteUserProps> = ({
     return (
       <CardPrimitive className={cx(className, styles.card)} variant={variant}>
         <CardPrimitive.Content>
-          <div style={{display: 'flex', justifyContent: 'center', padding: '2rem'}}>
+          <div className={(styles as Record<string, string>)['centeredSpinnerContainer']}>
             <Spinner size="medium" />
           </div>
         </CardPrimitive.Content>
@@ -724,7 +724,7 @@ const BaseInviteUser: FC<BaseInviteUserProps> = ({
     return (
       <CardPrimitive className={cx(className, styles.card)} variant={variant}>
         <CardPrimitive.Content>
-          <div style={{display: 'flex', justifyContent: 'center', padding: '2rem'}}>
+          <div className={(styles as Record<string, string>)['centeredSpinnerContainer']}>
             <Spinner size="medium" />
           </div>
         </CardPrimitive.Content>
@@ -765,7 +765,7 @@ const BaseInviteUser: FC<BaseInviteUserProps> = ({
       )}
       <CardPrimitive.Content>
         {apiError && (
-          <div style={{marginBottom: '1rem'}}>
+          <div className={(styles as Record<string, string>)['errorContainer']}>
             <AlertPrimitive variant="error">
               <AlertPrimitive.Description>{apiError.message}</AlertPrimitive.Description>
             </AlertPrimitive>
@@ -780,7 +780,7 @@ const BaseInviteUser: FC<BaseInviteUserProps> = ({
                 </AlertPrimitive>
               )}
           {isLoading && (
-            <div style={{display: 'flex', justifyContent: 'center', padding: '1rem'}}>
+            <div className={(styles as Record<string, string>)['centeredSpinnerContainerSmall']}>
               <Spinner size="small" />
             </div>
           )}

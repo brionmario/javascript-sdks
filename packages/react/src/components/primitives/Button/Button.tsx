@@ -1,11 +1,11 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cx} from '@emotion/css';
 import {withVendorCSSClassPrefix, bem} from '@thunderid/browser';
 import {ButtonHTMLAttributes, forwardRef, ReactNode, ForwardRefExoticComponent, RefAttributes, Ref} from 'react';
 import useStyles from './Button.styles';
 import useTheme from '../../../contexts/Theme/useTheme';
+import {cx} from '../../../styles/emotion';
 import Spinner, {SpinnerSize} from '../Spinner/Spinner';
 
 export type ButtonColor = 'primary' | 'secondary' | 'tertiary' | string;
@@ -152,14 +152,7 @@ const Button: ForwardRefExoticComponent<ButtonProps & RefAttributes<HTMLButtonEl
       >
         {loading && (
           <span className={cx(withVendorCSSClassPrefix(bem('button', 'spinner')), styles['spinner'])}>
-            <Spinner
-              size={size as SpinnerSize}
-              color="currentColor"
-              style={{
-                height: spinnerWidth,
-                width: spinnerWidth,
-              }}
-            />
+            <Spinner size={size as SpinnerSize} color="currentColor" widthOverride={spinnerWidth} />
           </span>
         )}
         {!loading && isIconVariant && (
