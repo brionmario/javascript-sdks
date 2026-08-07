@@ -7,11 +7,14 @@ import {
   type PropType,
   type Ref,
   type VNode,
+  Teleport,
   defineComponent,
   h,
+  nextTick,
   onMounted,
   onUnmounted,
   ref,
+  watch,
 } from 'vue';
 import getDisplayName from '../../../utils/getDisplayName';
 import getMappedUserProfileValue from '../../../utils/getMappedUserProfileValue';
@@ -64,6 +67,7 @@ const DEFAULT_ATTRIBUTE_MAPPINGS: Record<string, string | string[]> = {
   email: ['emails', 'email'],
   firstName: ['name.givenName', 'given_name'],
   lastName: ['name.familyName', 'family_name'],
+  picture: ['picture', 'avatar', 'pictureUrl', 'attributes.picture'],
   username: ['userName', 'username', 'user_name'],
 };
 
@@ -96,10 +100,11 @@ function resolveUserInfo(user: User | null): {
   displayName: string;
   gradient: string;
   initials: string;
+  picture: string | null;
   subtitle: string;
 } {
   if (!user) {
-    return {displayName: 'User', gradient: AVATAR_GRADIENTS[0], initials: '?', subtitle: ''};
+    return {displayName: 'User', gradient: AVATAR_GRADIENTS[0], initials: '?', picture: null, subtitle: ''};
   }
 
   const displayName: string = getDisplayName(DEFAULT_ATTRIBUTE_MAPPINGS, user) || 'User';
@@ -110,6 +115,8 @@ function resolveUserInfo(user: User | null): {
       .slice(0, 2)
       .join('')
       .toUpperCase() || '?';
+
+  const picture: string | null = getMappedUserProfileValue('picture', DEFAULT_ATTRIBUTE_MAPPINGS, user) || null;
 
   const seed = String(
     getMappedUserProfileValue('username', DEFAULT_ATTRIBUTE_MAPPINGS, user) ||
@@ -123,7 +130,7 @@ function resolveUserInfo(user: User | null): {
       '',
   );
 
-  return {displayName, gradient: getAvatarGradient(seed), initials, subtitle};
+  return {displayName, gradient: getAvatarGradient(seed), initials, picture, subtitle};
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -159,7 +166,16 @@ const BaseUserDropdown: Component = defineComponent({
   setup(props: BaseUserDropdownProps, {slots}: {slots: any}): () => VNode | VNode[] | null {
     const isOpen: Ref<boolean> = ref(false);
     const containerRef: Ref<HTMLElement | null> = ref(null);
+    const modalOverlayRef: Ref<HTMLElement | null> = ref(null);
+    const avatarImageError: Ref<boolean> = ref(false);
     const px: typeof withVendorCSSClassPrefix = withVendorCSSClassPrefix;
+
+    watch(
+      () => resolveUserInfo(props.user ?? null).picture,
+      (): void => {
+        avatarImageError.value = false;
+      },
+    );
 
     // ── Click-outside / Escape ────────────────────────────────────────────────
 
@@ -169,9 +185,51 @@ const BaseUserDropdown: Component = defineComponent({
       }
     }
 
-    function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === 'Escape') isOpen.value = false;
+    function handleModalClose(): void {
+      props.onProfileModalClose?.();
+      const triggerBtn = containerRef.value?.querySelector<HTMLElement>(`.${px('user-dropdown__trigger')}`);
+      triggerBtn?.focus();
     }
+
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (props.isProfileModalOpen) {
+        if (event.key === 'Escape') {
+          handleModalClose();
+        } else if (event.key === 'Tab') {
+          const overlay = modalOverlayRef.value;
+          if (overlay) {
+            const focusables = overlay.querySelectorAll<HTMLElement>(
+              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+            );
+            if (focusables.length > 0) {
+              const first = focusables[0];
+              const last = focusables[focusables.length - 1];
+              if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+              }
+            }
+          }
+        }
+      } else if (event.key === 'Escape') {
+        isOpen.value = false;
+      }
+    }
+
+    watch(
+      () => props.isProfileModalOpen,
+      (open) => {
+        if (open) {
+          nextTick(() => {
+            const closeBtn = modalOverlayRef.value?.querySelector<HTMLElement>(`.${px('user-dropdown__modal-close')}`);
+            closeBtn?.focus();
+          });
+        }
+      },
+    );
 
     onMounted((): void => {
       document.addEventListener('click', handleClickOutside);
@@ -189,9 +247,9 @@ const BaseUserDropdown: Component = defineComponent({
       if (props.menuAlign !== 'auto') return props.menuAlign ?? 'right';
       if (!containerRef.value) return 'right';
       const rect: DOMRect = containerRef.value.getBoundingClientRect();
-      const menuWidth: number = MENU_MIN_WIDTHS[props.size ?? 'md'] ?? 220;
-      // Open toward whichever side has enough room; prefer right.
-      return window.innerWidth - rect.right >= menuWidth ? 'right' : 'left';
+      const spaceRight: number = window.innerWidth - rect.left;
+      const spaceLeft: number = rect.right;
+      return spaceRight >= spaceLeft ? 'left' : 'right';
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -207,7 +265,7 @@ const BaseUserDropdown: Component = defineComponent({
         });
       }
 
-      const {displayName, initials, gradient, subtitle} = resolveUserInfo(props.user ?? null);
+      const {displayName, initials, gradient, picture, subtitle} = resolveUserInfo(props.user ?? null);
       const size: 'sm' | 'md' | 'lg' = props.size ?? 'md';
 
       // ── Trigger ────────────────────────────────────────────────────────────
@@ -233,14 +291,23 @@ const BaseUserDropdown: Component = defineComponent({
           type: 'button',
         },
         [
-          h(
-            'span',
-            {
-              class: [px('user-dropdown__avatar'), avatarSizeClass].filter(Boolean).join(' '),
-              style: {background: gradient},
-            },
-            initials,
-          ),
+          picture && !avatarImageError.value
+            ? h('img', {
+                alt: displayName,
+                class: [px('user-dropdown__avatar'), avatarSizeClass].filter(Boolean).join(' '),
+                onError: (): void => {
+                  avatarImageError.value = true;
+                },
+                src: picture,
+              })
+            : h(
+                'span',
+                {
+                  class: [px('user-dropdown__avatar'), avatarSizeClass].filter(Boolean).join(' '),
+                  style: {background: gradient},
+                },
+                initials,
+              ),
           props.showChevron ? h('span', {class: px('user-dropdown__chevron')}, [h(ChevronDownIcon, {size: 14})]) : null,
         ],
       );
@@ -261,7 +328,13 @@ const BaseUserDropdown: Component = defineComponent({
         // Header
         menuChildren.push(
           h('div', {class: px('user-dropdown__menu-header')}, [
-            h('div', {class: px('user-dropdown__menu-header-avatar'), style: {background: gradient}}, initials),
+            picture
+              ? h('img', {
+                  alt: displayName,
+                  class: px('user-dropdown__menu-header-avatar'),
+                  src: picture,
+                })
+              : h('div', {class: px('user-dropdown__menu-header-avatar'), style: {background: gradient}}, initials),
             h('div', {class: px('user-dropdown__menu-header-info')}, [
               h('span', {class: px('user-dropdown__menu-header-name')}, displayName),
               subtitle ? h('span', {class: px('user-dropdown__menu-header-subtitle')}, subtitle) : null,
@@ -355,32 +428,38 @@ const BaseUserDropdown: Component = defineComponent({
       if (props.isProfileModalOpen) {
         return h('div', [
           container,
-          h(
-            'div',
-            {
-              class: px('user-dropdown__modal-overlay'),
-              onClick: (e: MouseEvent): void => {
-                if ((e.target as HTMLElement).classList.contains(px('user-dropdown__modal-overlay'))) {
-                  props.onProfileModalClose?.();
-                }
+          h(Teleport, {to: 'body'}, [
+            h(
+              'div',
+              {
+                'aria-label': 'User profile',
+                'aria-modal': 'true',
+                class: px('user-dropdown__modal-overlay'),
+                ref: modalOverlayRef,
+                role: 'dialog',
+                onClick: (e: MouseEvent): void => {
+                  if ((e.target as HTMLElement).classList.contains(px('user-dropdown__modal-overlay'))) {
+                    handleModalClose();
+                  }
+                },
               },
-            },
-            [
-              h('div', {class: px('user-dropdown__modal-content')}, [
-                h(
-                  'button',
-                  {
-                    'aria-label': 'Close profile',
-                    class: px('user-dropdown__modal-close'),
-                    onClick: props.onProfileModalClose,
-                    type: 'button',
-                  },
-                  [h(XIcon, {size: 18})],
-                ),
-                props.profileContent,
-              ]),
-            ],
-          ),
+              [
+                h('div', {class: px('user-dropdown__modal-content')}, [
+                  h(
+                    'button',
+                    {
+                      'aria-label': 'Close profile',
+                      class: px('user-dropdown__modal-close'),
+                      onClick: handleModalClose,
+                      type: 'button',
+                    },
+                    [h(XIcon, {size: 18})],
+                  ),
+                  props.profileContent,
+                ]),
+              ],
+            ),
+          ]),
         ]);
       }
 

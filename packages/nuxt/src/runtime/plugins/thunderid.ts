@@ -3,14 +3,14 @@
 
 import {getRedirectBasedSignUpUrl} from '@thunderid/browser';
 import {VendorConstants} from '@thunderid/node';
-import type {UserProfile} from '@thunderid/node';
+import type {AttributeSchema, UserProfile} from '@thunderid/node';
 import {ThunderIDPlugin, THUNDERID_KEY} from '@thunderid/vue';
 import type {H3Event} from 'h3';
 import {computed} from 'vue';
 import type {ComputedRef, Ref} from 'vue';
 import ThunderIDRoot from '../components/ThunderIDRoot';
 import type {ThunderIDAuthState, ThunderIDSSRData} from '../types';
-import {getAuthStateKey, getUserProfileStateKey} from '../utils/stateKeys';
+import {getAuthStateKey, getUserProfileStateKey, getUserSchemaStateKey} from '../utils/stateKeys';
 import type {NuxtApp} from '#app';
 import {defineNuxtPlugin, useState, useRequestEvent, useRuntimeConfig, navigateTo} from '#app';
 
@@ -88,6 +88,10 @@ export default defineNuxtPlugin((nuxtApp: NuxtApp) => {
     getUserProfileStateKey(vendor),
     () => null,
   );
+  const userSchemaState: Ref<Record<string, AttributeSchema> | null> = useState<Record<string, AttributeSchema> | null>(
+    getUserSchemaStateKey(vendor),
+    () => null,
+  );
 
   if (import.meta.server) {
     const event: H3Event | undefined = useRequestEvent();
@@ -101,6 +105,7 @@ export default defineNuxtPlugin((nuxtApp: NuxtApp) => {
         user: ssr.user,
       };
       userProfileState.value = ssr.userProfile;
+      userSchemaState.value = ssr.userSchema ?? null;
     } else {
       // Backwards-compat: fall back to the legacy context shape (pre-Step-2 plugin).
       const ssrContext: {isSignedIn?: boolean; session?: {sub?: string}} | undefined = (

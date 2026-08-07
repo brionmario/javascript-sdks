@@ -1,77 +1,25 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import type {I18nPreferences, TokenEndpointAuthMethod, User, UserProfile} from '@thunderid/node';
+import type {
+  AttributeSchema,
+  AuthClientConfig,
+  I18nPreferences,
+  TokenEndpointAuthMethod,
+  User,
+  UserProfile,
+} from '@thunderid/node';
 import type {JWTPayload} from 'jose';
 
 /**
  * Configuration for the ThunderID Nuxt module.
+ * Extends `AuthClientConfig` from `@thunderid/node` for 1:1 SDK parity.
  */
-export interface ThunderIDNuxtConfig {
-  /** URL to redirect to after sign-in (default: '/') */
-  afterSignInUrl?: string;
-  /** URL to redirect to after sign-out (default: '/') */
-  afterSignOutUrl?: string;
-  /**
-   * ThunderID application id (`spId`) — appended to the redirect-based sign-up
-   * URL when present. Mirrors `applicationId` in the React/Next.js SDKs.
-   */
-  applicationId?: string;
-  /** Base URL of the ThunderID org tenant (e.g. https://localhost:8090) */
-  baseUrl?: string;
-  /** OAuth2 Client ID */
-  clientId?: string;
-  /** OAuth2 Client Secret (server-only, use THUNDERID_CLIENT_SECRET env var) */
-  clientSecret?: string;
-  /**
-   * Feature-gating preferences that control which server-side data fetches
-   * the Nitro plugin performs on every SSR request.
-   */
-  preferences?: {
-    /** i18n configuration forwarded to `I18nProvider`. */
-    i18n?: I18nPreferences;
-    theme?: {
-      /**
-       * Theme mode forwarded to the Vue SDK's `ThemeProvider`.
-       * - `'light'` (default) | `'dark'`: Fixed color scheme. Toggle at runtime with `useTheme().toggleTheme()`.
-       * - `'system'`: Follows the OS `prefers-color-scheme`.
-       * - `'class'`: Reads a CSS class on `<html>` (works well with Tailwind dark-mode).
-       * - `'branding'`: Follows the active theme from the tenant's branding preference.
-       */
-      mode?: 'light' | 'dark' | 'system' | 'class' | 'branding';
-    };
-    user?: {
-      /** Whether to fetch the user profile during SSR (default: true). */
-      fetchUserProfile?: boolean;
-    };
-  };
-  /** OAuth2 scopes to request */
-  scopes?: string | string[];
+export interface ThunderIDNuxtConfig extends AuthClientConfig {
   /** Secret for signing session JWTs (use THUNDERID_SESSION_SECRET env var) */
   sessionSecret?: string;
-  /**
-   * Optional override for the redirect-based sign-in URL. Reserved for
-   * parity with the React/Next.js SDKs; not currently used by the redirect
-   * flow (which goes through `/api/auth/signin`).
-   */
-  signInUrl?: string;
-  /**
-   * Optional override for the redirect-based sign-up URL. When set,
-   * `<ThunderIDSignUpButton>` and `useThunderID().signUp()` (no-arg) navigate
-   * here instead of deriving the URL from `baseUrl`/`clientId`.
-   */
-  signUpUrl?: string;
-  /**
-   * Configuration for the token endpoint request.
-   */
-  tokenRequest?: {
-    /**
-     * OAuth 2.0 client authentication method used at the token endpoint.
-     * Defaults to `client_secret_basic` for ThunderIDV2 and `client_secret_post`
-     * for all other platforms when not specified.
-     */
-    authMethod?: TokenEndpointAuthMethod;
-  };
+  /** Platform identifier */
+  platform?: any;
   /**
    * Vendor/brand namespace used to prefix Nuxt `useState` keys, the
    * `event.context` namespace, and other server-side identifiers.
@@ -133,6 +81,8 @@ export interface ThunderIDSSRData {
   user: User | null;
   /** Flattened user profile + raw profile (null when `preferences.user.fetchUserProfile` is false). */
   userProfile: UserProfile | null;
+  /** User schema metadata from /users/me/meta (null when `preferences.user.fetchUserProfile` is false). */
+  userSchema?: Record<string, AttributeSchema> | null;
 }
 
 /**

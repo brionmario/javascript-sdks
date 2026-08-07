@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {generateFlattenedUserProfile} from '@thunderid/browser';
-import type {UpdateMeProfileConfig, User, UserProfile} from '@thunderid/node';
+import type {AttributeSchema, UpdateMeProfileConfig, User, UserProfile} from '@thunderid/node';
 import {FlowMetaProvider, FlowProvider, I18nProvider, ThemeProvider, UserProvider} from '@thunderid/vue';
 import {defineComponent, h, type Component, type Ref, type SetupContext, type VNode} from 'vue';
 import type {ThunderIDAuthState, ThunderIDNuxtConfig} from '../types';
-import {getAuthStateKey, getUserProfileStateKey} from '../utils/stateKeys';
+import {getAuthStateKey, getUserProfileStateKey, getUserSchemaStateKey} from '../utils/stateKeys';
 import {useState, useRuntimeConfig} from '#imports';
 
 /**
@@ -55,6 +55,10 @@ const ThunderIDRoot: Component = defineComponent({
 
     // ── Read SSR-hydrated state keys (seeded by the Nuxt plugin) ────────────
     const userProfileState: Ref<UserProfile | null> = useState<UserProfile | null>(getUserProfileStateKey(vendor));
+    const userSchemaState: Ref<Record<string, AttributeSchema> | null> = useState<Record<
+      string,
+      AttributeSchema
+    > | null>(getUserSchemaStateKey(vendor));
     // Used by onUpdateProfile to keep the top-level auth user claim in sync.
     const authState: Ref<ThunderIDAuthState> = useState<ThunderIDAuthState>(getAuthStateKey(vendor));
 
@@ -176,6 +180,7 @@ const ThunderIDRoot: Component = defineComponent({
                                 profile: shouldFetchProfile ? userProfileState.value : null,
                                 revalidateProfile: shouldFetchProfile ? revalidateProfile : undefined,
                                 updateProfile: shouldFetchProfile ? updateProfile : undefined,
+                                userSchema: shouldFetchProfile ? userSchemaState.value : null,
                               },
                               {
                                 default: (): VNode | VNode[] | undefined => slots.default?.(),

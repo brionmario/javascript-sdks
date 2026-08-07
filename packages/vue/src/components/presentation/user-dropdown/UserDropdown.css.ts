@@ -79,6 +79,8 @@ const USER_DROPDOWN_CSS = `
   justify-content: center;
   width: 32px;
   height: 32px;
+  max-width: 32px;
+  max-height: 32px;
   border-radius: 50%;
   color: #ffffff;
   flex-shrink: 0;
@@ -87,12 +89,20 @@ const USER_DROPDOWN_CSS = `
   line-height: 1;
   user-select: none;
   pointer-events: none;
+  object-fit: cover;
+}
+
+img.thunderid-user-dropdown__avatar {
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 /* sm — 28 px */
 .thunderid-user-dropdown__avatar--sm {
   width: 28px;
   height: 28px;
+  max-width: 28px;
+  max-height: 28px;
   font-size: var(--thunder-typography-fontSize-xs);
 }
 
@@ -100,6 +110,8 @@ const USER_DROPDOWN_CSS = `
 .thunderid-user-dropdown__avatar--lg {
   width: 38px;
   height: 38px;
+  max-width: 38px;
+  max-height: 38px;
   font-size: var(--thunder-typography-fontSize-md);
 }
 
@@ -219,6 +231,12 @@ const USER_DROPDOWN_CSS = `
   font-weight: var(--thunder-typography-fontWeight-semibold);
   line-height: 1;
   user-select: none;
+  object-fit: cover;
+}
+
+img.thunderid-user-dropdown__menu-header-avatar {
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .thunderid-user-dropdown__menu-header-info {
@@ -305,6 +323,7 @@ const USER_DROPDOWN_CSS = `
   justify-content: center;
   z-index: 9999;
   backdrop-filter: blur(3px);
+  box-sizing: border-box;
   animation: thunderid-overlay-enter var(--thunder-transition-fast) ease;
 }
 
@@ -319,11 +338,14 @@ const USER_DROPDOWN_CSS = `
   background: var(--thunder-color-background-surface);
   border-radius: var(--thunder-border-radius-large);
   box-shadow: var(--thunder-shadow-large);
-  max-width: 480px;
+  max-width: 640px;
   width: 92%;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  margin: auto;
+  padding: calc(var(--thunder-spacing-unit) * 3);
+  box-sizing: border-box;
   animation: thunderid-modal-enter var(--thunder-transition-normal) ease;
 }
 
