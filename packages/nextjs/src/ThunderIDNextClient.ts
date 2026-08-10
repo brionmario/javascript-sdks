@@ -59,6 +59,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
       organizationHandle,
       clientId,
       clientSecret,
+      flowSecret,
       signInUrl,
       afterSignInUrl,
       afterSignOutUrl,
@@ -77,6 +78,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
         clientId,
         clientSecret,
         enablePKCE: (rest as any).enablePKCE ?? true,
+        flowSecret,
         organizationHandle,
         signInUrl,
         signUpUrl,
@@ -227,11 +229,13 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
     if (isEmbeddedFlowPayload) {
       await this.ensureInitialized();
 
-      const configData: AuthClientConfig<T> = await this.getStorageManager().getConfigData();
+      // Typed as the Next config rather than `AuthClientConfig<T>` because the server-only
+      // `flowSecret` lives on `ThunderIDNodeConfig`, which the generic base config does not expose.
+      const configData: ThunderIDNextConfig = (await this.getStorageManager().getConfigData()) as ThunderIDNextConfig;
 
       return executeEmbeddedSignInFlow({
         baseUrl: configData?.baseUrl,
-        flowSecret: configData?.clientSecret || arg2?.flowSecret,
+        flowSecret: arg2?.flowSecret ?? configData?.flowSecret,
         payload: arg1,
         url: resolveResourceEndpoint('flowExecute', configData, arg2?.url),
       }) as unknown as Promise<EmbeddedSignInFlowResponse>;
