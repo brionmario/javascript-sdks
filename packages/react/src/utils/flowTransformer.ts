@@ -27,7 +27,12 @@
  * consistent response handling across all embedded flows.
  */
 
-import {EmbeddedFlowComponent, FlowMetadataResponse} from '@thunderid/browser';
+import {
+  EmbeddedFlowComponent,
+  FlowMetadataResponse,
+  I18nMessage,
+  hasUnresolvedTranslationParams,
+} from '@thunderid/browser';
 import resolveTranslationsInArray from './resolveTranslationsInArray';
 import {UseTranslation} from '../hooks/useTranslation';
 
@@ -37,8 +42,8 @@ import {UseTranslation} from '../hooks/useTranslation';
 export interface FlowErrorResponse {
   error?: {
     code: string;
-    description: {key: string; defaultValue?: string};
-    message: {key: string; defaultValue?: string};
+    description: I18nMessage;
+    message: I18nMessage;
   };
   executionId: string;
   flowStatus: 'ERROR';
@@ -222,8 +227,10 @@ export const transformComponents = (
  * Extract error message from flow error response.
  *
  * Resolution order:
- * 1. Structured `error` object: try i18n lookup via `t(error.message.key)`.
- * 2. Fallback to `defaultValue` from `message`, then `description`.
+ * 1. Structured `error` object: try i18n lookup via `t(error.message.key, error.message.params)`.
+ *    Bundle entries keep the backend's `{{param(name)}}` placeholders, so `params` must be passed
+ *    through; a resolved value that still holds an unsubstituted placeholder is treated as a miss.
+ * 2. Fallback to `defaultValue` from `message`, then `description` (the backend pre-substitutes it).
  * 3. Standard `Error.message`.
  * 4. Generic translated fallback via `defaultErrorKey`.
  */
@@ -237,15 +244,17 @@ export const extractErrorMessage = (
 
     // 1. Try i18n lookup on message.key first (preferred for user-facing errors)
     if (flowError?.message?.key) {
-      const translated: string = t(flowError.message.key);
-      if (translated && translated !== flowError.message.key) {
+      const params: Record<string, string> | undefined = flowError.message.params;
+
+      const translated: string = t(flowError.message.key, params);
+      if (translated && translated !== flowError.message.key && !hasUnresolvedTranslationParams(translated)) {
         return translated;
       }
 
       // If the key resolved to itself, retry under the 'system:' namespace
       const systemKey = `system.${flowError.message.key}`;
-      const systemTranslated: string = t(systemKey);
-      if (systemTranslated && systemTranslated !== systemKey) {
+      const systemTranslated: string = t(systemKey, params);
+      if (systemTranslated && systemTranslated !== systemKey && !hasUnresolvedTranslationParams(systemTranslated)) {
         return systemTranslated;
       }
     }

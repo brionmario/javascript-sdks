@@ -34,11 +34,14 @@ export interface EmbeddedFlowExecuteRequestConfigBase<T = any> extends Partial<R
 /**
  * Internationalized message structure returned by the backend.
  *
- * The `defaultValue` field carries the untranslated fallback text.
+ * The `defaultValue` field carries the untranslated fallback text, already substituted with
+ * `params`. When resolving `key` against a translation bundle instead, `params` must be applied
+ * to the resolved value, since bundle entries keep their `{{param(name)}}` placeholders.
  */
 export interface I18nMessage {
   defaultValue?: string;
   key: string;
+  params?: Record<string, string>;
 }
 
 /**

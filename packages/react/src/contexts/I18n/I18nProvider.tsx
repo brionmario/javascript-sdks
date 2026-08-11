@@ -12,6 +12,7 @@ import {
   getDefaultI18nBundles,
   normalizeTranslations,
   getVendorPrefix,
+  substituteTranslationParams,
 } from '@thunderid/browser';
 import {FC, PropsWithChildren, ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import I18nContext, {I18nContextValue} from './I18nContext';
@@ -273,15 +274,7 @@ const I18nProvider: FC<PropsWithChildren<I18nProviderProps>> = ({
       }
 
       // Replace parameters if provided
-      if (params && Object.keys(params).length > 0) {
-        return Object.entries(params).reduce(
-          (acc: string, [paramKey, paramValue]: [string, string | number]) =>
-            acc.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue)),
-          translation,
-        );
-      }
-
-      return translation;
+      return substituteTranslationParams(translation, params);
     },
     [mergedBundles, currentLanguage, fallbackLanguage],
   );
