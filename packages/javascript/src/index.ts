@@ -170,6 +170,10 @@ export {default as extractEmojiFromUri} from './utils/extractEmojiFromUri';
 export {default as set} from './utils/set';
 export {default as get} from './utils/get';
 export {default as startCase} from './utils/startCase';
+export {
+  default as substituteTranslationParams,
+  hasUnresolvedTranslationParams,
+} from './utils/substituteTranslationParams';
 export {default as removeTrailingSlash} from './utils/removeTrailingSlash';
 export {default as resolveFieldName} from './utils/resolveFieldName';
 export {default as resolveResourceEndpoint} from './utils/resolveResourceEndpoint';

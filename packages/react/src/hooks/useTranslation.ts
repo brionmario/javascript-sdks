@@ -8,6 +8,7 @@ import {
   I18nBundle,
   I18nTranslations,
   normalizeTranslations,
+  substituteTranslationParams,
 } from '@thunderid/browser';
 import {useContext, useMemo} from 'react';
 import ComponentPreferencesContext from '../contexts/I18n/ComponentPreferencesContext';
@@ -132,15 +133,7 @@ const useTranslation = (componentPreferences?: I18nPreferences): UseTranslationW
       }
 
       // Replace parameters if provided
-      if (params && Object.keys(params).length > 0) {
-        return Object.entries(params).reduce(
-          (acc: string, [paramKey, paramValue]: [string, string | number]) =>
-            acc.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue)),
-          translation,
-        );
-      }
-
-      return translation;
+      return substituteTranslationParams(translation, params);
     };
   }, [mergedBundles, currentLanguage, fallbackLanguage, globalT, effectivePreferences?.bundles]);
 

@@ -11,6 +11,7 @@ import {
   getDefaultI18nBundles,
   normalizeTranslations,
   getVendorPrefix,
+  substituteTranslationParams,
 } from '@thunderid/browser';
 import {
   computed,
@@ -278,15 +279,7 @@ const I18nProvider: Component = defineComponent({
         translation = key;
       }
 
-      if (params && Object.keys(params).length > 0) {
-        return Object.entries(params).reduce(
-          (acc: string, [paramKey, paramValue]: [key: string, value: string | number]): string =>
-            acc.replaceAll(`{${paramKey}}`, String(paramValue)),
-          translation,
-        );
-      }
-
-      return translation;
+      return substituteTranslationParams(translation, params);
     };
 
     const setLanguage = (language: string): void => {
