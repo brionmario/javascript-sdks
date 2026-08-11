@@ -35,9 +35,17 @@ export interface FieldConfig {
    */
   label: string;
   /**
+   * Number of characters for OTP fields.
+   */
+  length?: number;
+  /**
    * The name of the field.
    */
   name: string;
+  /**
+   * Whether an OTP field accepts digits only. Defaults to true.
+   */
+  numericOnly?: boolean;
   /**
    * Callback function when the field loses focus.
    */
@@ -139,6 +147,8 @@ export const createField = (config: FieldConfig): ReactElement => {
     options = [],
     touched = false,
     placeholder,
+    length,
+    numericOnly = true,
   } = config;
 
   const validationError: string | null = error || validateFieldValue(value, type, required, touched);
@@ -203,7 +213,13 @@ export const createField = (config: FieldConfig): ReactElement => {
     }
     case FieldType.Otp:
       return (
-        <OtpField {...commonProps} onChange={(e: ChangeEvent<HTMLInputElement>): void => onChange(e.target.value)} />
+        <OtpField
+          {...commonProps}
+          length={length}
+          type={numericOnly ? 'number' : 'text'}
+          uppercase={!numericOnly}
+          onChange={(e: ChangeEvent<HTMLInputElement>): void => onChange(e.target.value)}
+        />
       );
     case FieldType.Number:
       return (

@@ -18,7 +18,9 @@ export interface FieldConfig {
   disabled?: boolean;
   error?: string;
   label: string;
+  length?: number;
   name: string;
+  numericOnly?: boolean;
   onBlur?: () => void;
   onChange: (value: string) => void;
   options?: SelectOption[];
@@ -93,6 +95,8 @@ export const createField = (config: FieldConfig): VNode => {
     options = [],
     touched = false,
     placeholder,
+    length,
+    numericOnly = true,
   } = config;
 
   const validationError: string | null | undefined = error || validateFieldValue(value, type, required, touched);
@@ -152,6 +156,8 @@ export const createField = (config: FieldConfig): VNode => {
     case FieldType.Otp:
       return h(OtpField, {
         ...commonProps,
+        ...(length ? {length} : {}),
+        numericOnly,
         'onUpdate:modelValue': onChange,
       } as Record<string, unknown>);
 

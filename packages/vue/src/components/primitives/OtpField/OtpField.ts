@@ -4,6 +4,11 @@
 import {withVendorCSSClassPrefix} from '@thunderid/browser';
 import {type Component, type Ref, type SetupContext, type VNode, defineComponent, h, nextTick, ref} from 'vue';
 
+// Alphanumeric OTPs are minted from an uppercase charset, so the accepted characters are digits
+// and uppercase letters only.
+const NON_NUMERIC_OTP_CHARS = /[^0-9]/g;
+const NON_ALPHANUMERIC_OTP_CHARS = /[^0-9A-Z]/g;
+
 type OtpFieldProps = Readonly<{
   disabled: boolean;
   error: string | undefined;
@@ -11,6 +16,7 @@ type OtpFieldProps = Readonly<{
   length: number;
   modelValue: string;
   name: string | undefined;
+  numericOnly: boolean;
   required: boolean;
 }>;
 
@@ -23,6 +29,7 @@ const OtpField: Component = defineComponent({
     length: {default: 6, type: Number},
     modelValue: {default: '', type: String},
     name: {default: undefined, type: String},
+    numericOnly: {default: true, type: Boolean},
     required: {default: false, type: Boolean},
   },
   emits: ['update:modelValue'],
@@ -35,7 +42,10 @@ const OtpField: Component = defineComponent({
 
     const handleInput = (index: number, e: Event): void => {
       const target: HTMLInputElement = e.target as HTMLInputElement;
-      const val: string = target.value.replace(/\D/g, '').slice(0, 1);
+      // Alphanumeric codes are minted from an uppercase charset and verified case-sensitively.
+      const val: string = props.numericOnly
+        ? target.value.replace(NON_NUMERIC_OTP_CHARS, '').slice(0, 1)
+        : target.value.toUpperCase().replace(NON_ALPHANUMERIC_OTP_CHARS, '').slice(0, 1);
       target.value = val;
 
       const current: string[] = (props.modelValue || '').split('');
@@ -79,7 +89,7 @@ const OtpField: Component = defineComponent({
                 'aria-label': `Digit ${i + 1}`,
                 class: withVendorCSSClassPrefix('otp-field__digit'),
                 disabled: props.disabled,
-                inputmode: 'numeric',
+                inputmode: props.numericOnly ? 'numeric' : 'text',
                 key: i,
                 maxlength: 1,
                 onInput: (e: Event) => handleInput(i, e),

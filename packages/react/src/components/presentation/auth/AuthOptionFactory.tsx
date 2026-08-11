@@ -342,12 +342,21 @@ const createAuthComponentFromFlow = (
       const isTouched: boolean = touchedFields[identifier] || false;
       const error: string = isTouched ? formErrors[identifier] : undefined!;
 
+      // The server reports the length and character set of the code it generated, so the field
+      // matches the OTP the user received. An older server omits both and the defaults apply.
+      const reportedLength: number = Number(options.additionalData?.['otpLength']);
+      const otpLength: number | undefined =
+        Number.isInteger(reportedLength) && reportedLength > 0 ? reportedLength : undefined;
+      const numericOnly: boolean = options.additionalData?.['otpNumericOnly'] !== 'false';
+
       const field: any = createField({
         className: cx(options.inputClassName, component.classes),
         error,
         id: component.id,
         label: resolve(component.label) || '',
+        length: otpLength,
         name: identifier,
+        numericOnly,
         onBlur: () => options.onInputBlur?.(identifier),
         onChange: (newValue: string) => onInputChange(identifier, newValue),
         placeholder: resolve(component.placeholder) || '',
