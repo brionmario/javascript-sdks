@@ -300,6 +300,10 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
 
   const initializationAttemptedRef: any = useRef(false);
   const passkeyProcessedRef: any = useRef(false);
+  // A completed flow leaves its last step rendered while the consumer navigates away, and the
+  // redirect is not instantaneous. Latch the completion so the still-visible submit actions cannot
+  // fire again: the executionId is spent, and re-submitting would start a whole new sign-up flow.
+  const isFlowCompletedRef = useRef(false);
 
   /**
    * Restore any challenge token persisted before an OAuth redirect.
@@ -558,6 +562,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
       return;
     }
 
+    isFlowCompletedRef.current = true;
     onComplete?.(response);
   };
 
@@ -773,7 +778,7 @@ const BaseSignUpContent: FC<BaseSignUpProps> = ({
    * Handle component submission (for buttons outside forms).
    */
   const handleSubmit = async (component: any, data?: Record<string, any>, skipValidation?: boolean): Promise<void> => {
-    if (!currentFlow) {
+    if (!currentFlow || isFlowCompletedRef.current) {
       return;
     }
 
