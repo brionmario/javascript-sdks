@@ -53,7 +53,7 @@ export function printConfigNeeded(missingEnvVars) {
         pc.cyan('.env.example') +
         pc.dim(' to ') +
         pc.cyan('.env') +
-        pc.dim(', fill in the client credentials for your agent, then run ') +
+        pc.dim(', fill in the client credentials for your application, then run ') +
         pc.cyan('npm start') +
         pc.dim(' again.'),
     ),

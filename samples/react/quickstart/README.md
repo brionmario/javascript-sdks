@@ -17,9 +17,9 @@ A minimal React + Vite application demonstrating ThunderID authentication with O
    cp .env.example .env
    ```
 
-2. Fill in your ThunderID credentials in `.env`, using the values you set in `thunderid-config/thunderid.env`:
+2. Fill in your ThunderID credentials in `.env`:
    ```
-   VITE_THUNDERID_CLIENT_ID=REACT_QUICKSTART
+   VITE_THUNDERID_CLIENT_ID=<your-client-id>
    VITE_THUNDERID_BASE_URL=https://your-thunderid-instance
    ```
 

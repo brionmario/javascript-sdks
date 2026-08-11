@@ -25,10 +25,10 @@ Protected routes validate the `Authorization: Bearer <token>` header against Thu
    cp .env.example .env
    ```
 
-2. Edit `.env` with the credentials you set in `thunderid-config/thunderid.env`:
+2. Edit `.env` with your application's credentials:
    ```
-   THUNDERID_CLIENT_ID=EXPRESS_QUICKSTART
-   THUNDERID_CLIENT_SECRET=<the EXPRESS_QUICKSTART_CLIENT_SECRET value>
+   THUNDERID_CLIENT_ID=<your-client-id>
+   THUNDERID_CLIENT_SECRET=<your-client-secret>
    THUNDERID_BASE_URL=https://localhost:8090
    ```
 

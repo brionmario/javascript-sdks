@@ -64,7 +64,7 @@ function toggleDark() {
       </SignedIn>
 
       <SignedOut>
-        <SignInButton>
+        <SignInButton as-child>
           <template #default="{ signIn, isLoading }">
             <button class="btn-primary" @click="signIn" :disabled="isLoading">
               {{ isLoading ? 'Signing in…' : 'Sign in' }}
