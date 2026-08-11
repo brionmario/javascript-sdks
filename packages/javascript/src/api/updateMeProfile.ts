@@ -3,7 +3,6 @@
 
 import ThunderIDAPIError from '../errors/ThunderIDAPIError';
 import {User} from '../models/user';
-import processUserUsername from '../utils/processUsername';
 
 /**
  * Configuration for the updateMeProfile request
@@ -122,17 +121,12 @@ const updateMeProfile = async ({
       );
     }
 
-    // Match the read path (`getUsersMe`) — strip the userstore prefix
-    // (e.g. "DEFAULT/") so consumers receive a clean `userName`. Without
-    // this, the optimistic-update path would put the prefixed value into
-    // local state and the UI would flip to "DEFAULT/<email>" after a save.
     const user: User = (await response.json()) as User;
     const attributes: Record<string, unknown> = (user['attributes'] as Record<string, unknown>) ?? {};
-    const processedUser: User = {
+    return {
       ...user,
       ...attributes,
     };
-    return processUserUsername(processedUser);
   } catch (error) {
     if (error instanceof ThunderIDAPIError) {
       throw error;

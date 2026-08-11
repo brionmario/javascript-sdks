@@ -156,7 +156,6 @@ export {default as arrayBufferToBase64url} from './utils/arrayBufferToBase64url'
 export {default as base64urlToArrayBuffer} from './utils/base64urlToArrayBuffer';
 export {default as bem} from './utils/bem';
 export {default as formatDate} from './utils/formatDate';
-export {default as processUsername} from './utils/processUsername';
 export {default as deepMerge} from './utils/deepMerge';
 export {default as extractUserClaimsFromIdToken} from './utils/extractUserClaimsFromIdToken';
 export {default as isRecognizedBaseUrlPattern} from './utils/isRecognizedBaseUrlPattern';
