@@ -1,6 +1,6 @@
 {
   "name": "@thunderid/browser",
-  "version": "0.13.1",
+  "version": "1.0.0",
   "description": "Browser runtime SDK for ThunderID",
   "keywords": [
     "thunderid",
