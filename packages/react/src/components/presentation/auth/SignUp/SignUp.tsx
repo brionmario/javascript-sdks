@@ -112,8 +112,12 @@ const SignUp: FC<SignUpProps> = ({
     }
 
     // For non-redirection responses (regular sign-up completion), handle redirect if configured.
-    // Skip when assertion is present — the SDK stored the session and the caller handled navigation.
-    if (response?.type !== EmbeddedSignUpFlowType.Redirection && afterSignUpUrl && !(response as any)?.assertion) {
+    // A completion carrying an assertion redirects too. The stored session is a reason to leave the
+    // flow, not to stay on it: the flow is over, so remaining on the finished step strands the user
+    // on a form whose submit actions no longer lead anywhere. Consumers that navigate themselves
+    // opt out through shouldRedirectAfterSignUp, and one that passes no afterSignUpUrl is never
+    // redirected here.
+    if (response?.type !== EmbeddedSignUpFlowType.Redirection && afterSignUpUrl) {
       window.location.href = afterSignUpUrl;
     }
   };
