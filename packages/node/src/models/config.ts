@@ -46,6 +46,12 @@ export interface SessionCookieConfig {
  */
 export type ThunderIDNodeConfig = Config & {
   /**
+   * Flow Secret used to authenticate this application when it initiates a flow directly via the
+   * Flow Execution API. Sent in the `Flow-Secret` request header, and only on flow initiation —
+   * continuation requests are authenticated by their `executionId` and challenge token.
+   */
+  flowSecret?: string;
+  /**
    * Session cookie settings. Groups all cookie-related configuration in one place
    * so that any server SDK (Node, Express, Next.js, …) inherits the same shape.
    */

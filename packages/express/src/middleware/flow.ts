@@ -70,6 +70,7 @@ const handleFlow = (): express.RequestHandler => {
       const flowResponse = await executeEmbeddedSignInFlow({
         authId: resolvedAuthId,
         baseUrl: baseUrl,
+        flowSecret: config?.flowSecret ?? process.env['THUNDERID_FLOW_SECRET'],
         payload,
         url: resolveResourceEndpoint('flowExecute', config),
       });

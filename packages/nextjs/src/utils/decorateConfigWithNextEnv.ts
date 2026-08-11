@@ -11,6 +11,7 @@ const decorateConfigWithNextEnv = (config: ThunderIDNextConfig): ThunderIDNextCo
     baseUrl,
     clientId,
     clientSecret,
+    flowSecret,
     signInUrl,
     signUpUrl,
     afterSignInUrl,
@@ -31,6 +32,7 @@ const decorateConfigWithNextEnv = (config: ThunderIDNextConfig): ThunderIDNextCo
     baseUrl: baseUrl || process.env['NEXT_PUBLIC_THUNDERID_BASE_URL']!,
     clientId: clientId || process.env['NEXT_PUBLIC_THUNDERID_CLIENT_ID']!,
     clientSecret: clientSecret || process.env['THUNDERID_CLIENT_SECRET']!,
+    flowSecret: flowSecret || process.env['THUNDERID_FLOW_SECRET'],
     organizationHandle: organizationHandle || process.env['NEXT_PUBLIC_THUNDERID_ORGANIZATION_HANDLE']!,
     scopes: scopes || process.env['NEXT_PUBLIC_THUNDERID_SCOPES']!,
     sessionCookie: {
