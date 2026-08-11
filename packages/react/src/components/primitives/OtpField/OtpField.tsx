@@ -79,6 +79,10 @@ export interface OtpInputProps {
    */
   type?: OtpFieldType;
   /**
+   * Upper-case entered characters before emitting them
+   */
+  uppercase?: boolean;
+  /**
    * Current OTP value
    */
   value?: string;
@@ -100,6 +104,7 @@ const OtpField: FC<OtpInputProps> = ({
   style = {},
   autoFocus = false,
   pattern,
+  uppercase = false,
 }: OtpInputProps) => {
   const {theme, colorScheme}: ReturnType<typeof useTheme> = useTheme();
   const styles: Record<string, string> = useStyles(theme, colorScheme, !!disabled, !!error, length);
@@ -129,7 +134,7 @@ const OtpField: FC<OtpInputProps> = ({
   }, [autoFocus]);
 
   const handleChange = (index: number, event: ChangeEvent<HTMLInputElement>): void => {
-    const newValue: string = event.target.value;
+    const newValue: string = uppercase ? event.target.value.toUpperCase() : event.target.value;
 
     if (newValue.length > 1) return;
 
@@ -186,7 +191,10 @@ const OtpField: FC<OtpInputProps> = ({
   const handlePaste = (event: ClipboardEvent<HTMLInputElement>): void => {
     event.preventDefault();
 
-    const pastedData: string = event.clipboardData.getData('text').slice(0, length);
+    const rawData: string = event.clipboardData.getData('text');
+    // Filter first and let the copy loop below bound the result, so surrounding text such as
+    // "Your code is 123456" does not push the code itself past the cut-off.
+    const pastedData: string = uppercase ? rawData.toUpperCase() : rawData;
 
     let validData = '';
 
