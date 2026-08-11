@@ -17,9 +17,9 @@ A minimal Vite + vanilla JS app demonstrating sign-in and sign-out with the Thun
    cp .env.example .env
    ```
 
-2. Edit `.env` with the credentials you set in `thunderid-config/thunderid.env`:
+2. Edit `.env` with your application's credentials:
    ```
-   VITE_THUNDERID_CLIENT_ID=BROWSER_QUICKSTART
+   VITE_THUNDERID_CLIENT_ID=<your-client-id>
    VITE_THUNDERID_BASE_URL=https://localhost:8090
    ```
 

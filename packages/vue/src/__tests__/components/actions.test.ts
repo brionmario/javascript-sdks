@@ -194,6 +194,60 @@ describe('SignInButton', () => {
       expect(signIn).toHaveBeenCalledWith(options);
     });
   });
+
+  it('should render plain text slot content inside the styled, click-wired button', async () => {
+    const signIn = vi.fn().mockResolvedValue(undefined);
+    const mockContext = createMockThunderIDContext({signIn});
+
+    const wrapper = mount(SignInButton, {
+      global: {
+        provide: {
+          [THUNDERID_KEY as symbol]: mockContext,
+        },
+      },
+      slots: {
+        default: 'Sign In',
+      },
+    });
+
+    const button = wrapper.find('button');
+    expect(button.exists()).toBe(true);
+    expect(button.text()).toBe('Sign In');
+
+    await button.trigger('click');
+    await vi.waitFor(() => {
+      expect(signIn).toHaveBeenCalled();
+    });
+  });
+
+  it('should bypass the styled button when asChild is set', async () => {
+    const signIn = vi.fn().mockResolvedValue(undefined);
+    const mockContext = createMockThunderIDContext({signIn});
+
+    const wrapper = mount(SignInButton, {
+      global: {
+        provide: {
+          [THUNDERID_KEY as symbol]: mockContext,
+        },
+      },
+      props: {
+        asChild: true,
+      },
+      slots: {
+        default: ({signIn: doSignIn, isLoading}: {signIn: () => void; isLoading: boolean}) =>
+          h('a', {href: '#', onClick: doSignIn}, isLoading ? 'Signing in…' : 'Sign in'),
+      },
+    });
+
+    const link = wrapper.find('a');
+    expect(link.exists()).toBe(true);
+    expect(wrapper.find('button').exists()).toBe(false);
+
+    await link.trigger('click');
+    await vi.waitFor(() => {
+      expect(signIn).toHaveBeenCalled();
+    });
+  });
 });
 
 describe('SignOutButton', () => {

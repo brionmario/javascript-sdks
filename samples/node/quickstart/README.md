@@ -38,27 +38,28 @@ node/quickstart/
 
 - Node.js 18+
 - A running ThunderID instance (default: `https://localhost:8090`)
-- An **agent** registered in ThunderID with the `client_credentials` grant
+- A **Backend Service** application registered in ThunderID
 
-## Create an agent
+## Create an application
 
-Agents are ThunderID's machine identities, distinct from user-facing applications.
-
-1. Open the ThunderID Console (`https://localhost:8090/console`) and go to **Agents**.
-2. Create a new agent and give it a name (e.g. `node-service-quickstart`).
-3. Under its OAuth 2.0 settings, enable the `client_credentials` grant type and set the token
-   endpoint auth method to `client_secret_basic`.
-4. Copy the generated client ID and client secret, you'll need them below.
+1. Open the ThunderID Console (`https://localhost:8090/console`), navigate to **Applications**, and
+   click **Add Application**.
+2. From the **Choose a type** page, select **Backend Service**.
+3. Enter a name (e.g. `node-service-quickstart`) and create the application. Backend Service apps
+   are pre-configured for the `client_credentials` grant with `client_secret_basic` authentication,
+   no extra setup needed.
+4. Copy the **Client ID** from the **General** tab, and the **Client Secret** from the window that
+   pops up when the application is created (shown only once), you'll need them below.
 
 ## Getting started
 
-1. Copy the environment file and fill in your agent's credentials:
+1. Copy the environment file and fill in your application's credentials:
    ```sh
    cp .env.example .env
    ```
    ```
-   THUNDERID_CLIENT_ID=<your agent's client ID>
-   THUNDERID_CLIENT_SECRET=<your agent's client secret>
+   THUNDERID_CLIENT_ID=<your client ID>
+   THUNDERID_CLIENT_SECRET=<your client secret>
    THUNDERID_BASE_URL=https://localhost:8090
    ```
 
