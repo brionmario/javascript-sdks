@@ -1,10 +1,14 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {afterEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {injectStyles} from '../injectStyles';
 
 describe('injectStyles', () => {
+  beforeEach(() => {
+    document.head.innerHTML = '';
+  });
+
   afterEach(() => {
     document.head.innerHTML = '';
   });

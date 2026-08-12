@@ -14,7 +14,7 @@
     "@thunderid/react-router": "workspace:*",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "react-router": "^7.6.2"
+    "react-router": "^7.18.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.2",
