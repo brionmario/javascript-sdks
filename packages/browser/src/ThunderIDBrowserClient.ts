@@ -393,18 +393,21 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
       }
     }
 
-    // Revoke the access token at the OP before clearing the session. Disabled by default; set
-    // tokenLifecycle.revokeToken.revokeOnSignOut to true to enable. Best-effort: revocation can
-    // fail (no revocation_endpoint advertised, network error, non-200 response, or a stalled request)
-    // without blocking sign out, since the local session must be cleared regardless. Uses the
+    // Revoke the access token at the OP. Disabled by default; set
+    // tokenLifecycle.revokeToken.revokeOnSignOut to true to enable. Fire-and-forget: not awaited, so a
+    // slow or unreachable revocation_endpoint can't delay the redirect below. Best-effort: revocation
+    // can fail (no revocation_endpoint advertised, network error, non-200 response, or a stalled
+    // request) without affecting sign out, since the local session is cleared regardless. Uses the
     // request-only core method so the session (and the ID token read above) isn't cleared twice or
     // ahead of the RP-Initiated Logout URL resolution.
     if (config?.tokenLifecycle?.revokeToken?.revokeOnSignOut === true) {
-      try {
-        await this.requestAccessTokenRevocation(sessionId);
-      } catch (error) {
+      // Snapshot the access token now, before firing the revocation request without awaiting it —
+      // clearSession(Async) below can otherwise remove it from storage before this request reads it.
+      const accessTokenToRevoke = (await sm.getSessionData(sessionId))?.access_token;
+
+      this.requestAccessTokenRevocation(sessionId, accessTokenToRevoke).catch((error) => {
         logger.debug('Could not revoke the access token before signing out.', error);
-      }
+      });
     }
 
     if (signOutUrl) {

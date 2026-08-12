@@ -488,4 +488,61 @@ describe('ThunderIDJavaScriptClient', () => {
       expect(url.searchParams.has('client_id')).toBe(false);
     });
   });
+
+  describe('requestAccessTokenRevocation()', () => {
+    const REVOCATION_ENDPOINT = 'https://example.com/oauth2/revoke';
+
+    async function initForRevocation(): Promise<ThunderIDJavaScriptClient> {
+      const client = new ThunderIDJavaScriptClient(store, {} as any);
+      await client.initialize(BASE_CONFIG);
+      const sm = (client as any).storageManager;
+      await sm.setOIDCProviderMetaData({revocation_endpoint: REVOCATION_ENDPOINT});
+      await sm.setTemporaryDataParameter('op_config_initiated', true);
+      await sm.setSessionData({access_token: 'stored-access-token'});
+      return client;
+    }
+
+    it('reads the access token from storage when no override is passed', async () => {
+      const client = await initForRevocation();
+      mockFetchOnce({}, true, 200);
+
+      await (client as any).requestAccessTokenRevocation();
+
+      const [, requestInit] = (fetch as any).mock.calls[0];
+      expect(requestInit.body).toContain('token=stored-access-token');
+    });
+
+    it('uses the passed accessToken instead of reading storage, so a concurrent session clear cannot race it', async () => {
+      const client = await initForRevocation();
+      // Simulate the session having already been cleared by the time the request body is built.
+      await (client as any).storageManager.setSessionData({access_token: undefined});
+      mockFetchOnce({}, true, 200);
+
+      await (client as any).requestAccessTokenRevocation(undefined, 'snapshotted-access-token');
+
+      const [, requestInit] = (fetch as any).mock.calls[0];
+      expect(requestInit.body).toContain('token=snapshotted-access-token');
+    });
+
+    it('throws when the OP advertises no revocation_endpoint', async () => {
+      const client = new ThunderIDJavaScriptClient(store, {} as any);
+      await client.initialize(BASE_CONFIG);
+      const sm = (client as any).storageManager;
+      await sm.setOIDCProviderMetaData({token_endpoint: 'https://example.com/oauth2/token'});
+      await sm.setTemporaryDataParameter('op_config_initiated', true);
+
+      await expect((client as any).requestAccessTokenRevocation()).rejects.toMatchObject({
+        code: 'JS-AUTH_CORE-RAT3-NF01',
+      });
+    });
+
+    it('throws when the revocation request receives a non-200 response', async () => {
+      const client = await initForRevocation();
+      mockFetchOnce({error: 'invalid_token'}, false, 400);
+
+      await expect((client as any).requestAccessTokenRevocation()).rejects.toMatchObject({
+        code: 'JS-AUTH_CORE-RAT3-HE03',
+      });
+    });
+  });
 });
