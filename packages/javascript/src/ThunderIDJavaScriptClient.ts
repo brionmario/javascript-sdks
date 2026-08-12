@@ -36,6 +36,8 @@ import processOpenIDScopes from './utils/processOpenIDScopes';
 
 const WELL_KNOWN_PATH = '/.well-known/openid-configuration';
 
+const REVOKE_ACCESS_TOKEN_REQUEST_TIMEOUT_MS = 10_000;
+
 const DEFAULT_CONFIG: Partial<AuthClientConfig<unknown>> = {
   enablePKCE: true,
   responseMode: 'query',
@@ -880,7 +882,12 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
     };
   }
 
-  protected async revokeAccessToken(userId?: string): Promise<Response | boolean> {
+  /**
+   * Sends the access token revocation request to the OP's `revocation_endpoint`. Unlike
+   * {@link revokeAccessToken}, this does not clear the local session, so callers that need to read
+   * session data (e.g. the ID token for RP-Initiated Logout) after revoking can do so.
+   */
+  protected async requestAccessTokenRevocation(userId?: string): Promise<Response> {
     const revokeTokenEndpoint: string | undefined = (await this.oidcProviderMetaDataProvider()).revocation_endpoint;
     const configData = await this.configProvider();
 
@@ -910,6 +917,7 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
         credentials: configData.sendCookiesInRequests ? 'include' : 'same-origin',
         headers: {Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
         method: 'POST',
+        signal: AbortSignal.timeout(REVOKE_ACCESS_TOKEN_REQUEST_TIMEOUT_MS),
       });
     } catch (error: any) {
       throw new ThunderIDAuthException(
@@ -926,6 +934,12 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
         (await response.json()) as string,
       );
     }
+
+    return response;
+  }
+
+  protected async revokeAccessToken(userId?: string): Promise<Response | boolean> {
+    const response = await this.requestAccessTokenRevocation(userId);
 
     this.authHelper.clearSession(userId);
 

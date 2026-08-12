@@ -370,14 +370,17 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     const config = await (sm as any).getConfigData();
 
     // OIDC RP-Initiated Logout: end the session at the OP's end_session_endpoint. The sign-out URL
-    // (carrying id_token_hint/client_id + post_logout_redirect_uri) is resolved before the local
-    // session is cleared, so the ID token used for the hint is still available. This is the default;
-    // it falls back to a local-only sign out when no end_session_endpoint is advertised or the URL
-    // cannot be built. Set rpInitiatedLogout: false to force a local-only sign out.
+    // (carrying id_token_hint/client_id + post_logout_redirect_uri) is resolved before the access
+    // token is revoked or the local session is cleared, so the ID token used for the hint is still
+    // available. This is the default; it falls back to a local-only sign out when no
+    // end_session_endpoint is advertised or the URL cannot be built. Set rpInitiatedLogout: false to
+    // force a local-only sign out.
+    let signOutUrl = '';
+
     if (config?.rpInitiatedLogout !== false) {
       // A cached URL is stored per client at token exchange; when a specific session is targeted, build
       // a fresh URL instead so the id_token_hint matches that session.
-      let signOutUrl: string = sessionId ? '' : SPAUtils.getSignOutUrl(config.clientId, this._browserInstanceId);
+      signOutUrl = sessionId ? '' : SPAUtils.getSignOutUrl(config.clientId, this._browserInstanceId);
 
       if (!signOutUrl) {
         try {
@@ -388,18 +391,32 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
           signOutUrl = '';
         }
       }
+    }
 
-      if (signOutUrl) {
-        // Await the clear so local tokens are gone before navigating away; clearSession() is otherwise
-        // fire-and-forget and could be cut short by the redirect.
-        await this.clearSessionAsync(sessionId);
-        // Notify the caller before navigating away, mirroring the local-only path below.
-        afterSignOut?.(signOutUrl);
-        location.href = signOutUrl;
-        await SPAUtils.waitTillPageRedirect();
-
-        return signOutUrl;
+    // Revoke the access token at the OP before clearing the session. Disabled by default; set
+    // tokenLifecycle.revokeToken.revokeOnSignOut to true to enable. Best-effort: revocation can
+    // fail (no revocation_endpoint advertised, network error, non-200 response, or a stalled request)
+    // without blocking sign out, since the local session must be cleared regardless. Uses the
+    // request-only core method so the session (and the ID token read above) isn't cleared twice or
+    // ahead of the RP-Initiated Logout URL resolution.
+    if (config?.tokenLifecycle?.revokeToken?.revokeOnSignOut === true) {
+      try {
+        await this.requestAccessTokenRevocation(sessionId);
+      } catch (error) {
+        logger.debug('Could not revoke the access token before signing out.', error);
       }
+    }
+
+    if (signOutUrl) {
+      // Await the clear so local tokens are gone before navigating away; clearSession() is otherwise
+      // fire-and-forget and could be cut short by the redirect.
+      await this.clearSessionAsync(sessionId);
+      // Notify the caller before navigating away, mirroring the local-only path below.
+      afterSignOut?.(signOutUrl);
+      location.href = signOutUrl;
+      await SPAUtils.waitTillPageRedirect();
+
+      return signOutUrl;
     }
 
     // Local-only sign out: clear the session and navigate back to sign-in. Used when RP-initiated
