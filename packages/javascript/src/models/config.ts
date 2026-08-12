@@ -439,9 +439,8 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
        * clearing the local session and completing sign out.
        *
        * Enabled by default. Revocation is best-effort: if it fails (no `revocation_endpoint`
-       * advertised, network error, non-200 response), sign out still proceeds with a
-       * local-only session clear. Set to `false` to skip revocation and only clear the local
-       * session.
+       * advertised, network error, non-200 response), sign out still proceeds unaffected. Set to
+       * `false` to skip revocation; sign out then continues according to `rpInitiatedLogout`.
        *
        * @default true
        */
