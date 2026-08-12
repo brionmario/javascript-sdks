@@ -393,13 +393,13 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
       }
     }
 
-    // Revoke the access token at the OP before clearing the session. Best-effort: revocation can
+    // Revoke the access token at the OP before clearing the session. Disabled by default; set
+    // tokenLifecycle.revokeToken.revokeOnSignOut to true to enable. Best-effort: revocation can
     // fail (no revocation_endpoint advertised, network error, non-200 response, or a stalled request)
     // without blocking sign out, since the local session must be cleared regardless. Uses the
     // request-only core method so the session (and the ID token read above) isn't cleared twice or
-    // ahead of the RP-Initiated Logout URL resolution. Set tokenLifecycle.revokeToken.revokeOnSignOut
-    // to false to skip this.
-    if (config?.tokenLifecycle?.revokeToken?.revokeOnSignOut !== false) {
+    // ahead of the RP-Initiated Logout URL resolution.
+    if (config?.tokenLifecycle?.revokeToken?.revokeOnSignOut === true) {
       try {
         await this.requestAccessTokenRevocation(sessionId);
       } catch (error) {

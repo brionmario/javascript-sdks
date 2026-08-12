@@ -438,11 +438,11 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
        * Whether `signOut()` revokes the access token at the OP's `revocation_endpoint` before
        * clearing the local session and completing sign out.
        *
-       * Enabled by default. Revocation is best-effort: if it fails (no `revocation_endpoint`
-       * advertised, network error, non-200 response), sign out still proceeds unaffected. Set to
-       * `false` to skip revocation; sign out then continues according to `rpInitiatedLogout`.
+       * Disabled by default. Set to `true` to enable. Revocation is best-effort: if it fails (no
+       * `revocation_endpoint` advertised, network error, non-200 response), sign out still
+       * proceeds unaffected, continuing according to `rpInitiatedLogout`.
        *
-       * @default true
+       * @default false
        */
       revokeOnSignOut?: boolean;
     };
