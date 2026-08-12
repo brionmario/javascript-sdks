@@ -369,6 +369,19 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     const sm = this.getStorageManager();
     const config = await (sm as any).getConfigData();
 
+    // Revoke the access token at the OP before ending the session. Best-effort: revocation can
+    // fail (no revocation_endpoint advertised, network error, non-200 response) without blocking
+    // sign out, since the local session must be cleared regardless. Set
+    // tokenLifecycle.revokeToken.revokeOnSignOut to false to skip this and only clear the local
+    // session.
+    if (config?.tokenLifecycle?.revokeToken?.revokeOnSignOut !== false) {
+      try {
+        await this.revokeAccessToken(sessionId);
+      } catch (error) {
+        logger.debug('Could not revoke the access token before signing out.', error);
+      }
+    }
+
     // OIDC RP-Initiated Logout: end the session at the OP's end_session_endpoint. The sign-out URL
     // (carrying id_token_hint/client_id + post_logout_redirect_uri) is resolved before the local
     // session is cleared, so the ID token used for the hint is still available. This is the default;

@@ -214,8 +214,8 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
    *   by default derived by concatenating `baseUrl` with a fixed path (e.g. `{baseUrl}/flow/execute`).
    *   These do not participate in OIDC discovery.
    *
-   * Split these two groups when the OAuth authorization server (IdP) and the Thunder resource
-   * server are different hosts — for example, when two Thunder instances are connected as trusted
+   * Split these two groups when the OAuth authorization server (IdP) and the ThunderID resource
+   * server are different hosts — for example, when two ThunderID instances are connected as trusted
    * issuers. Point `baseUrl` (and hence the OAuth/discovery endpoints) at the authorization server,
    * and override the resource-server endpoints to target the resource server that actually owns the
    * users and flows.
@@ -429,6 +429,24 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
        */
       autoRefresh?: boolean;
     };
+
+    /**
+     * Configuration for token revocation behavior.
+     */
+    revokeToken?: {
+      /**
+       * Whether `signOut()` revokes the access token at the OP's `revocation_endpoint` before
+       * clearing the local session and completing sign out.
+       *
+       * Enabled by default. Revocation is best-effort: if it fails (no `revocation_endpoint`
+       * advertised, network error, non-200 response), sign out still proceeds with a
+       * local-only session clear. Set to `false` to skip revocation and only clear the local
+       * session.
+       *
+       * @default true
+       */
+      revokeOnSignOut?: boolean;
+    };
   };
 
   /**
@@ -602,7 +620,6 @@ export interface Preferences {
   i18n?: I18nPreferences;
   /**
    * Whether to resolve the theme from the Flow Meta API (GET /flow/meta).
-   * @remarks This is only applicable when using platform `ThunderID V2` (Thunder).
    */
   resolveFromMeta?: boolean;
   /**
