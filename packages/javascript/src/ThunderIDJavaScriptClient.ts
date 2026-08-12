@@ -886,8 +886,12 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
    * Sends the access token revocation request to the OP's `revocation_endpoint`. Unlike
    * {@link revokeAccessToken}, this does not clear the local session, so callers that need to read
    * session data (e.g. the ID token for RP-Initiated Logout) after revoking can do so.
+   *
+   * `accessToken` can be passed explicitly to snapshot it ahead of time (e.g. before firing this off
+   * without awaiting it, so a concurrent session clear can't race the token being read from storage).
+   * When omitted, it's read from storage at call time.
    */
-  protected async requestAccessTokenRevocation(userId?: string): Promise<Response> {
+  protected async requestAccessTokenRevocation(userId?: string, accessToken?: string): Promise<Response> {
     const revokeTokenEndpoint: string | undefined = (await this.oidcProviderMetaDataProvider()).revocation_endpoint;
     const configData = await this.configProvider();
 
@@ -899,9 +903,11 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
       );
     }
 
+    const resolvedAccessToken = accessToken ?? (await this.storageManager.getSessionData(userId)).access_token;
+
     const body: string[] = [
       `client_id=${configData.clientId}`,
-      `token=${(await this.storageManager.getSessionData(userId)).access_token}`,
+      `token=${resolvedAccessToken}`,
       'token_type_hint=access_token',
     ];
 
