@@ -67,15 +67,27 @@ const FlowMetaProvider: FC<PropsWithChildren<FlowMetaProviderProps>> = ({
   const [error, setError] = useState<Error | null>(null);
   const [pendingLanguage, setPendingLanguage] = useState<string | null>(null);
 
-  // Track the last fetchFlowMeta reference that was actually dispatched.
-  // This prevents two classes of double-fetch:
-  //   1. React StrictMode simulates unmount+remount — the re-mount fires the
-  //      effect again with the same fetchFlowMeta reference; without this guard
-  //      the else-branch would issue a redundant second network request.
-  //   2. Rapid dependency changes (e.g. baseUrl stabilising) that produce two
-  //      effect firings before the first fetch completes.
-  const lastFetchedRef: RefObject<(() => Promise<void>) | null> = useRef<(() => Promise<void>) | null>(null);
+  // Track the request actually dispatched (and in flight), keyed by its real parameters rather
+  // than the fetchFlowMeta reference. This prevents redundant fetches for the same request:
+  //   1. React StrictMode simulates unmount+remount — the re-mount fires the effect again with an
+  //      unchanged request; without this guard the else-branch would issue a redundant second
+  //      network request.
+  //   2. Rapid dependency changes that don't change the request itself — e.g. `endpoints` or
+  //      `i18nContext` being a new object with equivalent content — recreate fetchFlowMeta's
+  //      reference on every render. Keying on identity alone (rather than the resolved URL/id/
+  //      language) would treat each of those as a distinct request and refire the same fetch.
+  const lastRequestKeyRef: RefObject<string | null> = useRef<string | null>(null);
+  const inFlightRequestKeyRef: RefObject<string | null> = useRef<string | null>(null);
   const initialMetaConsumedRef: RefObject<boolean> = useRef(false);
+
+  const getRequestKey = useCallback(
+    (language?: string): string => {
+      const url = resolveResourceEndpoint('flowMeta', {endpoints});
+      return JSON.stringify([baseUrl, url, applicationId ?? null, language ?? i18nContext?.currentLanguage ?? null]);
+    },
+    [baseUrl, endpoints, applicationId, i18nContext?.currentLanguage],
+  );
+
   const fetchFlowMeta: () => Promise<void> = useCallback(async (): Promise<void> => {
     if (!enabled) {
       setMeta(null);
@@ -90,6 +102,13 @@ const FlowMetaProvider: FC<PropsWithChildren<FlowMetaProviderProps>> = ({
       return;
     }
 
+    const requestKey = getRequestKey();
+
+    if (inFlightRequestKeyRef.current === requestKey || lastRequestKeyRef.current === requestKey) {
+      return;
+    }
+
+    inFlightRequestKeyRef.current = requestKey;
     setIsLoading(true);
     setError(null);
 
@@ -101,12 +120,14 @@ const FlowMetaProvider: FC<PropsWithChildren<FlowMetaProviderProps>> = ({
         language: i18nContext?.currentLanguage,
       });
       setMeta(result);
+      lastRequestKeyRef.current = requestKey;
     } catch (err: unknown) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
+      inFlightRequestKeyRef.current = null;
       setIsLoading(false);
     }
-  }, [enabled, baseUrl, endpoints, applicationId, isInitialized, i18nContext?.currentLanguage]);
+  }, [enabled, baseUrl, endpoints, applicationId, isInitialized, i18nContext?.currentLanguage, getRequestKey]);
 
   const switchLanguage: (language: string) => Promise<void> = useCallback(
     async (language: string): Promise<void> => {
@@ -139,13 +160,16 @@ const FlowMetaProvider: FC<PropsWithChildren<FlowMetaProviderProps>> = ({
         // is committed before I18nProvider's setLanguage checks mergedBundles.
         setPendingLanguage(language);
         setMeta(result);
+        // Record this as the last-fetched request so fetchFlowMeta doesn't refetch once
+        // i18nContext.currentLanguage catches up to the language just switched to.
+        lastRequestKeyRef.current = getRequestKey(language);
       } catch (err: unknown) {
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setIsLoading(false);
       }
     },
-    [enabled, baseUrl, endpoints, applicationId, i18nContext],
+    [enabled, baseUrl, endpoints, applicationId, i18nContext, getRequestKey],
   );
 
   // After injectBundles + setPendingLanguage are batched and committed, this
@@ -163,20 +187,15 @@ const FlowMetaProvider: FC<PropsWithChildren<FlowMetaProviderProps>> = ({
       initialMetaConsumedRef.current = true;
 
       if (initialMeta) {
-        // Seeded from SSR (or another caller) — skip the redundant first client-side fetch.
-        // Later dependency changes (e.g. an explicit language switch) still fetch normally.
-        lastFetchedRef.current = fetchFlowMeta;
+        // Seeded from SSR (or another caller) — record its request key so a later effect firing
+        // for the same request (e.g. a StrictMode re-mount) skips the redundant first
+        // client-side fetch. Later dependency changes (e.g. an explicit language switch) still
+        // fetch normally, since their request key differs.
+        lastRequestKeyRef.current = getRequestKey();
         return;
       }
     }
 
-    if (lastFetchedRef.current === fetchFlowMeta) {
-      // Same reference as the last dispatch — this is a StrictMode re-mount
-      // or an effect re-fire with unchanged deps. Skip to avoid a duplicate fetch.
-      return;
-    }
-
-    lastFetchedRef.current = fetchFlowMeta;
     fetchFlowMeta();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchFlowMeta]);
