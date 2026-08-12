@@ -11,6 +11,7 @@ import {
   getTempSessionCookieName,
   getTempSessionCookieOptions,
 } from '../../../utils/session';
+import {deleteChunkedCookie} from '../../../utils/chunkedCookie';
 import {useRuntimeConfig} from '#imports';
 
 /**
@@ -30,7 +31,7 @@ export default defineEventHandler(async (event: H3Event): Promise<{redirectUrl: 
   const fallbackUrl: string = (publicConfig as any).afterSignOutUrl || '/';
 
   const clearCookies = (): void => {
-    deleteCookie(event, getSessionCookieName(), getSessionCookieOptions());
+    deleteChunkedCookie(event, getSessionCookieName(), getSessionCookieOptions());
     deleteCookie(event, getTempSessionCookieName(), getTempSessionCookieOptions());
   };
 

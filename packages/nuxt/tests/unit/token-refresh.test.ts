@@ -10,15 +10,15 @@
  *  - requireServerSession(event) — reads the session from the JWT cookie
  *  - useRuntimeConfig(event)     — reads Nuxt runtime config
  *  - fetch                        — calls the OIDC token endpoint
- *  - setCookie                    — re-issues the session cookie on refresh
+ *  - setChunkedCookie             — re-issues the session cookie on refresh
  *
  * All four are mocked so no HTTP calls or real Nuxt context is needed.
  */
 
-import {setCookie} from 'h3';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {requireServerSession} from '../../src/runtime/server/utils/serverSession';
 import {verifySessionToken, getSessionCookieName} from '../../src/runtime/server/utils/session';
+import {setChunkedCookie} from '../../src/runtime/server/utils/chunkedCookie';
 
 import {getValidAccessToken} from '../../src/runtime/server/utils/token-refresh';
 import {useRuntimeConfig} from '#imports';
@@ -30,15 +30,10 @@ vi.mock('#imports', () => ({
   useRuntimeConfig: vi.fn(),
 }));
 
-// ─── Mock h3 (setCookie) ──────────────────────────────────────────────────
-vi.mock('h3', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('h3')>();
-  return {
-    ...actual,
-    setCookie: vi.fn(),
-    createError: actual.createError,
-  };
-});
+// ─── Mock chunkedCookie (setChunkedCookie) ────────────────────────────────
+vi.mock('../../src/runtime/server/utils/chunkedCookie', () => ({
+  setChunkedCookie: vi.fn(),
+}));
 
 // ─── Mock serverSession (requireServerSession) ────────────────────────────
 vi.mock('../../src/runtime/server/utils/serverSession', () => ({
@@ -96,7 +91,7 @@ describe('getValidAccessToken — token still fresh', () => {
     const token = await getValidAccessToken(fakeEvent);
 
     expect(token).toBe('at_original');
-    expect(setCookie).not.toHaveBeenCalled();
+    expect(setChunkedCookie).not.toHaveBeenCalled();
   });
 
   it('returns the stored token when well before expiry', async () => {
@@ -106,7 +101,7 @@ describe('getValidAccessToken — token still fresh', () => {
     const token = await getValidAccessToken(fakeEvent);
 
     expect(token).toBe('at_original');
-    expect(setCookie).not.toHaveBeenCalled();
+    expect(setChunkedCookie).not.toHaveBeenCalled();
   });
 
   it('returns the stored token when exactly at the 60 s skew boundary', async () => {
@@ -209,9 +204,9 @@ describe('getValidAccessToken — successful refresh', () => {
 
     await getValidAccessToken(fakeEvent);
 
-    expect(setCookie).toHaveBeenCalledOnce();
+    expect(setChunkedCookie).toHaveBeenCalledOnce();
     // First arg is the event, second is the cookie name
-    expect(vi.mocked(setCookie).mock.calls[0][1]).toBe(getSessionCookieName());
+    expect(vi.mocked(setChunkedCookie).mock.calls[0][1]).toBe(getSessionCookieName());
 
     vi.unstubAllGlobals();
   });
@@ -235,7 +230,7 @@ describe('getValidAccessToken — successful refresh', () => {
 
     // Verify the new session cookie contains the original refresh token by
     // decoding the JWT written to the cookie.
-    const cookieCall = vi.mocked(setCookie).mock.calls[0];
+    const cookieCall = vi.mocked(setChunkedCookie).mock.calls[0];
     const cookieValue = cookieCall[2] as string;
     const payload = await verifySessionToken(cookieValue, TEST_SECRET);
     expect(payload.refreshToken).toBe('rt_kept');

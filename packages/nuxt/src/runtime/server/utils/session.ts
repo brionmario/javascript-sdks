@@ -3,10 +3,10 @@
 
 import {CookieConfig} from '@thunderid/node';
 import type {IdToken, TokenResponse} from '@thunderid/node';
-import {setCookie} from 'h3';
 import type {H3Event} from 'h3';
 import {SignJWT, jwtVerify} from 'jose';
 import type {ThunderIDSessionPayload} from '../../types';
+import {setChunkedCookie} from './chunkedCookie';
 
 const DEFAULT_EXPIRY_SECONDS = 3600;
 
@@ -211,5 +211,5 @@ export async function issueSessionCookie(
     sessionSecret,
   );
 
-  setCookie(event, getSessionCookieName(), sessionToken, getSessionCookieOptions());
+  setChunkedCookie(event, getSessionCookieName(), sessionToken, getSessionCookieOptions());
 }
