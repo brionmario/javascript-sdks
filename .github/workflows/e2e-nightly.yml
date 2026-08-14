@@ -1,0 +1,35 @@
+name: 🌙 E2E Nightly (latest ThunderID)
+
+# Runs the same E2E suite as pr-builder.yml's `e2e` job, against the same always-latest ThunderID
+# release. The two differ only in trigger: this one runs on a schedule regardless of PR activity,
+# so a ThunderID release that breaks something surfaces even on a day with no relevant PR open —
+# the per-PR job (see pr-builder.yml) is label-gated and opt-in, not scheduled.
+
+on:
+  schedule:
+    - cron: "30 18 * * *" # 18:30 UTC daily
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "lts/*"
+
+jobs:
+  e2e-nightly:
+    name: 🌙 E2E (sample apps, latest ThunderID)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # Least privilege: this job never pushes, comments, or writes to the repo — only the default
+    # GITHUB_TOKEN's read access is needed for checkout.
+    permissions:
+      contents: read
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: 🌙 Run E2E suite
+        uses: ./.github/actions/run-e2e-suite
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          artifact-name: playwright-report-nightly

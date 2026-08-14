@@ -1,0 +1,315 @@
+name: Run E2E Suite
+description: >
+  Installs and starts a local ThunderID release, imports the sample apps' OAuth2 clients, starts
+  all six sample apps against the workspace's own SDK packages, and runs the Playwright E2E suite
+  against them. Shared by pr-builder.yml's label-gated `e2e` job and e2e-nightly.yml's scheduled
+  run against the latest ThunderID release — the two differ only in trigger, not in what they run.
+  Requires the repo to already be checked out (a local composite action can't check itself out).
+
+inputs:
+  node-version:
+    description: Node.js version to pass to actions/setup-node
+    required: false
+    default: lts/*
+  artifact-name:
+    description: Name for the uploaded Playwright report artifact
+    required: false
+    default: playwright-report
+
+runs:
+  using: composite
+  steps:
+    - name: ⚙️ Set up Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: 📦 Set up pnpm
+      uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      with:
+        version: latest
+        run_install: false
+
+    - name: 🗄️ Cache pnpm store
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ~/.local/share/pnpm/store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: 📦 Install Dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: 🔨 Build SDK packages
+      shell: bash
+      # Sample apps consume workspace:* SDK packages — this is what actually puts the PR's
+      # changes under test.
+      run: pnpm build
+
+    - name: 🚀 Install, set up, and start ThunderID (latest, via npx)
+      id: install
+      shell: bash
+      working-directory: tests/e2e
+      # Mirrors download_and_start_server() in tests/e2e/run-e2e.sh: `npx thunderid` resolves the
+      # latest release itself, no GitHub API or thunderid.dev call of our own and no version
+      # pinned in this repo or workflow, downloads it, and runs setup.sh non-interactively via
+      # the THUNDERID_ADMIN_* env vars. It always finishes by trying to attach its interactive
+      # REPL, which needs a real TTY this runner doesn't have, so it fails; that's expected, and
+      # by then the release is already downloaded and fully set up on disk, so the exit code is
+      # ignored. We start it ourselves afterward with `start.sh`, since npx thunderid's own
+      # (REPL-attached) background process doesn't outlive the npx invocation. This is the first
+      # thing on this fresh runner to touch the ThunderID CLI's state, so there is no risk of it
+      # picking up a stale "active version" the way a long-lived dev machine could.
+      run: |
+        # setsid detaches into a new session with no controlling terminal, so npx thunderid's
+        # REPL (which opens /dev/tty directly, bypassing stdin redirection) fails to attach
+        # instead of hanging the step waiting for keystrokes that never come. Runners have no
+        # controlling terminal anyway, but this keeps the behavior guaranteed rather than
+        # incidental — see the identical note in tests/e2e/run-e2e.sh.
+        THUNDERID_ADMIN_USERNAME=admin THUNDERID_ADMIN_PASSWORD=admin \
+          setsid npx --yes thunderid --verbose < /dev/null || true
+
+        DIST_HOME=$(find "$PWD/thunderid" -maxdepth 1 -type d -name 'v*' | head -1)
+        if [ -z "$DIST_HOME" ]; then
+          echo "ERROR: npx thunderid did not produce an installed ThunderID release" && exit 1
+        fi
+        echo "dist_home=$DIST_HOME" >> "$GITHUB_OUTPUT"
+
+        chmod +x "$DIST_HOME/start.sh"
+        (cd "$DIST_HOME" && setsid ./start.sh &)
+        for i in $(seq 1 60); do
+          curl -skf https://localhost:8090/health/liveness && exit 0
+          sleep 2
+        done
+        echo "ERROR: ThunderID server did not become ready" && exit 1
+
+    - name: 🔑 Obtain admin token
+      id: admin-token
+      shell: bash
+      # Mirrors mint_admin_token() in tests/e2e/run-e2e.sh — the same OAuth2 authorization_code +
+      # PKCE sequence against the CONSOLE app, done directly in bash instead of through
+      # thunder-id/thunderid's obtain-admin-token composite action, so this job carries no
+      # reference to that repo's branch or a pinned commit at all.
+      run: |
+        REDIRECT_URI="https://localhost:8090/console"
+        CODE_VERIFIER=$(openssl rand -hex 32 | cut -c1-43)
+        CODE_CHALLENGE=$(printf '%s' "$CODE_VERIFIER" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+
+        HEADERS_FILE=$(mktemp)
+        curl -sk -o /dev/null -D "$HEADERS_FILE" \
+          -G "https://localhost:8090/oauth2/authorize" \
+          --data-urlencode "client_id=CONSOLE" \
+          --data-urlencode "redirect_uri=$REDIRECT_URI" \
+          --data-urlencode "scope=system" \
+          --data-urlencode "resource=https://localhost:8090/mcp" \
+          --data-urlencode "response_type=code" \
+          --data-urlencode "code_challenge=$CODE_CHALLENGE" \
+          --data-urlencode "code_challenge_method=S256"
+
+        LOCATION=$(grep -i "^location:" "$HEADERS_FILE" | tr -d '\r' | sed 's/^[Ll]ocation: //')
+        rm -f "$HEADERS_FILE"
+        AUTH_ID=$(echo "$LOCATION" | sed -n 's/.*[?&]authId=\([^&]*\).*/\1/p')
+        EXEC_ID=$(echo "$LOCATION" | sed -n 's/.*[?&]executionId=\([^&]*\).*/\1/p')
+        [ -n "$AUTH_ID" ] && [ -n "$EXEC_ID" ] || { echo "ERROR: Failed to parse authId/executionId from authorize redirect."; exit 1; }
+
+        PROMPT_RESP=$(curl -sk -X POST "https://localhost:8090/flow/execute" \
+          -H "Content-Type: application/json" -d "{\"executionId\": \"$EXEC_ID\"}")
+        CHALLENGE_TOKEN=$(echo "$PROMPT_RESP" | jq -r '.challengeToken // empty')
+        [ -n "$CHALLENGE_TOKEN" ] || { echo "ERROR: Flow execution did not return a challenge token: $PROMPT_RESP"; exit 1; }
+
+        FLOW_RESP=$(curl -sk -X POST "https://localhost:8090/flow/execute" \
+          -H "Content-Type: application/json" \
+          -d "$(jq -n --arg executionId "$EXEC_ID" --arg challengeToken "$CHALLENGE_TOKEN" \
+              --arg username "admin" --arg password "admin" --arg action "action_001" \
+              '{executionId: $executionId, challengeToken: $challengeToken, inputs: {username: $username, password: $password}, action: $action}')")
+        ASSERTION=$(echo "$FLOW_RESP" | jq -r '.assertion // empty')
+        [ -n "$ASSERTION" ] || { echo "ERROR: Admin authentication failed: $FLOW_RESP"; exit 1; }
+
+        CALLBACK_RESP=$(curl -sk -X POST "https://localhost:8090/oauth2/auth/callback" \
+          -H "Content-Type: application/json" -d "{\"authId\": \"$AUTH_ID\", \"assertion\": \"$ASSERTION\"}")
+        AUTH_CODE=$(echo "$CALLBACK_RESP" | jq -r '.redirect_uri // empty' | sed 's/.*[?&]code=\([^&]*\).*/\1/')
+        [ -n "$AUTH_CODE" ] || { echo "ERROR: OAuth2 callback did not return an authorization code: $CALLBACK_RESP"; exit 1; }
+
+        TOKEN_RESP=$(curl -sk -X POST "https://localhost:8090/oauth2/token" \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          --data-urlencode "grant_type=authorization_code" \
+          --data-urlencode "code=$AUTH_CODE" \
+          --data-urlencode "redirect_uri=$REDIRECT_URI" \
+          --data-urlencode "client_id=CONSOLE" \
+          --data-urlencode "resource=https://localhost:8090/mcp" \
+          --data-urlencode "code_verifier=$CODE_VERIFIER")
+        TOKEN=$(echo "$TOKEN_RESP" | jq -r '.access_token // empty')
+        [ -n "$TOKEN" ] || { echo "ERROR: Failed to obtain admin access token: $TOKEN_RESP"; exit 1; }
+        echo "::add-mask::$TOKEN"
+        echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+    - name: 📝 Import sample app OAuth2 clients
+      shell: bash
+      # Mirrors import_sample_apps_config() in tests/e2e/run-e2e.sh — a direct POST to /import,
+      # done in bash instead of through thunder-id/thunderid's import-declarative-config
+      # composite action, so this job carries no reference to that repo's branch or a pinned
+      # commit at all.
+      env:
+        ADMIN_TOKEN: ${{ steps.admin-token.outputs.token }}
+      run: |
+        CONTENT=$(jq -Rs . < tests/e2e/thunderid-config/sample-apps.yaml)
+        VARIABLES=$(jq -n '{
+          BROWSER_CLIENT_ID: "JS_SDK_E2E_BROWSER", BROWSER_REDIRECT_URIS: ["http://localhost:5173"],
+          REACT_CLIENT_ID: "JS_SDK_E2E_REACT", REACT_REDIRECT_URIS: ["http://localhost:5174"],
+          VUE_CLIENT_ID: "JS_SDK_E2E_VUE", VUE_REDIRECT_URIS: ["http://localhost:5175"],
+          NEXTJS_CLIENT_ID: "JS_SDK_E2E_NEXTJS", NEXTJS_CLIENT_SECRET: "e2e-nextjs-secret", NEXTJS_REDIRECT_URIS: ["http://localhost:3001"],
+          NUXT_CLIENT_ID: "JS_SDK_E2E_NUXT", NUXT_CLIENT_SECRET: "e2e-nuxt-secret", NUXT_REDIRECT_URIS: ["http://localhost:3002/api/auth/callback"], NUXT_POST_LOGOUT_REDIRECT_URIS: ["http://localhost:3002/"],
+          EXPRESS_CLIENT_ID: "JS_SDK_E2E_EXPRESS", EXPRESS_CLIENT_SECRET: "e2e-express-secret", EXPRESS_REDIRECT_URIS: ["http://localhost:3000/login"], EXPRESS_POST_LOGOUT_REDIRECT_URIS: ["http://localhost:3000/logout"],
+          NODE_CLIENT_ID: "JS_SDK_E2E_NODE", NODE_CLIENT_SECRET: "e2e-node-secret",
+          ALL_ORIGINS: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000", "http://localhost:3001", "http://localhost:3002"]
+        }')
+        RESPONSE_FILE=$(mktemp)
+        HTTP_STATUS=$(curl -sk -o "$RESPONSE_FILE" -w "%{http_code}" \
+          -X POST "https://localhost:8090/import" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $ADMIN_TOKEN" \
+          -d "{\"content\": $CONTENT, \"variables\": $VARIABLES, \"options\": {\"upsert\": true}}")
+
+        if [ "$HTTP_STATUS" != "200" ]; then
+          echo "ERROR: import returned HTTP $HTTP_STATUS:"; cat "$RESPONSE_FILE"; echo ""; exit 1
+        fi
+        FAILED_COUNT=$(jq -r '.summary.failed // 0' "$RESPONSE_FILE")
+        if [ "$FAILED_COUNT" != "0" ]; then
+          echo "ERROR: import had $FAILED_COUNT failed resource(s):"; cat "$RESPONSE_FILE"; echo ""; exit 1
+        fi
+        rm -f "$RESPONSE_FILE"
+
+    - name: 🔄 Restart the server with security enabled
+      shell: bash
+      working-directory: ${{ steps.install.outputs.dist_home }}
+      run: |
+        # `pkill -f start.sh` only matches the wrapper script, not the server binary it launches
+        # in the foreground (a separate PID that SIGKILL to the wrapper never reaches) — kill by
+        # port instead, and confirm the old server is actually gone before starting a new one,
+        # since starting a replacement while the old process still holds the port would let the
+        # old (pre-import) server keep answering liveness checks and silently pass this step.
+        lsof -ti tcp:8090 | xargs -r kill -9
+        for i in $(seq 1 30); do
+          curl -skf https://localhost:8090/health/liveness > /dev/null 2>&1 || break
+          sleep 1
+        done
+        if curl -skf https://localhost:8090/health/liveness > /dev/null 2>&1; then
+          echo "ERROR: previous ThunderID server is still reachable after kill" && exit 1
+        fi
+
+        setsid ./start.sh &
+        for i in $(seq 1 60); do
+          curl -skf https://localhost:8090/health/liveness && exit 0
+          sleep 2
+        done
+        echo "ERROR: ThunderID server did not restart" && exit 1
+
+    - name: 📝 Write sample app .env files
+      shell: bash
+      # Each app needs its own OAuth2 client wired in before it starts (see the OAuth2 clients
+      # imported above). The apps' own `prepare-dev.cjs --flow=redirect` helper looks like the
+      # natural fit for nextjs/nuxt but isn't: it rewrites the sample's checked-in package.json
+      # (workspace:* -> latest, defeating the point of testing this PR's own SDK changes) and
+      # blanks any value matching its own placeholders — including the literal string
+      # `https://localhost:8090`, which is also our real server URL. Writing each .env directly
+      # sidesteps both; variable names come from each app's own scripts/prepare-dev.cjs
+      # (native-flow-only vars for nextjs/nuxt are omitted).
+      run: |
+        NEXTJS_SECRET=$(openssl rand -base64 32)
+        NUXT_SECRET=$(openssl rand -base64 32)
+
+        write_env() {
+          local file=$1; shift
+          printf '%s\n' "$@" > "$file"
+        }
+
+        write_env samples/browser/quickstart/.env \
+          "VITE_THUNDERID_BASE_URL=https://localhost:8090" \
+          "VITE_THUNDERID_CLIENT_ID=JS_SDK_E2E_BROWSER"
+
+        write_env samples/react/quickstart/.env \
+          "VITE_THUNDERID_BASE_URL=https://localhost:8090" \
+          "VITE_THUNDERID_CLIENT_ID=JS_SDK_E2E_REACT"
+
+        write_env samples/vue/quickstart/.env \
+          "VITE_THUNDERID_BASE_URL=https://localhost:8090" \
+          "VITE_THUNDERID_CLIENT_ID=JS_SDK_E2E_VUE"
+
+        write_env samples/express/quickstart/.env \
+          "THUNDERID_BASE_URL=https://localhost:8090" \
+          "THUNDERID_CLIENT_ID=JS_SDK_E2E_EXPRESS" \
+          "THUNDERID_CLIENT_SECRET=e2e-express-secret" \
+          "NODE_TLS_REJECT_UNAUTHORIZED=0"
+
+        write_env samples/nextjs/quickstart/.env \
+          "NEXT_PUBLIC_THUNDERID_BASE_URL=https://localhost:8090" \
+          "NEXT_PUBLIC_THUNDERID_CLIENT_ID=JS_SDK_E2E_NEXTJS" \
+          "THUNDERID_CLIENT_SECRET=e2e-nextjs-secret" \
+          "THUNDERID_SECRET=${NEXTJS_SECRET}" \
+          "NODE_TLS_REJECT_UNAUTHORIZED=0"
+
+        write_env samples/nuxt/quickstart/.env \
+          "NUXT_PUBLIC_THUNDERID_BASE_URL=https://localhost:8090" \
+          "NUXT_PUBLIC_THUNDERID_CLIENT_ID=JS_SDK_E2E_NUXT" \
+          "THUNDERID_CLIENT_SECRET=e2e-nuxt-secret" \
+          "THUNDERID_SESSION_SECRET=${NUXT_SECRET}" \
+          "NODE_TLS_REJECT_UNAUTHORIZED=0"
+
+    - name: 🚀 Start sample apps
+      shell: bash
+      run: |
+        ( cd samples/browser/quickstart && pnpm exec vite --port 5173 & )
+        ( cd samples/react/quickstart && pnpm exec vite --port 5174 & )
+        ( cd samples/vue/quickstart && pnpm exec vite --port 5175 & )
+        ( cd samples/nextjs/quickstart && pnpm exec next dev -p 3001 & )
+        ( cd samples/nuxt/quickstart && pnpm exec nuxt dev --port 3002 & )
+        ( cd samples/express/quickstart && pnpm exec node --env-file-if-exists=.env index.mjs & )
+        for url in http://localhost:5173 http://localhost:5174 http://localhost:5175 http://localhost:3000 http://localhost:3001 http://localhost:3002; do
+          ready=0
+          for i in $(seq 1 60); do
+            curl -sf "$url" > /dev/null && ready=1 && break
+            sleep 2
+          done
+          if [ "$ready" != "1" ]; then
+            echo "ERROR: $url did not become ready after 120s" && exit 1
+          fi
+        done
+
+    - name: 🎭 Install Playwright browsers
+      shell: bash
+      working-directory: tests/e2e
+      run: npx playwright install --with-deps chromium
+
+    - name: 🧪 Run E2E tests
+      shell: bash
+      working-directory: tests/e2e
+      env:
+        SERVER_URL: https://localhost:8090
+        ADMIN_USERNAME: admin
+        ADMIN_PASSWORD: admin
+        ADMIN_TOKEN: ${{ steps.admin-token.outputs.token }}
+        TEST_USER_USERNAME: e2e-test-user
+        TEST_USER_PASSWORD: E2ePassword@123
+        BROWSER_APP_URL: http://localhost:5173
+        REACT_APP_URL: http://localhost:5174
+        VUE_APP_URL: http://localhost:5175
+        NEXTJS_APP_URL: http://localhost:3001
+        NUXT_APP_URL: http://localhost:3002
+        EXPRESS_APP_URL: http://localhost:3000
+        # node/quickstart has no page to drive — client-credentials.spec.ts spawns it directly
+        # with `env: process.env`, so its credentials just need to be here, not a .env file.
+        THUNDERID_BASE_URL: https://localhost:8090
+        THUNDERID_CLIENT_ID: JS_SDK_E2E_NODE
+        THUNDERID_CLIENT_SECRET: e2e-node-secret
+        NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      run: npx playwright test
+
+    - name: 📤 Upload Playwright report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: tests/e2e/playwright-report/
+        retention-days: 30

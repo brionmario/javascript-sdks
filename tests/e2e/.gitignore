@@ -1,0 +1,8 @@
+# Downloaded by run-e2e.sh (npx thunderid) — a full release distribution, not source.
+thunderid/
+.npx-thunderid-home/
+
+# Playwright output
+playwright-report/
+test-results/
+blob-report/

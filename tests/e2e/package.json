@@ -1,0 +1,33 @@
+{
+  "name": "@thunderid/e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "End-to-end tests driving the sample quickstart apps against a real ThunderID backend",
+  "type": "module",
+  "scripts": {
+    "clean-reports": "rimraf playwright-report test-results blob-report",
+    "test:e2e": "pnpm run clean-reports && playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format:check": "prettier --check --cache .",
+    "format:fix": "prettier --write --cache .",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@thunderid/eslint-plugin": "catalog:",
+    "@thunderid/prettier-config": "catalog:",
+    "@types/node": "catalog:",
+    "dotenv": "17.2.3",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:",
+    "undici": "^7.0.0"
+  }
+}
