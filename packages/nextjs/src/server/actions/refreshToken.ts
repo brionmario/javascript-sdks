@@ -6,6 +6,7 @@
 import {ThunderIDAPIError, logger} from '@thunderid/node';
 import {cookies} from 'next/headers';
 import {ThunderIDNextConfig} from '../../models/config';
+import {deleteChunkedCookie, getChunkedCookie, setChunkedCookie} from '../../utils/chunkedCookie';
 import handleRefreshToken, {HandleRefreshTokenResult} from '../../utils/handleRefreshToken';
 import SessionManager, {SessionTokenPayload} from '../../utils/SessionManager';
 import getClient from '../getClient';
@@ -41,7 +42,7 @@ export interface RefreshResult {
 const refreshToken = async (): Promise<RefreshResult> => {
   try {
     const cookieStore: RequestCookies = await cookies();
-    const sessionToken: string | undefined = cookieStore.get(SessionManager.getSessionCookieName())?.value;
+    const sessionToken: string | undefined = getChunkedCookie(cookieStore, SessionManager.getSessionCookieName());
 
     if (!sessionToken) {
       throw new ThunderIDAPIError(
@@ -64,7 +65,8 @@ const refreshToken = async (): Promise<RefreshResult> => {
     });
 
     try {
-      cookieStore.set(
+      setChunkedCookie(
+        cookieStore,
         SessionManager.getSessionCookieName(),
         result.newSessionToken,
         SessionManager.getSessionCookieOptions(result.sessionCookieExpiryTime),
@@ -92,7 +94,7 @@ const refreshToken = async (): Promise<RefreshResult> => {
     // path covers that case on the next request.
     try {
       const cookieStore: RequestCookies = await cookies();
-      cookieStore.delete(SessionManager.getSessionCookieName());
+      deleteChunkedCookie(cookieStore, SessionManager.getSessionCookieName());
       logger.debug('[refreshToken] Cleared session cookie after refresh failure.');
     } catch {
       // Intentionally swallowed — middleware handles cleanup when mutation is blocked.

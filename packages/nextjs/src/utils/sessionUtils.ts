@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {NextRequest} from 'next/server';
+import {getChunkedCookie} from './chunkedCookie';
 import SessionManager, {SessionTokenPayload} from './SessionManager';
 
 /**
@@ -13,7 +14,7 @@ import SessionManager, {SessionTokenPayload} from './SessionManager';
  */
 export const hasValidSession = async (request: NextRequest): Promise<boolean> => {
   try {
-    const sessionToken: string | undefined = request.cookies.get(SessionManager.getSessionCookieName())?.value;
+    const sessionToken: string | undefined = getChunkedCookie(request.cookies, SessionManager.getSessionCookieName());
     if (!sessionToken) {
       return false;
     }
@@ -34,7 +35,7 @@ export const hasValidSession = async (request: NextRequest): Promise<boolean> =>
  */
 export const getSessionFromRequest = async (request: NextRequest): Promise<SessionTokenPayload | undefined> => {
   try {
-    const sessionToken: string | undefined = request.cookies.get(SessionManager.getSessionCookieName())?.value;
+    const sessionToken: string | undefined = getChunkedCookie(request.cookies, SessionManager.getSessionCookieName());
     if (!sessionToken) {
       return undefined;
     }
