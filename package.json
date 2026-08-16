@@ -33,6 +33,7 @@
   "devDependencies": {
     "turbo": "2.10.2",
     "@thunderid/eslint-plugin": "catalog:",
+    "@thunderid/prettier-config": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",

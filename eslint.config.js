@@ -14,4 +14,12 @@ export default [
       '@thunderid/copyright-header': 'off',
     },
   },
+  {
+    // Progress/setup/teardown output is the intended UX for E2E tooling, not stray debug
+    // logging — same reasoning thunderid's own tests/e2e applies (no no-console rule there).
+    files: ['tests/e2e/**'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ];
