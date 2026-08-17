@@ -4,6 +4,7 @@
 'use server';
 
 import {cookies} from 'next/headers';
+import {deleteChunkedCookie} from '../../utils/chunkedCookie';
 import logger from '../../utils/logger';
 import SessionManager from '../../utils/SessionManager';
 
@@ -31,7 +32,7 @@ type RequestCookies = Awaited<ReturnType<typeof cookies>>;
  */
 const clearSession = async (): Promise<void> => {
   const cookieStore: RequestCookies = await cookies();
-  cookieStore.delete(SessionManager.getSessionCookieName());
+  deleteChunkedCookie(cookieStore, SessionManager.getSessionCookieName());
   cookieStore.delete(SessionManager.getTempSessionCookieName());
   logger.debug('[clearSession] Session cookies cleared.');
 };

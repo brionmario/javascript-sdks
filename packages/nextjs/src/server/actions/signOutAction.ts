@@ -5,6 +5,7 @@
 
 import {cookies} from 'next/headers';
 import getSessionId from './getSessionId';
+import {deleteChunkedCookie} from '../../utils/chunkedCookie';
 import logger from '../../utils/logger';
 import SessionManager from '../../utils/SessionManager';
 import getClient from '../getClient';
@@ -23,7 +24,7 @@ const signOutAction = async (): Promise<{data?: {afterSignOutUrl?: string}; erro
   const clearSessionCookies = async (): Promise<void> => {
     const cookieStore: RequestCookies = await cookies();
 
-    cookieStore.delete(SessionManager.getSessionCookieName());
+    deleteChunkedCookie(cookieStore, SessionManager.getSessionCookieName());
     cookieStore.delete(SessionManager.getTempSessionCookieName());
   };
 

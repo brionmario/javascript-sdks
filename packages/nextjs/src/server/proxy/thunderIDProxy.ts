@@ -1,9 +1,17 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import {CookieChunking} from '@thunderid/node';
 import {NextRequest, NextResponse} from 'next/server';
 import {REFRESH_BUFFER_SECONDS} from '../../constants/sessionConstants';
 import {ThunderIDNextConfig} from '../../models/config';
+import {
+  ChunkedCookieOptions,
+  ChunkedCookieWriter,
+  deleteChunkedCookie,
+  getChunkedCookie,
+  setChunkedCookie,
+} from '../../utils/chunkedCookie';
 import decorateConfigWithNextEnv from '../../utils/decorateConfigWithNextEnv';
 import handleRefreshToken from '../../utils/handleRefreshToken';
 import SessionManager, {SessionTokenPayload} from '../../utils/SessionManager';
@@ -36,46 +44,74 @@ type ThunderIDProxyHandler = (
 ) => Promise<NextResponse | void> | NextResponse | void;
 
 /**
- * Removes a named cookie from a raw Cookie header string.
+ * Splits a raw Cookie header string into its `{name, part}` entries, where
+ * `part` is the original `name=value` text (trimmed, never empty).
  */
-const removeCookieFromHeader = (cookieHeader: string, name: string): string =>
+const parseCookieHeaderParts = (cookieHeader: string): {name: string; part: string}[] =>
   cookieHeader
     .split(';')
     .map((p: string) => p.trim())
-    .filter((p: string) => {
-      const eqIdx: number = p.indexOf('=');
-      const partName: string = eqIdx === -1 ? p : p.slice(0, eqIdx).trim();
-      return partName !== name;
-    })
-    .join('; ');
+    .filter(Boolean)
+    .map((part: string) => {
+      const eqIdx: number = part.indexOf('=');
+      const name: string = eqIdx === -1 ? part : part.slice(0, eqIdx).trim();
+      return {name, part};
+    });
 
 /**
- * Replaces the value of a named cookie inside a raw Cookie header string.
- * If the cookie does not already appear in the header it is appended.
+ * Removes a cookie from a raw Cookie header string — the unchunked `name`
+ * entry and/or any numbered `${name}.0`, `${name}.1`, ... chunk entries.
  */
-const replaceCookieInHeader = (cookieHeader: string, name: string, value: string): string => {
-  const parts: string[] = cookieHeader
-    .split(';')
-    .map((p: string) => p.trim())
-    .filter(Boolean);
+export const removeChunkedCookieFromHeader = (cookieHeader: string, name: string): string => {
+  const entries: {name: string; part: string}[] = parseCookieHeaderParts(cookieHeader);
+  const toRemove = new Set<string>(
+    CookieChunking.filterChunkNames(
+      name,
+      entries.map((e) => e.name),
+    ),
+  );
 
-  let found = false;
-  const updated: string[] = parts.map((part: string) => {
-    const eqIdx: number = part.indexOf('=');
-    const partName: string = eqIdx === -1 ? part : part.slice(0, eqIdx).trim();
-    if (partName === name) {
-      found = true;
-      return `${name}=${value}`;
-    }
-    return part;
-  });
-
-  if (!found) {
-    updated.push(`${name}=${value}`);
-  }
-
-  return updated.join('; ');
+  return entries
+    .filter((e) => !toRemove.has(e.name))
+    .map((e) => e.part)
+    .join('; ');
 };
+
+/**
+ * Replaces a cookie's value inside a raw Cookie header string, splitting it
+ * across numbered `${name}.0`, `${name}.1`, ... chunk entries once it would
+ * exceed the ~4KB per-cookie limit browsers enforce. Any entry the cookie
+ * doesn't appear in yet is appended; stale chunk entries a shrunk value no
+ * longer needs are dropped.
+ */
+export const replaceChunkedCookieInHeader = (cookieHeader: string, name: string, value: string): string => {
+  const remaining: string[] = parseCookieHeaderParts(removeChunkedCookieFromHeader(cookieHeader, name)).map(
+    (e) => e.part,
+  );
+  const newParts: string[] = Object.entries(CookieChunking.split(name, value)).map(
+    ([chunkName, chunkValue]: [string, string]) => `${chunkName}=${chunkValue}`,
+  );
+
+  return [...remaining, ...newParts].join('; ');
+};
+
+/**
+ * Adapts a request/response pair into a {@link ChunkedCookieWriter}: existing
+ * chunk names are discovered from the incoming request's cookies (what the
+ * browser currently holds), while writes/deletes apply to the response.
+ */
+const toChunkedCookieWriter = (
+  request: NextRequest,
+  responseCookies: NextResponse['cookies'],
+): ChunkedCookieWriter => ({
+  delete: (name: string): void => {
+    responseCookies.delete(name);
+  },
+  getAll: (): {name: string}[] => request.cookies.getAll(),
+  set: (name: string, value: string, options: ChunkedCookieOptions): void => {
+    responseCookies.set(name, value, options);
+  },
+});
 
 /**
  * ThunderID proxy that integrates authentication into your Next.js application.
@@ -168,7 +204,7 @@ const thunderIDProxy =
     // new session JWT.
     let expiredSession: SessionTokenPayload | undefined;
     if (!verifiedSession) {
-      const rawToken: string | undefined = request.cookies.get(SessionManager.getSessionCookieName())?.value;
+      const rawToken: string | undefined = getChunkedCookie(request.cookies, SessionManager.getSessionCookieName());
       if (rawToken) {
         try {
           const decoded: SessionTokenPayload = await SessionManager.verifySessionTokenForRefresh(rawToken);
@@ -220,7 +256,10 @@ const thunderIDProxy =
     // ── Session cleanup detection ─────────────────────────────────────────────
     // Mark stale cookies for deletion when the session is irrecoverable. Skipped
     // during OAuth callbacks where a session cookie may not exist yet.
-    const rawSessionCookie: string | undefined = request.cookies.get(SessionManager.getSessionCookieName())?.value;
+    const rawSessionCookie: string | undefined = getChunkedCookie(
+      request.cookies,
+      SessionManager.getSessionCookieName(),
+    );
 
     let shouldClearCookie = false;
 
@@ -279,17 +318,18 @@ const thunderIDProxy =
 
       if (handlerResponse) {
         // Handler returned a response (e.g. a redirect from protectRoute).
-        // Attach the deletion so the browser discards the stale cookie.
-        handlerResponse.cookies.delete(cookieName);
+        // Attach the deletion so the browser discards the stale cookie (and
+        // every chunk of it).
+        deleteChunkedCookie(toChunkedCookieWriter(request, handlerResponse.cookies), cookieName);
         return handlerResponse;
       }
 
       // Pass-through: strip the dead cookie from the forwarded request headers
       // so the same-request Server Component render sees no session at all.
       const requestHeaders: Headers = new Headers(request.headers);
-      requestHeaders.set('cookie', removeCookieFromHeader(request.headers.get('cookie') ?? '', cookieName));
+      requestHeaders.set('cookie', removeChunkedCookieFromHeader(request.headers.get('cookie') ?? '', cookieName));
       const cleanResponse: NextResponse = NextResponse.next({request: {headers: requestHeaders}});
-      cleanResponse.cookies.delete(cookieName);
+      deleteChunkedCookie(toChunkedCookieWriter(request, cleanResponse.cookies), cookieName);
       return cleanResponse;
     }
 
@@ -308,14 +348,19 @@ const thunderIDProxy =
     if (handlerResponse) {
       // Handler returned a response (e.g. a redirect from protectRoute).
       // Attach the refresh cookie so the browser receives it even on redirects.
-      handlerResponse.cookies.set(cookieName, refreshCookieUpdate.token, cookieOptions);
+      setChunkedCookie(
+        toChunkedCookieWriter(request, handlerResponse.cookies),
+        cookieName,
+        refreshCookieUpdate.token,
+        cookieOptions,
+      );
       return handlerResponse;
     }
 
     // Default pass-through: update both the response cookie and the request
     // Cookie header so the downstream Server Component render is not stale.
     const requestHeaders: Headers = new Headers(request.headers);
-    const updatedCookieHeader: string = replaceCookieInHeader(
+    const updatedCookieHeader: string = replaceChunkedCookieInHeader(
       request.headers.get('cookie') ?? '',
       cookieName,
       refreshCookieUpdate.token,
@@ -323,7 +368,12 @@ const thunderIDProxy =
     requestHeaders.set('cookie', updatedCookieHeader);
 
     const response: NextResponse = NextResponse.next({request: {headers: requestHeaders}});
-    response.cookies.set(cookieName, refreshCookieUpdate.token, cookieOptions);
+    setChunkedCookie(
+      toChunkedCookieWriter(request, response.cookies),
+      cookieName,
+      refreshCookieUpdate.token,
+      cookieOptions,
+    );
     return response;
   };
 

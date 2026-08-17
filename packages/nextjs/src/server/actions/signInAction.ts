@@ -12,6 +12,7 @@ import {
 } from '@thunderid/node';
 import {cookies} from 'next/headers';
 import {ThunderIDNextConfig} from '../../models/config';
+import {getChunkedCookie, setChunkedCookie} from '../../utils/chunkedCookie';
 import logger from '../../utils/logger';
 import SessionManager, {SessionTokenPayload} from '../../utils/SessionManager';
 import getClient from '../getClient';
@@ -45,7 +46,10 @@ const signInAction = async (
 
     let sessionId: string | undefined;
 
-    const existingSessionToken: string | undefined = cookieStore.get(SessionManager.getSessionCookieName())?.value;
+    const existingSessionToken: string | undefined = getChunkedCookie(
+      cookieStore,
+      SessionManager.getSessionCookieName(),
+    );
 
     if (existingSessionToken) {
       try {
@@ -124,7 +128,8 @@ const signInAction = async (
         organizationId,
       );
 
-      cookieStore.set(
+      setChunkedCookie(
+        cookieStore,
         SessionManager.getSessionCookieName(),
         sessionToken,
         SessionManager.getSessionCookieOptions(sessionCookieExpiryTime),

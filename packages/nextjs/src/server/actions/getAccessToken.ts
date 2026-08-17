@@ -4,6 +4,7 @@
 'use server';
 
 import {cookies} from 'next/headers';
+import {getChunkedCookie} from '../../utils/chunkedCookie';
 import SessionManager, {SessionTokenPayload} from '../../utils/SessionManager';
 
 type RequestCookies = Awaited<ReturnType<typeof cookies>>;
@@ -16,7 +17,7 @@ type RequestCookies = Awaited<ReturnType<typeof cookies>>;
 const getAccessToken = async (): Promise<string | undefined> => {
   const cookieStore: RequestCookies = await cookies();
 
-  const sessionToken: string | undefined = cookieStore.get(SessionManager.getSessionCookieName())?.value;
+  const sessionToken: string | undefined = getChunkedCookie(cookieStore, SessionManager.getSessionCookieName());
 
   if (sessionToken) {
     try {
