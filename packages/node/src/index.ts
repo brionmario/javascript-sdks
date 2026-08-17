@@ -29,6 +29,7 @@ export type {default as AuthURLCallback} from './models/AuthURLCallback';
 export {default as MemoryCacheStore} from './stores/MemoryCacheStore';
 
 // Utils
+export {default as CookieChunking} from './utils/CookieChunking';
 export {default as NodeCryptoUtils} from './utils/NodeCryptoUtils';
 export {default as SessionUtils} from './utils/SessionUtils';
 export {default as generateSessionId} from './utils/generateSessionId';

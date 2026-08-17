@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type {H3Event} from 'h3';
-import {getCookie, createError} from 'h3';
+import {createError} from 'h3';
 import {verifySessionToken, getSessionCookieName} from './session';
+import {getChunkedCookie} from './chunkedCookie';
 import type {ThunderIDSessionPayload} from '../../types';
 import ThunderIDNuxtClient from '../ThunderIDNuxtClient';
 import {useRuntimeConfig} from '#imports';
@@ -30,7 +31,7 @@ export async function useServerSession(event: H3Event): Promise<ThunderIDSession
   const config: ReturnType<typeof useRuntimeConfig> = useRuntimeConfig();
   const sessionSecret: string | undefined = config.thunderid?.sessionSecret;
 
-  const sessionCookie: string | undefined = getCookie(event, getSessionCookieName());
+  const sessionCookie: string | undefined = getChunkedCookie(event, getSessionCookieName());
   if (!sessionCookie) {
     return null;
   }
@@ -82,7 +83,7 @@ export async function verifyAndRehydrateSession(
   event: H3Event,
   sessionSecret?: string,
 ): Promise<ThunderIDSessionPayload | null> {
-  const sessionCookie: string | undefined = getCookie(event, getSessionCookieName());
+  const sessionCookie: string | undefined = getChunkedCookie(event, getSessionCookieName());
   if (!sessionCookie) {
     return null;
   }

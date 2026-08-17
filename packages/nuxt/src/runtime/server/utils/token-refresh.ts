@@ -1,9 +1,10 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {createError, setCookie, type H3Event} from 'h3';
+import {createError, type H3Event} from 'h3';
 import {requireServerSession} from './serverSession';
 import {createSessionToken, getSessionCookieName, getSessionCookieOptions} from './session';
+import {setChunkedCookie} from './chunkedCookie';
 import type {ThunderIDSessionPayload} from '../../types';
 import {useRuntimeConfig} from '#imports';
 
@@ -120,7 +121,7 @@ export async function getValidAccessToken(event: H3Event): Promise<string> {
     privateConfig?.sessionSecret,
   );
 
-  setCookie(event, getSessionCookieName(), newSessionToken, getSessionCookieOptions());
+  setChunkedCookie(event, getSessionCookieName(), newSessionToken, getSessionCookieOptions());
 
   return refreshed.access_token;
 }
