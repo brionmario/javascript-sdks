@@ -70,17 +70,21 @@ export class BrowserQuickstartPage extends GateLoginPage {
     return `${header}.${payload}.${signature}`;
   }
 
-  /** Opens the "Manage Profile" dialog (src/components/profileDialog.js). */
+  /** Opens the "Manage Account" page (src/pages/account.js) via the nav dropdown, then switches
+   * to its Personal info tab — the account page lands on the Home tab first, same as
+   * react/vue/quickstart's own Account page. Replaces the old "Manage Profile" popup; the field
+   * rendering/editing logic that used to back that popup (src/components/profileDialog.js) was
+   * kept and repurposed to feed this page's Personal info tab instead (renamed to
+   * profileFields.js). */
   async openManageProfile(): Promise<void> {
     await this.page.locator('#ud-trigger').click();
     await this.page.locator('#ud-manage-profile').click();
-    await this.page
-      .locator('#profile-dialog-overlay')
-      .waitFor({state: 'visible', timeout: Timeouts.ELEMENT_VISIBILITY});
+    await this.page.locator('.account-nav-item[data-tab="personal"]').click();
+    await this.page.locator('#profile-field-list').waitFor({state: 'visible', timeout: Timeouts.ELEMENT_VISIBILITY});
   }
 
-  /** Edits one field of the profile dialog, which renders each schema attribute as its own row
-   * with a pencil "Edit" button.*/
+  /** Edits one field of the Personal info tab, which renders each schema attribute as its own
+   * row with a pencil "Edit" button. */
   async editProfileField(fieldKey: string, value: string): Promise<void> {
     const row = this.page.locator(`.profile-field-row[data-field="${fieldKey}"]`);
     await row.locator('[data-action="edit"]').click();
@@ -95,9 +99,53 @@ export class BrowserQuickstartPage extends GateLoginPage {
     await expect(row.locator('.profile-field-row-value')).toHaveText(value, {timeout: Timeouts.ELEMENT_VISIBILITY});
   }
 
+  /** Leaves the Account page via the nav's "‹ Home" back link, same as closing the old dialog
+   * used to return control to the main app shell. */
   async closeManageProfile(): Promise<void> {
-    await this.page.locator('#profile-dialog-close').click();
-    await this.page.locator('#profile-dialog-overlay').waitFor({state: 'hidden', timeout: Timeouts.DEFAULT_ACTION});
+    await this.page.locator('#nav-back-btn').click();
+    await this.page.locator('#profile-field-list').waitFor({state: 'hidden', timeout: Timeouts.DEFAULT_ACTION});
+  }
+
+  /** Opens the Account page and switches to its Security tab, where each credential renders as
+   * a collapsed row (src/pages/account.js's `renderCredentialCard`) that expands into the real
+   * form — see {@link changeCredential}. */
+  async openSecurityTab(): Promise<void> {
+    await this.page.locator('#ud-trigger').click();
+    await this.page.locator('#ud-manage-profile').click();
+    await this.page.locator('.account-nav-item[data-tab="security"]').click();
+    await this.page.locator('.account-security-list').waitFor({state: 'visible', timeout: Timeouts.ELEMENT_VISIBILITY});
+  }
+
+  /** Expands or collapses the named credential's row — the same button does both, keyed by the
+   * schema attribute (`"password"`) rather than its label. Call {@link openSecurityTab} first. */
+  async toggleCredential(attribute: string): Promise<void> {
+    await this.page.locator(`[data-cred-toggle="${attribute}"]`).click();
+  }
+
+  /** Fills the currently-open credential form's new-value and confirmation fields, without
+   * submitting. */
+  async fillCredentialFields(newValue: string, confirmValue: string): Promise<void> {
+    await this.page.locator('[data-cred-field="newValue"]').fill(newValue);
+    await this.page.locator('[data-cred-field="confirmValue"]').fill(confirmValue);
+  }
+
+  /** Whether the currently-open credential form's submit button is disabled. */
+  async isCredentialSubmitDisabled(): Promise<boolean> {
+    return this.page.locator('[data-cred-submit]').isDisabled();
+  }
+
+  /** Expands the named credential's row, fills the new value and its confirmation, and
+   * submits. Waits for the row to collapse back afterward, which is this sample's own
+   * `onDone` behavior on a successful write — proof the change actually succeeded server-side
+   * rather than just that the button was clicked. Call {@link openSecurityTab} first. */
+  async changeCredential(attribute: string, newValue: string): Promise<void> {
+    const toggle = this.page.locator(`[data-cred-toggle="${attribute}"]`);
+    await toggle.click();
+
+    await this.fillCredentialFields(newValue, newValue);
+    await this.page.locator('[data-cred-submit]').click();
+
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false', {timeout: Timeouts.ELEMENT_VISIBILITY});
   }
 
   async verifyDisplayedName(fullName: string): Promise<void> {

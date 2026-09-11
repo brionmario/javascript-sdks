@@ -860,3 +860,244 @@ body {
   color: var(--color-text);
   letter-spacing: -0.01em;
 }
+
+/* ─── Account page (Google Account-style left-nav layout) ─────────── */
+.account-page {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - var(--nav-height));
+  margin-top: var(--nav-height);
+}
+
+.account-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 40px 24px;
+  position: sticky;
+  top: var(--nav-height);
+}
+
+.account-sidebar-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  margin: 0 0 24px 16px;
+}
+
+.account-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+
+.account-nav-item:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.account-nav-item--active,
+.account-nav-item--active:hover {
+  background: rgba(54, 136, 255, 0.12);
+  color: var(--color-primary);
+}
+
+.account-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  padding: 40px 32px 80px;
+  border-left: 1px solid var(--color-border);
+}
+
+.account-content-inner {
+  width: 100%;
+  max-width: 720px;
+}
+
+/* UserProfile's `min-width: 600px` (a floor meant to keep the field grid from getting
+   cramped in other contexts) fights this page's own responsive layout, refusing to shrink
+   below 600px even when the viewport is narrower. The Security/Home boxes have no such floor
+   and already shrink fluidly with their container, so match that here. */
+.account-content .thunderid-user-profile {
+  min-width: 0;
+}
+
+.account-content-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  margin: 0 0 6px;
+}
+
+.account-content-subtitle {
+  font-size: 14px;
+  color: var(--color-muted);
+  margin: 0 0 32px;
+}
+
+.account-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.account-tile {
+  text-align: left;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 22px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition);
+}
+
+.account-tile:hover {
+  border-color: rgba(54, 136, 255, 0.35);
+}
+
+.account-tile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.account-tile-icon--blue {
+  background: rgba(54, 136, 255, 0.12);
+  color: var(--color-primary);
+}
+
+.account-tile-icon--green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.account-tile-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.account-tile-desc {
+  font-size: 12.5px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.account-security-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.account-security-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 20px 22px;
+}
+
+.account-security-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.account-security-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.account-security-card-desc {
+  font-size: 12.5px;
+  color: var(--color-muted);
+}
+
+.account-security-card-cta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.account-security-card-cta:hover {
+  opacity: 0.8;
+}
+
+.account-security-card-chevron {
+  display: inline-flex;
+  transition: transform 0.2s;
+}
+
+.account-security-card-chevron--open {
+  transform: rotate(180deg);
+}
+
+.account-security-card-form {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 760px) {
+  .account-page {
+    flex-direction: column;
+  }
+  .account-sidebar {
+    width: 100%;
+    position: static;
+    padding: 20px 16px 8px;
+  }
+  .account-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .account-content {
+    max-width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    padding: 24px 20px 60px;
+  }
+}

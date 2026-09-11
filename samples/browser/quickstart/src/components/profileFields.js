@@ -1,6 +1,5 @@
 import { deepMerge, getUsersMe, getUsersMeMeta, updateMeProfile } from '@thunderid/browser'
 
-const ICON_CLOSE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
 const ICON_PENCIL = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`
 
 // Attributes that are always read-only regardless of schema mutability
@@ -16,7 +15,7 @@ const ALWAYS_READONLY_KEYS = [
   'user_name',
 ]
 
-function escapeHtml(str) {
+export function escapeHtml(str) {
   if (str == null) return ''
   return String(str)
     .replace(/&/g, '&amp;')
@@ -96,7 +95,7 @@ function renderAvatarInner(user, displayName) {
   }
 }
 
-function createFetcher(auth) {
+export function createFetcher(auth) {
   return async (url, config) => {
     const token = await auth.getAccessToken()
     return fetch(url, {
@@ -110,12 +109,17 @@ function createFetcher(auth) {
 export async function fetchProfileFormContext({ baseUrl, auth }) {
   const fetcher = createFetcher(auth)
 
+  // A failed fetch stays `null`, not `{}` — `supportsCredential` treats those differently: an
+  // unresolved schema is "not known yet" (every credential stays available), while `{}` is a
+  // known schema declaring nothing (every credential becomes unavailable). Collapsing a fetch
+  // failure into `{}` would make a transient network error look identical to "no credentials
+  // configured".
   const [metaRes, profile] = await Promise.all([
-    getUsersMeMeta({ baseUrl, fetcher }).catch(() => ({ schema: {} })),
+    getUsersMeMeta({ baseUrl, fetcher }).catch(() => null),
     getUsersMe({ baseUrl, fetcher }).catch(() => null),
   ])
 
-  return { schema: metaRes?.schema || {}, profile }
+  return { schema: metaRes?.schema ?? null, profile }
 }
 
 function renderFieldRow(key, schemaEntry, value) {
@@ -140,36 +144,30 @@ function renderFieldRow(key, schemaEntry, value) {
     </div>`
 }
 
-export function renderProfileDialog(user, { schema = {}, profile } = {}) {
+// Renders the "Personal info" section: avatar/name summary plus the schema-driven,
+// per-field editable rows. Used by the account page's Personal info tab.
+export function renderProfileFields(user, { schema = {}, profile } = {}) {
   const attributes = profile?.attributes || {}
   const displayName = getDisplayName(user, attributes)
   const avatar = renderAvatarInner(user, displayName)
   const email = escapeHtml(user?.email || user?.username || '')
 
-  const rows = Object.entries(schema)
+  // `schema` may be `null` (the meta fetch failed) — a default parameter only covers
+  // `undefined`, not an explicit `null`, so this still needs its own fallback.
+  const rows = Object.entries(schema || {})
     .map(([key, schemaEntry]) => renderFieldRow(key, schemaEntry, attributes[key]))
     .join('')
 
   return `
-    <div class="profile-dialog-overlay" id="profile-dialog-overlay">
-      <div class="profile-dialog" role="dialog" aria-modal="true" aria-label="Manage Profile">
-        <div class="profile-dialog-header">
-          <h2>Profile</h2>
-          <button class="profile-dialog-close" id="profile-dialog-close" aria-label="Close">${ICON_CLOSE}</button>
-        </div>
-        <div class="profile-dialog-body">
-          <div class="profile-dialog-summary">
-            <div class="profile-dialog-avatar ${avatar.className}" style="${avatar.style || ''}">${avatar.html}</div>
-            <div>
-              <div class="profile-dialog-name">${escapeHtml(displayName)}</div>
-              ${email ? `<div class="profile-dialog-subtitle">${email}</div>` : ''}
-            </div>
-          </div>
-          <div class="profile-dialog-error" id="profile-dialog-error" hidden></div>
-          <div class="profile-field-list" id="profile-field-list">${rows}</div>
-        </div>
+    <div class="profile-summary">
+      <div class="profile-summary-avatar ${avatar.className}" style="${avatar.style || ''}">${avatar.html}</div>
+      <div>
+        <div class="profile-summary-name">${escapeHtml(displayName)}</div>
+        ${email ? `<div class="profile-summary-subtitle">${email}</div>` : ''}
       </div>
-    </div>`
+    </div>
+    <div class="profile-error" id="profile-error" hidden></div>
+    <div class="profile-field-list" id="profile-field-list">${rows}</div>`
 }
 
 // Validates a field value against its schema entry (required + regex), matching
@@ -195,19 +193,13 @@ function validateField(schemaEntry, label, value) {
   return null
 }
 
-export function attachProfileDialogHandlers({ user, auth, schema = {}, profile, onSaved, onClose }) {
-  const overlay = document.getElementById('profile-dialog-overlay')
-  const closeDialog = () => {
-    overlay?.remove()
-    onClose?.()
-  }
-
-  document.getElementById('profile-dialog-close')?.addEventListener('click', closeDialog)
-  overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) closeDialog()
-  })
-
-  const errorEl = document.getElementById('profile-dialog-error')
+// Wires up inline per-field editing for the rows rendered by `renderProfileFields`. Safe to
+// call once after that markup is in the DOM.
+export function attachProfileFieldHandlers({ user, auth, schema, profile, onSaved }) {
+  // `schema` may be `null` (the meta fetch failed) — a default parameter only covers
+  // `undefined`, not an explicit `null`, so this still needs its own fallback.
+  const resolvedSchema = schema || {}
+  const errorEl = document.getElementById('profile-error')
   const fieldList = document.getElementById('profile-field-list')
   const baseUrl = import.meta.env.VITE_THUNDERID_BASE_URL
   const fetcher = createFetcher(auth)
@@ -220,15 +212,15 @@ export function attachProfileDialogHandlers({ user, auth, schema = {}, profile, 
     const mergedUser = { ...user, ...currentAttributes }
     const displayName = getDisplayName(mergedUser, currentAttributes)
 
-    const avatarEl = overlay?.querySelector('.profile-dialog-avatar')
+    const avatarEl = document.querySelector('.profile-summary-avatar')
     if (avatarEl) {
       const avatar = renderAvatarInner(mergedUser, displayName)
-      avatarEl.className = `profile-dialog-avatar ${avatar.className}`
+      avatarEl.className = `profile-summary-avatar ${avatar.className}`
       avatarEl.setAttribute('style', avatar.style || '')
       avatarEl.innerHTML = avatar.html
     }
 
-    const nameEl = overlay?.querySelector('.profile-dialog-name')
+    const nameEl = document.querySelector('.profile-summary-name')
     if (nameEl) nameEl.textContent = displayName
   }
 
@@ -308,6 +300,6 @@ export function attachProfileDialogHandlers({ user, auth, schema = {}, profile, 
     const row = editBtn.closest('.profile-field-row')
     const key = row?.dataset.field
     if (!row || !key) return
-    startEdit(row, key, schema[key])
+    startEdit(row, key, resolvedSchema[key])
   })
 }

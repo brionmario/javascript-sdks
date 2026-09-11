@@ -34,6 +34,7 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
     display: flex;
     align-items: center;
     gap: ${theme.vars.spacing.unit};
+    min-width: 0;
   `;
 
   const fieldActions: string = css`
@@ -160,6 +161,7 @@ const useStyles = (theme: Theme, colorScheme: string): Record<string, string> =>
       align-items: center;
       gap: ${theme.vars.spacing.unit};
       overflow: hidden;
+      min-width: 0;
       min-height: 28px;
       line-height: 28px;
       word-break: break-word;

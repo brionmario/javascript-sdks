@@ -104,6 +104,24 @@ const translations: I18nTranslations = {
   'user.profile.update.generic.error': 'Ocorreu um erro ao atualizar seu perfil. Tente novamente.',
 
   /* |---------------------------------------------------------------| */
+  /* |                        Change Password                        | */
+  /* |---------------------------------------------------------------| */
+
+  'user.change_password.heading': 'Alterar {credential}',
+  'user.change_password.new.label': 'Novo {credential}',
+  'user.change_password.new.placeholder': 'Digite seu novo {credentialLower}',
+  'user.change_password.confirm.label': 'Confirmar novo {credential}',
+  'user.change_password.confirm.placeholder': 'Digite novamente seu novo {credentialLower}',
+  'user.change_password.requirements.heading': 'Seu {credentialLower} deve conter:',
+  'user.change_password.submit': 'Atualizar {credential}',
+  'user.change_password.success': 'Seu {credentialLower} foi atualizado.',
+  'user.change_password.mismatch.error': 'Os {credentialLower}s não coincidem.',
+  'user.change_password.generic.error': 'Ocorreu um erro ao atualizar seu {credentialLower}. Tente novamente.',
+  'user.change_password.unavailable.heading': 'Alteração de {credentialLower} indisponível',
+  'user.change_password.unavailable.description': 'Entre em contato com o administrador.',
+  'validation.password.pattern': 'Corresponde ao formato exigido',
+
+  /* |---------------------------------------------------------------| */
   /* |                     Organization Switcher                     | */
   /* |---------------------------------------------------------------| */
 

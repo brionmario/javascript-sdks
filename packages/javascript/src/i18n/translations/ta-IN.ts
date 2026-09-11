@@ -105,6 +105,25 @@ const translations: I18nTranslations = {
     'உங்கள் சுயவிவரத்தை புதுப்பிக்கும் போது பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.',
 
   /* |---------------------------------------------------------------| */
+  /* |                        Change Password                        | */
+  /* |---------------------------------------------------------------| */
+
+  'user.change_password.heading': '{credential} மாற்றவும்',
+  'user.change_password.new.label': 'புதிய {credential}',
+  'user.change_password.new.placeholder': 'உங்கள் புதிய {credentialLower}-ஐ உள்ளிடவும்',
+  'user.change_password.confirm.label': 'புதிய {credential}-ஐ உறுதிப்படுத்தவும்',
+  'user.change_password.confirm.placeholder': 'உங்கள் புதிய {credentialLower}-ஐ மீண்டும் உள்ளிடவும்',
+  'user.change_password.requirements.heading': 'உங்கள் {credentialLower} பின்வருவனவற்றைக் கொண்டிருக்க வேண்டும்:',
+  'user.change_password.submit': '{credential}-ஐ புதுப்பிக்கவும்',
+  'user.change_password.success': 'உங்கள் {credentialLower} புதுப்பிக்கப்பட்டது.',
+  'user.change_password.mismatch.error': '{credentialLower} பொருந்தவில்லை.',
+  'user.change_password.generic.error':
+    'உங்கள் {credentialLower}-ஐ புதுப்பிக்கும் போது பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.',
+  'user.change_password.unavailable.heading': '{credential} மாற்றங்கள் கிடைக்கவில்லை',
+  'user.change_password.unavailable.description': 'உங்கள் நிர்வாகியை தொடர்பு கொள்ளவும்.',
+  'validation.password.pattern': 'தேவையான வடிவமைப்பிற்கு பொருந்துகிறது',
+
+  /* |---------------------------------------------------------------| */
   /* |                     Organization Switcher                     | */
   /* |---------------------------------------------------------------| */
 

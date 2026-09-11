@@ -1,7 +1,7 @@
 import './style.css'
 import auth, { missingEnvVars } from './auth.js'
 import { renderSignedOutNav, renderSignedInNav, attachNavHandlers, attachSignedOutNavHandlers } from './components/nav.js'
-import { renderProfileDialog, attachProfileDialogHandlers, fetchProfileFormContext } from './components/profileDialog.js'
+import { mountAccountPage } from './pages/account.js'
 import { renderSignedOut, renderHome, renderConfigNeeded, startCountdown, attachSignedOutHandlers, attachConfigNeededHandlers } from './pages/home.js'
 import { renderTokenDebug, attachTokenHandlers } from './pages/token.js'
 
@@ -22,6 +22,24 @@ function renderSignedInPage() {
   const app = document.getElementById('app')
   if (!app) return
 
+  if (currentPage === 'account') {
+    app.innerHTML = renderSignedInNav({ user, isDark, currentPage }) + '<div id="account-root"></div>'
+    attachNavHandlers({
+      isDark: () => isDark,
+      setIsDark: (v) => { isDark = v },
+      navigateTo,
+      auth,
+    })
+    mountAccountPage(document.getElementById('account-root'), {
+      user,
+      auth,
+      onUserUpdated: (updatedUser) => {
+        user = updatedUser
+      },
+    })
+    return
+  }
+
   let content
   if (currentPage === 'token') {
     content = renderTokenDebug({ rawToken })
@@ -36,7 +54,6 @@ function renderSignedInPage() {
     setIsDark: (v) => { isDark = v },
     navigateTo,
     auth,
-    openManageProfile,
   })
 
   if (currentPage === 'token') {
@@ -44,30 +61,6 @@ function renderSignedInPage() {
   } else if (currentPage === 'home') {
     timer = startCountdown({ idToken })
   }
-}
-
-async function openManageProfile() {
-  const app = document.getElementById('app')
-  if (!app) return
-
-  const { schema, profile } = await fetchProfileFormContext({
-    baseUrl: import.meta.env.VITE_THUNDERID_BASE_URL,
-    auth,
-  })
-
-  app.insertAdjacentHTML('beforeend', renderProfileDialog(user, { schema, profile }))
-  attachProfileDialogHandlers({
-    user,
-    auth,
-    schema,
-    profile,
-    onSaved: (updatedUser) => {
-      user = updatedUser
-    },
-    onClose: () => {
-      renderSignedInPage()
-    },
-  })
 }
 
 async function renderApp() {

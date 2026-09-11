@@ -98,7 +98,7 @@ export function renderSignedInNav({ user, isDark, currentPage }) {
               ${ICON_KEY} Token debug
             </button>
             <button class="ud-item" id="ud-manage-profile">
-              ${ICON_USER} Manage Profile
+              ${ICON_USER} Manage Account
             </button>
             <div class="ud-divider"></div>
             <button class="ud-item ud-item--signout" id="ud-sign-out">Sign out</button>
@@ -108,7 +108,7 @@ export function renderSignedInNav({ user, isDark, currentPage }) {
     </nav>`
 }
 
-export function attachNavHandlers({ isDark, setIsDark, navigateTo, auth, openManageProfile }) {
+export function attachNavHandlers({ isDark, setIsDark, navigateTo, auth }) {
   document.getElementById('dark-toggle')?.addEventListener('click', () => {
     const next = !isDark()
     setIsDark(next)
@@ -149,7 +149,7 @@ export function attachNavHandlers({ isDark, setIsDark, navigateTo, auth, openMan
 
   document.getElementById('ud-manage-profile')?.addEventListener('click', () => {
     menu?.classList.remove('ud-menu--open')
-    openManageProfile?.()
+    navigateTo('account')
   })
 
   document.getElementById('ud-sign-out')?.addEventListener('click', () => {

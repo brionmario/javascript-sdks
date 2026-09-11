@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, Outlet, useLocation } from 'react-router'
-import { SignedIn, SignedOut, SignInButton, UserDropdown, Loading } from '@thunderid/react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+import { SignedIn, SignedOut, SignInButton, UserDropdown, Loading, useTheme } from '@thunderid/react'
 import ReactLogo from './icons/ReactLogo'
 
 function MoonIcon() {
@@ -44,12 +44,15 @@ function KeyIcon() {
 export default function Nav() {
   const [dark, setDark] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const isHome = location.pathname === '/'
+  const { toggleTheme } = useTheme()
 
   const toggleDark = () => {
     const next = !dark
     setDark(next)
     document.documentElement.setAttribute('data-theme', next ? 'dark' : '')
+    toggleTheme()
   }
 
   const tokenDebugMenuItem = {
@@ -79,7 +82,12 @@ export default function Nav() {
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>
           <SignedIn>
-            <UserDropdown showTriggerLabel menuItems={[tokenDebugMenuItem]} />
+            <UserDropdown
+              showTriggerLabel
+              menuItems={[tokenDebugMenuItem]}
+              manageProfileLabel="Manage Account"
+              onManageProfile={() => navigate('/account')}
+            />
           </SignedIn>
           <SignedOut>
             <SignInButton>

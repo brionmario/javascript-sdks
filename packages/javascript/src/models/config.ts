@@ -210,7 +210,7 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
    *   `endSession`, `wellKnown`) — by default derived from the well-known discovery document at
    *   `{baseUrl}/oauth2/token/.well-known/openid-configuration`. Individual overrides take
    *   precedence over values resolved from the discovery document.
-   * - **Resource-server endpoints** (`flowExecute`, `flowMeta`, `usersMe`) —
+   * - **Resource-server endpoints** (`flowExecute`, `flowMeta`, `usersMe`, `usersMeCredentials`) —
    *   by default derived by concatenating `baseUrl` with a fixed path (e.g. `{baseUrl}/flow/execute`).
    *   These do not participate in OIDC discovery.
    *
@@ -283,6 +283,12 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
      * If not provided, defaults to `{baseUrl}/users/me`.
      */
     usersMe?: string;
+    /**
+     * The self-service credential update endpoint URL used to change one of the signed-in
+     * user's own credentials (for example `password` or `pin`).
+     * If not provided, defaults to `{baseUrl}/users/me/update-credentials`.
+     */
+    usersMeCredentials?: string;
     /**
      * The user profile schema metadata endpoint URL used to fetch profile schema attributes.
      * If not provided, defaults to `{baseUrl}/users/me/meta`.

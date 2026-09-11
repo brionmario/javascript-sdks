@@ -105,6 +105,25 @@ const translations: I18nTranslations = {
   'user.profile.update.generic.error': 'ప్రొఫైల్ అప్‌డేట్ చేస్తూ లోపం వచ్చింది. దయచేసి మళ్లీ ప్రయత్నించండి.',
 
   /* |---------------------------------------------------------------| */
+  /* |                        Change Password                        | */
+  /* |---------------------------------------------------------------| */
+
+  'user.change_password.heading': '{credential} మార్చండి',
+  'user.change_password.new.label': 'కొత్త {credential}',
+  'user.change_password.new.placeholder': 'మీ కొత్త {credentialLower} నమోదు చేయండి',
+  'user.change_password.confirm.label': 'కొత్త {credential} నిర్ధారించండి',
+  'user.change_password.confirm.placeholder': 'మీ కొత్త {credentialLower}ని మళ్లీ నమోదు చేయండి',
+  'user.change_password.requirements.heading': 'మీ {credentialLower} కింది వాటిని కలిగి ఉండాలి:',
+  'user.change_password.submit': '{credential} నవీకరించండి',
+  'user.change_password.success': 'మీ {credentialLower} నవీకరించబడింది.',
+  'user.change_password.mismatch.error': '{credentialLower} సరిపోలలేదు.',
+  'user.change_password.generic.error':
+    'మీ {credentialLower} నవీకరించేటప్పుడు లోపం వచ్చింది. దయచేసి మళ్లీ ప్రయత్నించండి.',
+  'user.change_password.unavailable.heading': '{credential} మార్పులు అందుబాటులో లేవు',
+  'user.change_password.unavailable.description': 'దయచేసి మీ నిర్వాహకుడిని సంప్రదించండి.',
+  'validation.password.pattern': 'అవసరమైన ఫార్మాట్‌కు సరిపోతుంది',
+
+  /* |---------------------------------------------------------------| */
   /* |                     Organization Switcher                     | */
   /* |---------------------------------------------------------------| */
 

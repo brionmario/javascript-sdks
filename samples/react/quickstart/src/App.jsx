@@ -3,6 +3,7 @@ import { ProtectedRoute } from '@thunderid/react-router'
 import Nav from './components/Nav'
 import HomePage from './pages/HomePage'
 import TokenDebugPage from './pages/TokenDebugPage'
+import AccountPage from './pages/AccountPage'
 import './App.css'
 
 const router = createBrowserRouter([
@@ -11,6 +12,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/token', element: <ProtectedRoute><TokenDebugPage /></ProtectedRoute> },
+      { path: '/account', element: <ProtectedRoute><AccountPage /></ProtectedRoute> },
     ],
   },
 ])

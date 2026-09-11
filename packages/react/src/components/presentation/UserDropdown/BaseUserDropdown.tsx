@@ -63,6 +63,11 @@ export interface BaseUserDropdownProps {
    */
   isLoading?: boolean;
   /**
+   * Label for the "Manage Profile" menu item. Defaults to `'Manage Profile'`; set this
+   * to relabel the action (e.g. `'Manage Account'`) without replacing the whole item.
+   */
+  manageProfileLabel?: string;
+  /**
    * Menu items to display in the dropdown
    */
   menuItems?: MenuItem[];
@@ -106,6 +111,7 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
   menuItems = [],
   showTriggerLabel = false,
   avatarSize = 32,
+  manageProfileLabel = 'Manage Profile',
   onManageProfile,
   onSignOut,
   attributeMapping = {},
@@ -159,7 +165,7 @@ export const BaseUserDropdown: FC<BaseUserDropdownProps> = ({
   if (onManageProfile) {
     defaultMenuItems.push({
       icon: <User width="16" height="16" />,
-      label: 'Manage Profile',
+      label: manageProfileLabel,
       onClick: onManageProfile,
     });
   }

@@ -55,6 +55,22 @@ const UserDropdown: Component = defineComponent({
       default: undefined,
       type: Array as PropType<DropdownMenuItem[]>,
     },
+    /**
+     * Called instead of opening the built-in profile popup when the profile menu item is
+     * clicked. Use this when the app has its own account page to navigate to.
+     *
+     * @example
+     * ```vue
+     * <UserDropdown profile-label="Manage Account" :on-manage-profile="() => router.push('/account')" />
+     * ```
+     */
+    onManageProfile: {default: undefined, type: Function as PropType<() => void>},
+    /**
+     * Label for the "Profile" menu item. Defaults to `'Profile'`; set this alongside
+     * `onManageProfile` when redirecting to a custom account page instead of the built-in
+     * profile popup.
+     */
+    profileLabel: {default: undefined, type: String},
     /** Whether to show the animated down-chevron beside the avatar. Default `false`. */
     showChevron: {default: false, type: Boolean},
     /**
@@ -67,6 +83,8 @@ const UserDropdown: Component = defineComponent({
       default: 'md',
       type: String as PropType<'sm' | 'md' | 'lg'>,
     },
+    /** Show the user's display name as text beside the trigger avatar. Default `false`. */
+    showTriggerLabel: {default: false, type: Boolean},
   },
   emits: ['profileClick'],
   setup(
@@ -74,7 +92,10 @@ const UserDropdown: Component = defineComponent({
       className: string;
       menuAlign: 'auto' | 'left' | 'right';
       menuItems?: DropdownMenuItem[];
+      onManageProfile?: () => void;
+      profileLabel?: string;
       showChevron: boolean;
+      showTriggerLabel: boolean;
       size: 'sm' | 'md' | 'lg';
     },
     {slots, emit}: {emit: any; slots: any},
@@ -92,6 +113,10 @@ const UserDropdown: Component = defineComponent({
           menuAlign: props.menuAlign,
           menuItems: props.menuItems,
           onProfileClick: (): void => {
+            if (props.onManageProfile) {
+              props.onManageProfile();
+              return;
+            }
             isProfileModalOpen.value = true;
             emit('profileClick');
           },
@@ -101,14 +126,17 @@ const UserDropdown: Component = defineComponent({
           onSignOut: (): void => {
             signOut();
           },
-          profileContent: isProfileModalOpen.value
-            ? h(UserProfileComponent, {
-                cardLayout: false,
-                compact: true,
-                editable: true,
-              })
-            : null,
+          profileContent:
+            !props.onManageProfile && isProfileModalOpen.value
+              ? h(UserProfileComponent, {
+                  cardLayout: false,
+                  compact: true,
+                  editable: true,
+                })
+              : null,
+          profileLabel: props.profileLabel,
           showChevron: props.showChevron,
+          showTriggerLabel: props.showTriggerLabel,
           size: props.size,
           user: user.value,
         },

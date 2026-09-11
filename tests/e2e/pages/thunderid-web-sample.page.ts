@@ -66,7 +66,7 @@ export class ThunderIDWebSamplePage extends GateLoginPage {
    * to wait on. A second click after hydration catches up recovers cleanly; this has been
    * observed to matter specifically for nuxt/quickstart under CI-level CPU contention, where the
    * gap is wide enough to lose the first click outright rather than just render it late. */
-  private async openDropdown(target: Locator): Promise<void> {
+  protected async openDropdown(target: Locator): Promise<void> {
     const trigger = this.page.locator(USER_DROPDOWN_TRIGGER).first();
     for (let attempt = 1; attempt <= 3; attempt++) {
       await trigger.click();
@@ -112,12 +112,13 @@ export class ThunderIDWebSamplePage extends GateLoginPage {
     return `${header}.${payload}.${signature}`;
   }
 
-  /** Opens the SDK-provided profile dialog — `UserDropdown`'s built-in profile action, present
-   * (and always on, no opt-in prop needed) in both the React and Vue packages, just under
-   * different labels: React's wrapped `UserDropdown` hardcodes "Manage Profile"
-   * (BaseUserDropdown.tsx's `handleManageProfile`); Vue's hardcodes plain "Profile"
-   * (BaseUserDropdown.ts:359, `onProfileClick`/`profileContent`). Nuxt inherits Vue's via its own
-   * `UserDropdown` wrapper, which delegates to the same `@thunderid/vue` component. */
+  /** Opens the SDK-provided profile dialog — `UserDropdown`'s built-in profile action, under the
+   * plain "Profile" label. Nuxt inherits this via its own `UserDropdown` wrapper, which delegates
+   * to the same `@thunderid/vue` component; nextjs likewise inherits React's "Manage Profile"
+   * label and behavior. react/quickstart and vue/quickstart's own Nav components now override
+   * this action to redirect to a full Account page instead — see
+   * {@link ThunderIDAccountPageSamplePage} below for their variant of the methods in this
+   * section. */
   async openManageProfile(): Promise<void> {
     const profileButton = this.page.getByRole('button', {name: /^(Manage Profile|Profile)$/});
     await this.openDropdown(profileButton);
@@ -148,6 +149,98 @@ export class ThunderIDWebSamplePage extends GateLoginPage {
    * those pick up the change without a session refresh isn't guaranteed. */
   async verifyProfileFieldValue(label: RegExp, value: string): Promise<void> {
     const row = this.page.getByRole('dialog').getByText(label).locator('../..');
+    await expect(row).toContainText(value, {timeout: Timeouts.ELEMENT_VISIBILITY});
+  }
+}
+
+/**
+ * Variant of {@link ThunderIDWebSamplePage} for react/quickstart and vue/quickstart, whose Nav
+ * components redirect `UserDropdown`'s profile action to a full "Manage Account" page (Home /
+ * Personal info / Security tabs) instead of opening the SDK's built-in profile popup. nuxt and
+ * nextjs are unaffected by that change — their own Nav components still use the base class's
+ * dialog-based behavior — so this exists as a separate subclass rather than a change to the
+ * shared base.
+ */
+export class ThunderIDAccountPageSamplePage extends ThunderIDWebSamplePage {
+  /** Opens the Account page via the nav dropdown's "Manage Account" item. Lands on the Home
+   * tab, same as the sidebar's own default. */
+  private async openManageAccount(): Promise<void> {
+    const manageAccountButton = this.page.getByRole('button', {name: 'Manage Account'});
+    await this.openDropdown(manageAccountButton);
+    await manageAccountButton.click();
+  }
+
+  /** Opens the Account page and switches to its Personal info tab. */
+  async openManageProfile(): Promise<void> {
+    await this.openManageAccount();
+
+    const sidebar = this.page.getByRole('navigation');
+    await sidebar.getByRole('button', {name: 'Personal info'}).click();
+    await expect(this.page.getByRole('heading', {name: 'Personal info', level: 2})).toBeVisible({
+      timeout: Timeouts.ELEMENT_VISIBILITY,
+    });
+  }
+
+  /** Opens the Account page and switches to its Security tab, where each credential
+   * (`ChangeCredential`) renders as a collapsed row that expands into the real form — see
+   * {@link changeCredential}. */
+  async openSecurityTab(): Promise<void> {
+    await this.openManageAccount();
+
+    const sidebar = this.page.getByRole('navigation');
+    await sidebar.getByRole('button', {name: 'Security'}).click();
+    await expect(this.page.getByRole('heading', {name: 'Security', level: 2})).toBeVisible({
+      timeout: Timeouts.ELEMENT_VISIBILITY,
+    });
+  }
+
+  /** Expands or collapses the named credential's row (`cta` is the row's own toggle button
+   * text, e.g. "Change password") — the same button does both. Call {@link openSecurityTab}
+   * first. */
+  async toggleCredential(cta: string): Promise<void> {
+    await this.page.getByRole('button', {name: cta}).click();
+  }
+
+  /** Fills the currently-open credential form's new-value and confirmation fields, without
+   * submitting. */
+  async fillCredentialFields(newValue: string, confirmValue: string): Promise<void> {
+    await this.page.locator('input[name="newPassword"]').fill(newValue);
+    await this.page.locator('input[name="confirmPassword"]').fill(confirmValue);
+  }
+
+  /** Whether the currently-open credential form's submit button is disabled. */
+  async isCredentialSubmitDisabled(): Promise<boolean> {
+    return this.page.getByRole('button', {name: /^Update /}).isDisabled();
+  }
+
+  /** Expands the named credential's row, fills the new value and its confirmation, and
+   * submits. Waits for the row to collapse back afterward — `ChangeCredential`'s `onSuccess`
+   * closes it in this sample, so that collapse is this method's proof the write actually
+   * succeeded server-side rather than just that the button was clicked. Call
+   * {@link openSecurityTab} first. */
+  async changeCredential(cta: string, newValue: string): Promise<void> {
+    const toggle = this.page.getByRole('button', {name: cta});
+    await toggle.click();
+
+    await this.fillCredentialFields(newValue, newValue);
+    await this.page.getByRole('button', {name: /^Update /}).click();
+
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false', {timeout: Timeouts.ELEMENT_VISIBILITY});
+  }
+
+  /** Same row structure as the base class's dialog variant (`BaseUserProfile` is unchanged —
+   * only where it's mounted changed), scoped to the page's `<main>` landmark instead of a
+   * dialog. */
+  async editProfileField(label: RegExp, value: string): Promise<void> {
+    const row = this.page.getByRole('main').getByText(label).locator('../..');
+    await row.getByRole('button', {name: 'Edit'}).click();
+    await row.locator('input').fill(value);
+    await row.getByRole('button', {name: 'Save'}).click();
+    await expect(row.locator('input')).toHaveCount(0, {timeout: Timeouts.DEFAULT_ACTION});
+  }
+
+  async verifyProfileFieldValue(label: RegExp, value: string): Promise<void> {
+    const row = this.page.getByRole('main').getByText(label).locator('../..');
     await expect(row).toContainText(value, {timeout: Timeouts.ELEMENT_VISIBILITY});
   }
 }
