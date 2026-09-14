@@ -104,6 +104,24 @@ export interface I18nTranslations {
   'user.profile.update.generic.error': string;
 
   /* |---------------------------------------------------------------| */
+  /* |                        Change Password                        | */
+  /* |---------------------------------------------------------------| */
+
+  'user.change_password.heading': string;
+  'user.change_password.new.label': string;
+  'user.change_password.new.placeholder': string;
+  'user.change_password.confirm.label': string;
+  'user.change_password.confirm.placeholder': string;
+  'user.change_password.requirements.heading': string;
+  'user.change_password.submit': string;
+  'user.change_password.success': string;
+  'user.change_password.mismatch.error': string;
+  'user.change_password.generic.error': string;
+  'user.change_password.unavailable.heading': string;
+  'user.change_password.unavailable.description': string;
+  'validation.password.pattern': string;
+
+  /* |---------------------------------------------------------------| */
   /* |                     Organization Switcher                     | */
   /* |---------------------------------------------------------------| */
 

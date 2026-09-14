@@ -139,6 +139,12 @@ export * from './components/presentation/UserProfile/BaseUserProfile';
 export {default as UserProfile} from './components/presentation/UserProfile/UserProfile';
 export * from './components/presentation/UserProfile/UserProfile';
 
+export {default as BaseChangeCredential} from './components/presentation/ChangeCredential/BaseChangeCredential';
+export * from './components/presentation/ChangeCredential/BaseChangeCredential';
+
+export {default as ChangeCredential} from './components/presentation/ChangeCredential/ChangeCredential';
+export * from './components/presentation/ChangeCredential/ChangeCredential';
+
 export {default as BaseUserAvatar} from './components/presentation/UserAvatar/BaseUserAvatar';
 export * from './components/presentation/UserAvatar/BaseUserAvatar';
 
@@ -228,6 +234,8 @@ export {default as BuildingAlt} from './components/primitives/Icons/BuildingAlt'
 
 export {default as updateMeProfile} from './api/updateMeProfile';
 export type {UpdateMeProfileConfig} from './api/updateMeProfile';
+export {default as updateMeCredentials} from './api/updateMeCredentials';
+export type {UpdateMeCredentialsConfig} from './api/updateMeCredentials';
 export {default as getMeProfile} from './api/getUsersMe';
 export * from './api/getUsersMe';
 export {default as getUsersMeMeta} from './api/getUsersMeMeta';

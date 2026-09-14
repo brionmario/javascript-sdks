@@ -24,10 +24,12 @@ const RESOURCE_KEY_FORMS: string[] = [
   'flowMeta',
   'usersMe',
   'usersMeMeta',
+  'usersMeCredentials',
   'flow_execute',
   'flow_meta',
   'users_me',
   'users_me_meta',
+  'users_me_credentials',
 ];
 
 describe('AuthenticationHelper resource-endpoint filtering', (): void => {
@@ -41,6 +43,7 @@ describe('AuthenticationHelper resource-endpoint filtering', (): void => {
         flowExecute: 'https://rs.example.com/flow/execute',
         flowMeta: 'https://rs.example.com/flow/meta',
         usersMe: 'https://rs.example.com/users/me',
+        usersMeCredentials: 'https://rs.example.com/users/me/update-credentials',
         usersMeMeta: 'https://rs.example.com/users/me/meta',
       },
     });
@@ -64,6 +67,7 @@ describe('AuthenticationHelper resource-endpoint filtering', (): void => {
         flowExecute: 'https://rs.example.com/flow/execute',
         flowMeta: 'https://rs.example.com/flow/meta',
         usersMe: 'https://rs.example.com/users/me',
+        usersMeCredentials: 'https://rs.example.com/users/me/update-credentials',
         usersMeMeta: 'https://rs.example.com/users/me/meta',
       },
     });
@@ -94,6 +98,7 @@ describe('AuthenticationHelper resource-endpoint filtering', (): void => {
         flowExecute: 'https://rs.example.com/flow/execute',
         flowMeta: 'https://rs.example.com/flow/meta',
         usersMe: 'https://rs.example.com/users/me',
+        usersMeCredentials: 'https://rs.example.com/users/me/update-credentials',
         usersMeMeta: 'https://rs.example.com/users/me/meta',
       },
     });

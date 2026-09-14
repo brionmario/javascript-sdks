@@ -14,9 +14,7 @@ const USER_PROFILE_CSS = `
   display: flex;
   flex-direction: column;
   padding: calc(var(--thunderid-spacing-unit) * 4);
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
+  min-width: 600px;
   font-family: var(--thunderid-typography-fontFamily);
   background: var(--thunderid-color-background-surface);
   border-radius: var(--thunderid-border-radius-large, 8px);
@@ -153,6 +151,7 @@ img.thunderid-user-profile__avatar {
   display: flex;
   align-items: center;
   gap: var(--thunderid-spacing-unit);
+  min-width: 0;
 }
 
 .thunderid-user-profile__field-label {
@@ -176,6 +175,7 @@ img.thunderid-user-profile__avatar {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 350px;
+  min-width: 0;
   text-align: start;
   overflow: hidden;
 }

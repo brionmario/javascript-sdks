@@ -55,8 +55,11 @@ export interface BaseUserDropdownProps {
   onProfileClick?: () => void;
   onProfileModalClose?: () => void;
   onSignOut?: () => void;
+  /** Label for the default profile menu item. Defaults to `'Profile'`. */
+  profileLabel?: string;
   profileContent?: VNode | null;
   showChevron?: boolean;
+  showTriggerLabel?: boolean;
   size?: 'sm' | 'md' | 'lg';
   user?: User | null;
 }
@@ -157,8 +160,12 @@ const BaseUserDropdown: Component = defineComponent({
     onProfileModalClose: {default: undefined, type: Function as PropType<() => void>},
     onSignOut: {default: undefined, type: Function as PropType<() => void>},
     profileContent: {default: null, type: Object as PropType<VNode | null>},
+    /** Label for the default profile menu item. Defaults to `'Profile'`. */
+    profileLabel: {default: 'Profile', type: String},
     /** Show the animated chevron on the trigger. Default `false`. */
     showChevron: {default: false, type: Boolean},
+    /** Show the user's display name as text beside the trigger avatar. Default `false`. */
+    showTriggerLabel: {default: false, type: Boolean},
     /** Controls avatar size on the trigger and spacing density of the menu. */
     size: {default: 'md', type: String as PropType<'sm' | 'md' | 'lg'>},
     user: {default: null, type: Object as PropType<User | null>},
@@ -308,6 +315,7 @@ const BaseUserDropdown: Component = defineComponent({
                 },
                 initials,
               ),
+          props.showTriggerLabel ? h('span', {class: px('user-dropdown__trigger-label')}, displayName) : null,
           props.showChevron ? h('span', {class: px('user-dropdown__chevron')}, [h(ChevronDownIcon, {size: 14})]) : null,
         ],
       );
@@ -357,7 +365,7 @@ const BaseUserDropdown: Component = defineComponent({
                 },
                 type: 'button',
               },
-              [h(UserIcon, {size: 15}), h('span', null, 'Profile')],
+              [h(UserIcon, {size: 15}), h('span', null, props.profileLabel ?? 'Profile')],
             ),
           );
         }

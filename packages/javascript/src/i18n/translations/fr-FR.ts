@@ -106,6 +106,25 @@ const translations: I18nTranslations = {
     'Une erreur est survenue lors de la mise à jour de votre profil. Veuillez réessayer.',
 
   /* |---------------------------------------------------------------| */
+  /* |                        Change Password                        | */
+  /* |---------------------------------------------------------------| */
+
+  'user.change_password.heading': 'Modifier {credential}',
+  'user.change_password.new.label': 'Nouveau {credential}',
+  'user.change_password.new.placeholder': 'Entrez votre nouveau {credentialLower}',
+  'user.change_password.confirm.label': 'Confirmer le nouveau {credential}',
+  'user.change_password.confirm.placeholder': 'Saisissez à nouveau votre nouveau {credentialLower}',
+  'user.change_password.requirements.heading': 'Votre {credentialLower} doit contenir :',
+  'user.change_password.submit': 'Mettre à jour {credential}',
+  'user.change_password.success': 'Votre {credentialLower} a été mis à jour.',
+  'user.change_password.mismatch.error': 'Les {credentialLower}s ne correspondent pas.',
+  'user.change_password.generic.error':
+    'Une erreur est survenue lors de la mise à jour de votre {credentialLower}. Veuillez réessayer.',
+  'user.change_password.unavailable.heading': 'Modification du {credentialLower} indisponible',
+  'user.change_password.unavailable.description': 'Veuillez contacter votre administrateur.',
+  'validation.password.pattern': 'Correspond au format requis',
+
+  /* |---------------------------------------------------------------| */
   /* |                     Organization Switcher                     | */
   /* |---------------------------------------------------------------| */
 

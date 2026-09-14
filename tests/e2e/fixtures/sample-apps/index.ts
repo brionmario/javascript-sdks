@@ -10,15 +10,15 @@
 import {test as base} from '@playwright/test';
 import {BrowserQuickstartPage} from '../../pages/browser-quickstart.page';
 import {ExpressQuickstartPage} from '../../pages/express-quickstart.page';
-import {ThunderIDWebSamplePage} from '../../pages/thunderid-web-sample.page';
+import {ThunderIDAccountPageSamplePage, ThunderIDWebSamplePage} from '../../pages/thunderid-web-sample.page';
 
 interface SampleAppFixtures {
   browserQuickstartPage: BrowserQuickstartPage;
   expressQuickstartPage: ExpressQuickstartPage;
   nextjsQuickstartPage: ThunderIDWebSamplePage;
   nuxtQuickstartPage: ThunderIDWebSamplePage;
-  reactQuickstartPage: ThunderIDWebSamplePage;
-  vueQuickstartPage: ThunderIDWebSamplePage;
+  reactQuickstartPage: ThunderIDAccountPageSamplePage;
+  vueQuickstartPage: ThunderIDAccountPageSamplePage;
 }
 
 export const test = base.extend<SampleAppFixtures>({
@@ -34,11 +34,13 @@ export const test = base.extend<SampleAppFixtures>({
   nuxtQuickstartPage: async ({page}, use) => {
     await use(new ThunderIDWebSamplePage(page));
   },
+  // react/quickstart and vue/quickstart's Nav redirects "Manage Profile" to a full Account page
+  // instead of the SDK's built-in popup — see ThunderIDAccountPageSamplePage's doc comment.
   reactQuickstartPage: async ({page}, use) => {
-    await use(new ThunderIDWebSamplePage(page));
+    await use(new ThunderIDAccountPageSamplePage(page));
   },
   vueQuickstartPage: async ({page}, use) => {
-    await use(new ThunderIDWebSamplePage(page));
+    await use(new ThunderIDAccountPageSamplePage(page));
   },
 });
 

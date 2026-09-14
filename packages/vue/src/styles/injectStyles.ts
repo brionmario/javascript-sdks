@@ -24,6 +24,8 @@ import ANIMATIONS_CSS from './animations.css';
 import DEFAULTS_CSS from './defaults.css';
 
 // Primitives
+import BASE_SIGN_IN_CSS from '../components/auth/sign-in/BaseSignIn.css';
+import CHANGE_CREDENTIAL_CSS from '../components/presentation/change-credential/ChangeCredential.css';
 import LANGUAGE_SWITCHER_CSS from '../components/presentation/language-switcher/LanguageSwitcher.css';
 import USER_DROPDOWN_CSS from '../components/presentation/user-dropdown/UserDropdown.css';
 import USER_PROFILE_CSS from '../components/presentation/user-profile/UserProfile.css';
@@ -40,11 +42,6 @@ import SELECT_CSS from '../components/primitives/Select/Select.css';
 import SPINNER_CSS from '../components/primitives/Spinner/Spinner.css';
 import TEXT_FIELD_CSS from '../components/primitives/TextField/TextField.css';
 import TYPOGRAPHY_CSS from '../components/primitives/Typography/Typography.css';
-
-// Auth
-import BASE_SIGN_IN_CSS from '../components/auth/sign-in/BaseSignIn.css';
-
-// Presentation
 
 /**
  * Assembled CSS for all ThunderID Vue components.
@@ -74,6 +71,7 @@ const STYLES: string = [
   // Auth
   BASE_SIGN_IN_CSS,
   // Presentation
+  CHANGE_CREDENTIAL_CSS,
   LANGUAGE_SWITCHER_CSS,
   USER_DROPDOWN_CSS,
   USER_PROFILE_CSS,

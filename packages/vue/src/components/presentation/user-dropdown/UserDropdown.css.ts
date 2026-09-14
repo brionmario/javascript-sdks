@@ -19,6 +19,7 @@
  *   __item--danger                – destructive action (red text/hover)
  *
  * Elements:
+ *   __trigger-label               – display name beside the trigger avatar (showTriggerLabel)
  *   __chevron                     – rotates 180° when menu is open
  *   __menu-header                 – user identity section at top of menu
  *   __menu-header-avatar          – gradient avatar circle in header
@@ -64,6 +65,17 @@ const USER_DROPDOWN_CSS = `
 .thunderid-user-dropdown__trigger--open {
   border-color: var(--thunderid-color-primary-main);
   box-shadow: 0 0 0 3px var(--thunderid-focus-ring-color);
+}
+
+.thunderid-user-dropdown__trigger-label {
+  color: var(--thunderid-color-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: calc(var(--thunderid-spacing-unit) * 0.5);
 }
 
 .thunderid-user-dropdown__trigger:focus-visible {

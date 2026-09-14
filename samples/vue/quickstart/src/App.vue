@@ -5,6 +5,7 @@ import Nav from './components/Nav.vue'
 import ConfigNotice from './components/ConfigNotice.vue'
 import HomePage from './pages/HomePage.vue'
 import TokenDebugPage from './pages/TokenDebugPage.vue'
+import AccountPage from './pages/AccountPage.vue'
 
 const REQUIRED_ENV_VARS = ['VITE_THUNDERID_CLIENT_ID', 'VITE_THUNDERID_BASE_URL']
 const missingEnvVars = REQUIRED_ENV_VARS.filter((key) => !import.meta.env[key])
@@ -33,6 +34,7 @@ const dark = ref(false)
 
       <HomePage v-if="page === 'home'" :dark="dark" />
       <TokenDebugPage v-else-if="page === 'token'" />
+      <AccountPage v-else-if="page === 'account'" />
     </div>
   </ThunderIDProvider>
 </template>

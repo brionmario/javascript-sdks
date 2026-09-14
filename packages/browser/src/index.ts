@@ -37,6 +37,7 @@ export {default as hasAuthParamsInUrl} from './utils/hasAuthParamsInUrl';
 export {default as hasCalledForThisInstanceInUrl} from './utils/hasCalledForThisInstanceInUrl';
 export {default as navigate} from './utils/navigate';
 export {default as http} from './utils/http';
+export {default as createHttpClientFetcher} from './utils/createHttpClientFetcher';
 export {default as handleWebAuthnAuthentication} from './utils/handleWebAuthnAuthentication';
 export {default as resolveEmojiUrisInHtml} from './utils/resolveEmojiUrisInHtml';
 export {default as isAvatarUri, AVATAR_URI_SCHEME} from './utils/isAvatarUri';

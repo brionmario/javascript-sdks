@@ -104,6 +104,24 @@ const translations: I18nTranslations = {
   'user.profile.update.generic.error': 'プロフィール更新中にエラーが発生しました。もう一度お試しください。',
 
   /* |---------------------------------------------------------------| */
+  /* |                        Change Password                        | */
+  /* |---------------------------------------------------------------| */
+
+  'user.change_password.heading': '{credential}の変更',
+  'user.change_password.new.label': '新しい{credential}',
+  'user.change_password.new.placeholder': '新しい{credentialLower}を入力してください',
+  'user.change_password.confirm.label': '新しい{credential}の確認',
+  'user.change_password.confirm.placeholder': '新しい{credentialLower}を再入力してください',
+  'user.change_password.requirements.heading': '{credentialLower}の条件:',
+  'user.change_password.submit': '{credential}を更新',
+  'user.change_password.success': '{credentialLower}を更新しました。',
+  'user.change_password.mismatch.error': '{credentialLower}が一致しません。',
+  'user.change_password.generic.error': '{credentialLower}の更新中にエラーが発生しました。もう一度お試しください。',
+  'user.change_password.unavailable.heading': '{credential}の変更はできません',
+  'user.change_password.unavailable.description': '管理者にお問い合わせください。',
+  'validation.password.pattern': '必要な形式に一致しています',
+
+  /* |---------------------------------------------------------------| */
   /* |                     Organization Switcher                     | */
   /* |---------------------------------------------------------------| */
 

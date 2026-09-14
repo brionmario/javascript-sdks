@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { SignedIn, SignedOut, SignInButton, UserDropdown } from '@thunderid/vue'
+import { SignedIn, SignedOut, SignInButton, UserDropdown, useTheme } from '@thunderid/vue'
 
 const props = defineProps({
   page: { type: String, default: 'home' },
@@ -15,8 +15,11 @@ const menuItems = computed(() => [
   { label: 'Token debug', onClick: () => emit('update:page', 'token') },
 ])
 
+const { toggleTheme } = useTheme()
+
 function toggleDark() {
   emit('update:dark', !props.dark)
+  toggleTheme()
 }
 </script>
 
@@ -60,7 +63,12 @@ function toggleDark() {
       </button>
 
       <SignedIn>
-        <UserDropdown :show-trigger-label="true" :menu-items="menuItems" />
+        <UserDropdown
+          :show-trigger-label="true"
+          :menu-items="menuItems"
+          profile-label="Manage Account"
+          :on-manage-profile="() => emit('update:page', 'account')"
+        />
       </SignedIn>
 
       <SignedOut>
