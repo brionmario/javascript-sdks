@@ -1,4 +1,4 @@
-name: 🌙 E2E Nightly (latest ThunderID)
+name: 🌙 Nightly E2E
 
 # Runs the same E2E suite as pr-builder.yml's `e2e` job, against the same always-latest ThunderID
 # release. The two differ only in trigger: this one runs on a schedule regardless of PR activity,
@@ -13,8 +13,8 @@ env:
   NODE_VERSION: "lts/*"
 
 jobs:
-  e2e-nightly:
-    name: 🌙 E2E (sample apps, latest ThunderID)
+  e2e:
+    name: 🎭 E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 40
     # Least privilege: this job never pushes, comments, or writes to the repo — only the default

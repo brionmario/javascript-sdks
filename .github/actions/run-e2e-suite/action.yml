@@ -2,7 +2,7 @@ name: Run E2E Suite
 description: >
   Installs and starts a local ThunderID release, imports the sample apps' OAuth2 clients, starts
   all six sample apps against the workspace's own SDK packages, and runs the Playwright E2E suite
-  against them. Shared by pr-builder.yml's label-gated `e2e` job and e2e-nightly.yml's scheduled
+  against them. Shared by pr-builder.yml's label-gated `e2e` job and nightly.yml's scheduled
   run against the latest ThunderID release — the two differ only in trigger, not in what they run.
   Requires the repo to already be checked out (a local composite action can't check itself out).
 
