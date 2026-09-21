@@ -27,4 +27,4 @@ jobs:
       contents: read
       pull-requests: write
     # Pin to a tag once one is cut, so shared workflow changes land here deliberately.
-    uses: thunder-id/thunderid/.github/workflows/sdk-parity-check.yml@main
+    uses: brionmario/thunderid/.github/workflows/sdk-parity-check.yml@sdk-parity-spec-trim
