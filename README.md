@@ -16,6 +16,13 @@ JavaScript SDKs for ThunderID. Provides authentication and user management for b
 | [`@thunderid/nuxt`](packages/nuxt) | ![npm](https://img.shields.io/npm/v/@thunderid/nuxt) | Nuxt SDK |
 | [`@thunderid/express`](packages/express) | ![npm](https://img.shields.io/npm/v/@thunderid/express) | Express.js SDK |
 | [`@thunderid/tanstack-router`](packages/tanstack-router) | ![npm](https://img.shields.io/npm/v/@thunderid/tanstack-router) | TanStack Router integration |
+| [`@thunderid/better-auth`](packages/better-auth) | ![npm](https://img.shields.io/npm/v/@thunderid/better-auth) | Better Auth provider helper |
+
+## Contributing
+
+Please refer to the [Contributing Guide](https://thunderid.dev/community/overview) for the different ways to contribute to this project and the relevant guidelines.
+
+For code contributions, refer to the [Contributing Code](https://thunderid.dev/community/contributing/contributing-code/prerequisites/) section for details on the prerequisites and instructions for running ThunderID in development mode.
 
 ## License
 
