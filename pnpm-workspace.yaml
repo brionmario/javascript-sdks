@@ -104,6 +104,14 @@ overrides:
   # `@mapbox/node-pre-gyp`@latest already depends on `tar: ^7.4.0`, which permits 7.5.21 — this pin
   # can likely be dropped once nitropack/@vercel/nft's own lockfile entries are refreshed.
   tar: 7.5.21
+  # JUSTIFICATION: Fixes GHSA-587h-7wmj-h5pm (2026-10-21), where launch-editor's `fs.existsSync()`
+  # existence check can be bypassed on Windows; the 8.x line needs >=8.2.4. Transitive via the
+  # vite 8 that pnpm auto-installs for `vitest`'s peer range (`@thunderid/eslint-plugin` >
+  # `@vitest/eslint-plugin` > `vitest` > `vite`). `vitest` already permits 8.2.4, but pnpm keeps the
+  # peer at the locked 8.2.1 through `pnpm update` and `pnpm dedupe`. Drop the pin once a fresh
+  # lockfile resolves vite 8 at >=8.2.4 on its own. The 6.x and 7.x lines and launch-editor took
+  # their patched releases (6.4.4, 7.3.7, 2.14.2) through a plain `pnpm update`.
+  vite@8: 8.2.4
 
 auditConfig:
   ignoreGhsas:
