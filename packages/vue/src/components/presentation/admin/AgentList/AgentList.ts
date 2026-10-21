@@ -1,0 +1,32 @@
+// Copyright 2026 The ThunderID Authors
+// SPDX-License-Identifier: Apache-2.0
+
+import type {AgentListResponse, BasicAgent} from '@thunderid/browser';
+import type {Component} from 'vue';
+import BaseAgentList from './BaseAgentList';
+import useGetAgents from '../../../../composables/agents/useGetAgents';
+import createConnectedAdminList from '../shared/createConnectedAdminList';
+
+/**
+ * Lists the agents the signed-in user is allowed to see, a page at a time.
+ *
+ * Props: `limit`, `selectedAgentId`, `onSelect` (`@select`), `title`, `description`, `className`,
+ * `preferences`. Slots: `actions`.
+ *
+ * @example
+ * ```vue
+ * <AgentList @select="(agent) => (selectedAgentId = agent.id)" />
+ * ```
+ */
+const AgentList: Component = createConnectedAdminList<AgentListResponse, BasicAgent>({
+  base: BaseAgentList,
+  errorKey: 'admin.agents.list.error',
+  name: 'AgentList',
+  query: (params: () => Record<string, unknown>) => useGetAgents(() => params() as {limit?: number; offset?: number}),
+  rows: (data: AgentListResponse | undefined) => data?.agents ?? [],
+  rowsProp: 'agents',
+  selectedProp: 'selectedAgentId',
+  total: (data: AgentListResponse | undefined) => data?.totalResults,
+});
+
+export default AgentList;
