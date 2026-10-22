@@ -47,7 +47,7 @@ import {
 } from './CustomRenderWidgets';
 import {num, str} from './storyHelpers';
 import {Narrow} from './StoryWidgets';
-import type {Action, Args, ComponentDef, PropControl, Snippet} from './types';
+import type {Action, Args, ComponentDef, PropControl, Snippet, StoryDef} from './types';
 
 /** The `source` control, with the custom renderer as a third option. */
 const SOURCE_WITH_CUSTOM: PropControl = {
@@ -417,7 +417,7 @@ const RENDER: Record<string, (args: Args, action: Action) => ReactNode> = {
 };
 
 /**
- * Adds a "Custom (MUI)" story after an admin component's other stories. It renders the Base component
+ * Replaces an admin component's live stories with a "Custom (MUI)" story. It renders the Base component
  * with sample data through its `children` render function, drawn with MUI.
  */
 export const withCustomStory = (def: ComponentDef): ComponentDef => {
@@ -432,6 +432,10 @@ export const withCustomStory = (def: ComponentDef): ComponentDef => {
     controls: def.controls.map((control: PropControl) => (control.name === 'source' ? SOURCE_WITH_CUSTOM : control)),
     render: (args: Args, action: Action) =>
       isCustom(args) ? <Mui>{render(args, action)}</Mui> : def.render(args, action),
-    stories: [...def.stories, {args: {source: 'custom'}, id: 'custom', name: 'Custom (MUI)'}],
+    // The tree offers sample-data stories only; the live variants stay reachable through the source control.
+    stories: [
+      ...def.stories.filter((story: StoryDef) => story.args?.['source'] !== 'live'),
+      {args: {source: 'custom'}, id: 'custom', name: 'Custom (MUI)'},
+    ],
   };
 };
