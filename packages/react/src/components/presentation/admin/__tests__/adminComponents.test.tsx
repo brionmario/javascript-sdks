@@ -13,7 +13,9 @@ import BaseAgentCreate from '../AgentCreate/BaseAgentCreate';
 import BaseGroupCreate from '../GroupCreate/BaseGroupCreate';
 import BaseGroupMembers from '../GroupMembers/BaseGroupMembers';
 import GroupMembers from '../GroupMembers/GroupMembers';
+import AgentList from '../AgentList/AgentList';
 import BaseRoleAssignments from '../RoleAssignments/BaseRoleAssignments';
+import RoleAssignments from '../RoleAssignments/RoleAssignments';
 import BaseRolePermissions from '../RolePermissions/BaseRolePermissions';
 import RolePermissions from '../RolePermissions/RolePermissions';
 import BaseUserCreate from '../UserCreate/BaseUserCreate';
@@ -470,7 +472,7 @@ describe('render props', () => {
       </BaseGroupCreate>,
     );
 
-    expect((screen.getByRole('button', {name: 'Save'})).disabled).toBe(true);
+    expect(screen.getByRole('button', {name: 'Save'}).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText('Group name'), {target: {value: '  Engineering '}});
     fireEvent.click(screen.getByRole('button', {name: 'Save'}));
     expect(onSubmit).toHaveBeenCalledWith({description: undefined, name: 'Engineering'});
@@ -566,5 +568,92 @@ describe('render props', () => {
     );
 
     expect(screen.getAllByRole('listitem').map((item: HTMLElement) => item.textContent)).toEqual(['Orders API: read']);
+  });
+});
+
+describe('search and filters', () => {
+  it('searches users on the server by the chosen attribute', async () => {
+    const fetcher: FetcherMock = vi
+      .fn<ApiFetcher>()
+      .mockResolvedValue(respond({count: 0, startIndex: 1, totalResults: 0, users: []}));
+
+    renderWithProviders(<UserList />, {fetcher});
+
+    fireEvent.change(await screen.findByRole('combobox', {name: 'Search by'}), {target: {value: 'email'}});
+    fireEvent.change(screen.getByRole('searchbox', {name: 'Email'}), {target: {value: ' ada@example.com '}});
+    fireEvent.click(screen.getByRole('button', {name: 'Search'}));
+
+    await waitFor(() => {
+      const url: string = fetcher.mock.calls[fetcher.mock.calls.length - 1][0];
+      expect(new URL(url).searchParams.get('filter')).toBe('email eq "ada@example.com"');
+    });
+    expect(await screen.findByText('No matches for "ada@example.com". Search matches the whole value.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Clear search'}));
+    await waitFor(() => {
+      const url: string = fetcher.mock.calls[fetcher.mock.calls.length - 1][0];
+      expect(new URL(url).searchParams.has('filter')).toBe(false);
+    });
+  });
+
+  it('hides the user search when a fixed filter is given', () => {
+    renderWithProviders(<UserList filter={'username eq "ada"'} />, {
+      fetcher: vi.fn<ApiFetcher>().mockResolvedValue(respond({users: []})),
+    });
+
+    expect(screen.queryByRole('search')).toBeNull();
+  });
+
+  it('searches agents by name', async () => {
+    const fetcher: FetcherMock = vi
+      .fn<ApiFetcher>()
+      .mockResolvedValue(respond({agents: [], count: 0, startIndex: 1, totalResults: 0}));
+
+    renderWithProviders(<AgentList />, {fetcher});
+
+    fireEvent.change(await screen.findByRole('searchbox', {name: 'Name'}), {target: {value: 'Concierge'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Search'}));
+
+    await waitFor(() => {
+      const url: string = fetcher.mock.calls[fetcher.mock.calls.length - 1][0];
+      expect(new URL(url).searchParams.get('filter')).toBe('name eq "Concierge"');
+    });
+  });
+
+  it('narrows role assignments to one assignee type on the server', async () => {
+    const fetcher: FetcherMock = vi
+      .fn<ApiFetcher>()
+      .mockResolvedValue(respond({assignments: [], count: 0, startIndex: 1, totalResults: 0}));
+
+    renderWithProviders(<RoleAssignments roleId="r-1" />, {fetcher});
+
+    fireEvent.change(await screen.findByRole('combobox', {name: 'Assignee type'}), {target: {value: 'group'}});
+
+    await waitFor(() => {
+      const url: string = fetcher.mock.calls[fetcher.mock.calls.length - 1][0];
+      expect(new URL(url).searchParams.get('type')).toBe('group');
+    });
+  });
+
+  it('hands the search to a list render function', () => {
+    const onSearch: Mock = vi.fn();
+
+    renderWithProviders(
+      <BaseUserList
+        users={users}
+        search={{attribute: 'username', value: 'aiko'}}
+        searchAttributes={[{label: 'Username', value: 'username'}]}
+        onSearch={onSearch}
+      >
+        {({search, onSearch: apply}): ReactNode => (
+          <button type="button" onClick={(): void => apply?.(null)}>
+            {`Searching ${search?.attribute}=${search?.value}`}
+          </button>
+        )}
+      </BaseUserList>,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Searching username=aiko'}));
+    expect(onSearch).toHaveBeenCalledWith(null);
   });
 });

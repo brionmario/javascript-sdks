@@ -95,8 +95,8 @@ const createManagementClient = (resolve: ManagementRequestConfigResolver): Thund
         deleteAgent({agentId: requireId(agentId, 'deleteAgent'), ...(await config('agents', options))}),
       get: async (agentId, options) =>
         getAgent({agentId: requireId(agentId, 'getAgent'), ...(await config('agents', options))}),
-      list: async ({limit, offset, ...options} = {}) =>
-        getAgents({limit, offset, ...(await config('agents', options))}),
+      list: async ({filter, limit, offset, ...options} = {}) =>
+        getAgents({filter, limit, offset, ...(await config('agents', options))}),
       listGroups: async (agentId, {limit, offset, ...options} = {}) =>
         getAgentGroups({
           agentId: requireId(agentId, 'getAgentGroups'),

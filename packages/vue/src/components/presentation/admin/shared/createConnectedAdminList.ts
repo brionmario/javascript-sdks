@@ -1,8 +1,8 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {toManagementErrorMessage} from '@thunderid/browser';
-import type {Preferences} from '@thunderid/browser';
+import {toEqualityFilter, toManagementErrorMessage} from '@thunderid/browser';
+import type {Preferences, SelectOption} from '@thunderid/browser';
 import {
   type Component,
   type ComponentObjectPropsOptions,
@@ -14,6 +14,7 @@ import {
   h,
   ref,
 } from 'vue';
+import type {AdminSearchValue} from './AdminSearch';
 import useAdminTranslation, {type AdminTranslate} from './useAdminTranslation';
 import type {ResourceQueryResult} from '../../../../composables/useResourceQuery';
 
@@ -35,6 +36,11 @@ export interface ConnectedAdminListDefinition<TData, TRow> {
   rows: (data: TData | undefined) => TRow[];
   /** Name of the base list's rows prop. */
   rowsProp: string;
+  /**
+   * The attributes the list can be searched by on the server, with translated labels. The list offers
+   * no search when omitted.
+   */
+  searchAttributes?: (t: AdminTranslate) => SelectOption[];
   /** Name of the selected row prop. */
   selectedProp: string;
   /** Extracts the total from a page. */
@@ -62,6 +68,10 @@ const createConnectedAdminList = <TData, TRow>(definition: ConnectedAdminListDef
       onSelect: {default: undefined, type: Function as PropType<(row: TRow) => void>},
       /** Component-level preferences, for example `i18n.bundles` overrides. */
       preferences: {default: undefined, type: Object as PropType<Preferences>},
+      /** Whether to show the search form, when the list can be searched. The server matches the whole value. */
+      searchable: {default: true, type: Boolean},
+      /** The attributes to offer in the search form, with translated labels. Defaults to the list's own. */
+      searchAttributes: {default: undefined, type: Array as PropType<SelectOption[]>},
       /** Heading of the list. Pass an empty string to hide it. */
       title: {default: undefined, type: String},
       [definition.selectedProp]: {default: undefined, type: String},
@@ -70,15 +80,23 @@ const createConnectedAdminList = <TData, TRow>(definition: ConnectedAdminListDef
     setup(props: Record<string, unknown>, {slots}: SetupContext): () => VNode {
       const t: AdminTranslate = useAdminTranslation(() => props['preferences'] as Preferences | undefined);
       const offset: Ref<number> = ref(0);
+      const search: Ref<AdminSearchValue | null> = ref(null);
       const extraKeys: string[] = Object.keys(definition.extraProps ?? {});
       const query: ResourceQueryResult<TData> = definition.query(() => ({
         ...Object.fromEntries(extraKeys.map((key: string) => [key, props[key]])),
+        // A fixed `filter` prop wins: the server takes one expression.
+        filter:
+          (props['filter'] as string | undefined) ??
+          (search.value ? toEqualityFilter(search.value.attribute, search.value.value) : undefined),
         limit: props['limit'] as number,
         offset: offset.value,
       }));
 
-      return (): VNode =>
-        h(
+      return (): VNode => {
+        const canSearch: boolean =
+          Boolean(definition.searchAttributes) && (props['searchable'] as boolean) && !props['filter'];
+
+        return h(
           definition.base,
           {
             className: props['className'],
@@ -90,8 +108,17 @@ const createConnectedAdminList = <TData, TRow>(definition: ConnectedAdminListDef
             onPageChange: (next: number): void => {
               offset.value = next;
             },
+            onSearch: canSearch
+              ? (next: AdminSearchValue | null): void => {
+                  search.value = next;
+                  offset.value = 0;
+                }
+              : undefined,
             onSelect: props['onSelect'],
             preferences: props['preferences'],
+            search: search.value,
+            searchAttributes:
+              (props['searchAttributes'] as SelectOption[] | undefined) ?? definition.searchAttributes?.(t),
             [definition.rowsProp]: definition.rows(query.data.value),
             [definition.selectedProp]: props[definition.selectedProp],
             title: props['title'],
@@ -99,6 +126,7 @@ const createConnectedAdminList = <TData, TRow>(definition: ConnectedAdminListDef
           },
           {...slots},
         );
+      };
     },
   });
 

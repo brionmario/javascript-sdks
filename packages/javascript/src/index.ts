@@ -347,6 +347,7 @@ export type {ThunderIDWordmarkPath} from './constants/ThunderIDWordmark';
 export {default as getTokenPermissions} from './utils/getTokenPermissions';
 export {default as createResourceInvalidator, fallbackResourceInvalidator} from './utils/createResourceInvalidator';
 export type {ResourceInvalidator, ResourceQueryKey} from './utils/createResourceInvalidator';
+export {default as toEqualityFilter} from './utils/toEqualityFilter';
 export {default as toManagementErrorMessage} from './utils/toManagementErrorMessage';
 export {default as resolveManagedIdentityName} from './utils/resolveManagedIdentityName';
 export {default as hasPermission} from './utils/hasPermission';

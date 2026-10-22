@@ -6,6 +6,7 @@ import {mount} from '@vue/test-utils';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {h, nextTick} from 'vue';
 import BaseAgentDetails from '../../components/presentation/admin/AgentDetails/BaseAgentDetails';
+import AgentList from '../../components/presentation/admin/AgentList/AgentList';
 import type {BaseAgentDetailsRenderProps} from '../../components/presentation/admin/AgentDetails/BaseAgentDetails';
 import BaseGroupCreate from '../../components/presentation/admin/GroupCreate/BaseGroupCreate';
 import type {BaseGroupCreateRenderProps} from '../../components/presentation/admin/GroupCreate/BaseGroupCreate';
@@ -13,6 +14,7 @@ import GroupList from '../../components/presentation/admin/GroupList/GroupList';
 import BaseGroupMembers from '../../components/presentation/admin/GroupMembers/BaseGroupMembers';
 import type {BaseGroupMembersRenderProps} from '../../components/presentation/admin/GroupMembers/BaseGroupMembers';
 import RoleCreate from '../../components/presentation/admin/RoleCreate/RoleCreate';
+import RoleAssignments from '../../components/presentation/admin/RoleAssignments/RoleAssignments';
 import BaseRolePermissions from '../../components/presentation/admin/RolePermissions/BaseRolePermissions';
 import type {BaseRolePermissionsRenderProps} from '../../components/presentation/admin/RolePermissions/BaseRolePermissions';
 import type {AdminListRenderProps} from '../../components/presentation/admin/shared/createAdminList';
@@ -22,6 +24,7 @@ import BaseUserDetails from '../../components/presentation/admin/UserDetails/Bas
 import type {BaseUserDetailsRenderProps} from '../../components/presentation/admin/UserDetails/BaseUserDetails';
 import UserDetails from '../../components/presentation/admin/UserDetails/UserDetails';
 import BaseUserList from '../../components/presentation/admin/UserList/BaseUserList';
+import UserList from '../../components/presentation/admin/UserList/UserList';
 import {createManagementContext, jsonResponse, translate} from '../helpers/managementContext';
 import {chooseOption, findAllSelectControls} from '../helpers/selectControl';
 
@@ -466,6 +469,68 @@ describe('admin components (vue)', () => {
       );
 
       expect(wrapper.findAll('li').map((item) => item.text())).toEqual(['Orders API: read']);
+    });
+  });
+
+  describe('search and filters', () => {
+    const lastUrl = (context: ReturnType<typeof createManagementContext>): URL =>
+      new URL(context.fetcher.mock.calls[context.fetcher.mock.calls.length - 1][0] as string);
+
+    it('searches users on the server by the chosen attribute and clears the search', async () => {
+      const context = createManagementContext();
+      context.fetcher.mockResolvedValue(jsonResponse({count: 0, startIndex: 1, totalResults: 0, users: []}));
+      const {wrapper} = mountWith(UserList, {}, context);
+      await vi.waitFor(() => expect(context.fetcher).toHaveBeenCalled());
+
+      const form = wrapper.find('form[role="search"]');
+      await chooseOption(findAllSelectControls(form)[0], translate('admin.users.list.search.email'));
+      await form.find('input').setValue(' ada@example.com ');
+      await form.trigger('submit');
+
+      await vi.waitFor(() => expect(lastUrl(context).searchParams.get('filter')).toBe('email eq "ada@example.com"'));
+      await vi.waitFor(() =>
+        expect(wrapper.text()).toContain(translate('admin.common.search.no_results', {value: 'ada@example.com'})),
+      );
+
+      const clear = wrapper
+        .findAll('form[role="search"] button')
+        .find((button) => button.text() === translate('admin.common.search.clear'));
+      await clear!.trigger('click');
+      await vi.waitFor(() => expect(lastUrl(context).searchParams.has('filter')).toBe(false));
+    });
+
+    it('hides the user search when a fixed filter is given', async () => {
+      const context = createManagementContext();
+      context.fetcher.mockResolvedValue(jsonResponse({users: []}));
+      const {wrapper} = mountWith(UserList, {filter: 'username eq "ada"'}, context);
+
+      await vi.waitFor(() => expect(context.fetcher).toHaveBeenCalled());
+      expect(wrapper.find('form[role="search"]').exists()).toBe(false);
+      expect(lastUrl(context).searchParams.get('filter')).toBe('username eq "ada"');
+    });
+
+    it('searches agents by name', async () => {
+      const context = createManagementContext();
+      context.fetcher.mockResolvedValue(jsonResponse({agents: [], count: 0, startIndex: 1, totalResults: 0}));
+      const {wrapper} = mountWith(AgentList, {}, context);
+      await vi.waitFor(() => expect(context.fetcher).toHaveBeenCalled());
+
+      const form = wrapper.find('form[role="search"]');
+      await form.find('input').setValue('Concierge');
+      await form.trigger('submit');
+
+      await vi.waitFor(() => expect(lastUrl(context).searchParams.get('filter')).toBe('name eq "Concierge"'));
+    });
+
+    it('narrows role assignments to one assignee type on the server', async () => {
+      const context = createManagementContext();
+      context.fetcher.mockResolvedValue(jsonResponse({assignments: [], count: 0, startIndex: 1, totalResults: 0}));
+      const {wrapper} = mountWith(RoleAssignments, {roleId: 'r1'}, context);
+      await vi.waitFor(() => expect(context.fetcher).toHaveBeenCalled());
+
+      await chooseOption(findAllSelectControls(wrapper)[0], translate('admin.common.identity_types.group'));
+
+      await vi.waitFor(() => expect(lastUrl(context).searchParams.get('type')).toBe('group'));
     });
   });
 });

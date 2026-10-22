@@ -1,6 +1,8 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import {SelectOption} from '@thunderid/browser';
+import {AdminSearchValue} from './AdminSearch';
 import {DataTableColumn} from '../../../primitives/DataTable/DataTable';
 
 /**
@@ -22,10 +24,22 @@ export interface AdminListRenderProps<T> {
    */
   onPageChange?: (offset: number) => void;
   /**
+   * Applies a search, or clears it with `null`. Undefined when the list cannot be searched.
+   */
+  onSearch?: (search: AdminSearchValue | null) => void;
+  /**
    * Chooses a row. Undefined when rows are not selectable.
    */
   onSelect?: (row: T) => void;
   rows: T[];
+  /**
+   * The search currently applied, if any.
+   */
+  search?: AdminSearchValue | null;
+  /**
+   * The attributes that can be searched, with translated labels.
+   */
+  searchAttributes?: SelectOption[];
   selectedRowId?: string;
   /**
    * Total number of rows on the server, or the number of rows given when unknown.

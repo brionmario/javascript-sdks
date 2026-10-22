@@ -212,6 +212,7 @@ export {default as BaseLanguageSwitcher} from './components/presentation/languag
 export {default as DataTable} from './components/primitives/DataTable/DataTable';
 export type {DataTableColumn, DataTablePagination} from './components/primitives/DataTable/DataTable';
 export type {AdminListRenderProps} from './components/presentation/admin/shared/createAdminList';
+export type {AdminSearchValue} from './components/presentation/admin/shared/AdminSearch';
 export type {AdminFormRenderProps} from './components/presentation/admin/shared/adminFormProps';
 export {default as BaseUserList} from './components/presentation/admin/UserList/BaseUserList';
 export {default as UserList} from './components/presentation/admin/UserList/UserList';

@@ -5,6 +5,7 @@ import type {RoleAssigneeType, RoleAssignment, RoleAssignmentInput, Preferences}
 import {type Component, type PropType, type SetupContext, type VNode, type VNodeChild, defineComponent, h} from 'vue';
 import Button from '../../../primitives/Button/Button';
 import DataTable, {type DataTableColumn} from '../../../primitives/DataTable/DataTable';
+import Select from '../../../primitives/Select/Select';
 import AdminSection from '../shared/AdminSection';
 import IdentityPicker, {type IdentityCandidate} from '../shared/IdentityPicker';
 import useAdminTranslation, {type AdminTranslate} from '../shared/useAdminTranslation';
@@ -18,9 +19,11 @@ type BaseRoleAssignmentsProps = Readonly<{
   isMutating: boolean;
   assignments: RoleAssignment[];
   onAssign: ((assignment: RoleAssignmentInput) => void) | undefined;
+  onTypeFilterChange: ((type: RoleAssigneeType | null) => void) | undefined;
   onUnassign: ((assignment: RoleAssignment) => void) | undefined;
   preferences: Preferences | undefined;
   title: string | undefined;
+  typeFilter: RoleAssigneeType | null;
 }>;
 
 const ASSIGNEE_TYPES: RoleAssigneeType[] = ['user', 'group', 'agent', 'app'];
@@ -41,7 +44,11 @@ export interface BaseRoleAssignmentsRenderProps {
   /** Assigns the role. Undefined when assigning is not allowed. */
   onAssign?: (assignment: RoleAssignmentInput) => void;
   /** Removes an assignment. Undefined when unassigning is not allowed. */
+  /** Shows only one assignee type, or every type with `null`. Undefined when the list cannot be filtered. */
+  onTypeFilterChange?: (type: RoleAssigneeType | null) => void;
   onUnassign?: (assignment: RoleAssignment) => void;
+  /** The assignee type the list is narrowed to, or `null` for every type. */
+  typeFilter: RoleAssigneeType | null;
 }
 
 /**
@@ -77,11 +84,18 @@ const BaseRoleAssignments: Component = defineComponent({
     /** Assigns the role. Also available as `@assign`. */
     onAssign: {default: undefined, type: Function as PropType<(assignment: RoleAssignmentInput) => void>},
     /** Removes an assignment. The remove buttons are shown only when set. Also available as `@unassign`. */
+    /**
+     * Narrows the list to one assignee type on the server, or back to every type with `null`. The type
+     * filter shows only when set. Also available as `@type-filter-change`.
+     */
+    onTypeFilterChange: {default: undefined, type: Function as PropType<(type: RoleAssigneeType | null) => void>},
     onUnassign: {default: undefined, type: Function as PropType<(assignment: RoleAssignment) => void>},
     /** Component-level preferences, for example `i18n.bundles` overrides. */
     preferences: {default: undefined, type: Object as PropType<Preferences>},
     /** Heading of the section. Pass an empty string to hide it. */
     title: {default: undefined, type: String},
+    /** The assignee type the list is narrowed to, or `null` for every type. */
+    typeFilter: {default: null, type: String as PropType<RoleAssigneeType | null>},
   },
   setup(props: BaseRoleAssignmentsProps, {slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
@@ -130,7 +144,9 @@ const BaseRoleAssignments: Component = defineComponent({
           isLoading: props.isLoading,
           isMutating: props.isMutating,
           onAssign: candidates ? onAssign : undefined,
+          onTypeFilterChange: props.onTypeFilterChange,
           onUnassign,
+          typeFilter: props.typeFilter,
         };
 
         return h('div', {class: props.className}, slots['default'](renderProps));
@@ -159,6 +175,24 @@ const BaseRoleAssignments: Component = defineComponent({
                     (type: RoleAssigneeType) => ({label: t(`admin.common.identity_types.${type}`), value: type}),
                   ),
                 })
+              : null,
+            props.onTypeFilterChange
+              ? h('div', {style: {maxWidth: '16rem'}}, [
+                  h(Select, {
+                    label: t('admin.common.filters.type'),
+                    modelValue: props.typeFilter ?? '',
+                    name: 'assigneeType',
+                    'onUpdate:modelValue': (value: string): void =>
+                      props.onTypeFilterChange?.((value || null) as RoleAssigneeType | null),
+                    options: [
+                      {label: t('admin.common.filters.all_types'), value: ''},
+                      ...(['user', 'group', 'agent', 'app'] as RoleAssigneeType[]).map((type: RoleAssigneeType) => ({
+                        label: t(`admin.common.identity_types.${type}`),
+                        value: type,
+                      })),
+                    ],
+                  }),
+                ])
               : null,
             h(DataTable, {
               caption: props.title?.length ? props.title : t('admin.roles.assignments.title'),

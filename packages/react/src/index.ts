@@ -201,6 +201,7 @@ export {default as UserProfile} from './components/presentation/UserProfile/User
 export * from './components/presentation/UserProfile/UserProfile';
 
 export * from './components/presentation/admin/shared/AdminListRenderProps';
+export type {AdminSearchValue} from './components/presentation/admin/shared/AdminSearch';
 
 export {default as BaseUserList} from './components/presentation/admin/UserList/BaseUserList';
 export * from './components/presentation/admin/UserList/BaseUserList';

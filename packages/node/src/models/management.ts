@@ -102,7 +102,7 @@ export interface ThunderIDNodeManagementClient {
     create(payload: CreateAgentRequest, options?: ManagementCallOptions): Promise<Agent>;
     delete(agentId: string, options?: ManagementCallOptions): Promise<void>;
     get(agentId: string, options?: ManagementCallOptions): Promise<Agent>;
-    list(options?: ManagementListOptions): Promise<AgentListResponse>;
+    list(options?: ManagementCallOptions & ApiFilteringParams): Promise<AgentListResponse>;
     listGroups(agentId: string, options?: ManagementListOptions): Promise<MembershipGroupListResponse>;
     listRoles(agentId: string, options?: ManagementListOptions): Promise<AgentRoleListResponse>;
     update(agentId: string, payload: UpdateAgentRequest, options?: ManagementCallOptions): Promise<Agent>;

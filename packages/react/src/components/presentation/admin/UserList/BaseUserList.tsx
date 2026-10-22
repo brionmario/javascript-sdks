@@ -1,12 +1,13 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {resolveManagedIdentityName, ManagedUser, Preferences} from '@thunderid/browser';
+import {resolveManagedIdentityName, ManagedUser, Preferences, SelectOption} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode} from 'react';
 import useTranslation from '../../../../hooks/useTranslation';
 import {Avatar} from '../../../primitives/Avatar/Avatar';
 import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTable';
 import {AdminListRenderProps} from '../shared/AdminListRenderProps';
+import AdminSearch, {AdminSearchValue} from '../shared/AdminSearch';
 import AdminSection from '../shared/AdminSection';
 
 /**
@@ -40,10 +41,23 @@ export interface BaseUserListProps {
    */
   onPageChange?: (offset: number) => void;
   /**
+   * Applies a search on the server, or clears it with `null`. The search form shows only when this and
+   * `searchAttributes` are set.
+   */
+  onSearch?: (search: AdminSearchValue | null) => void;
+  /**
    * Called when a user is chosen. Rows are selectable only when set.
    */
   onSelect?: (user: ManagedUser) => void;
   preferences?: Preferences;
+  /**
+   * The search currently applied, if any. While set, an empty page says nothing matched.
+   */
+  search?: AdminSearchValue | null;
+  /**
+   * The user attributes that can be searched, with translated labels.
+   */
+  searchAttributes?: SelectOption[];
   selectedUserId?: string;
   /**
    * Heading of the list. Pass an empty string to hide it.
@@ -67,8 +81,11 @@ const BaseUserList: FC<BaseUserListProps> = ({
   limit = 20,
   offset = 0,
   onPageChange,
+  onSearch,
   onSelect,
   preferences,
+  search = null,
+  searchAttributes,
   selectedUserId,
   title,
   totalResults,
@@ -116,7 +133,10 @@ const BaseUserList: FC<BaseUserListProps> = ({
           offset,
           onPageChange,
           onSelect,
+          onSearch,
           rows: users,
+          search,
+          searchAttributes,
           selectedRowId: selectedUserId,
           totalResults: totalResults ?? users.length,
           users,
@@ -134,6 +154,9 @@ const BaseUserList: FC<BaseUserListProps> = ({
       actions={actions}
       preferences={preferences}
     >
+      {onSearch && searchAttributes?.length ? (
+        <AdminSearch attributes={searchAttributes} search={search} onSearch={onSearch} />
+      ) : null}
       <DataTable
         caption={title?.length ? title : t('admin.users.list.title')}
         columns={columns}
@@ -141,7 +164,7 @@ const BaseUserList: FC<BaseUserListProps> = ({
         getRowId={(user: ManagedUser): string => user.id}
         isLoading={isLoading}
         error={error}
-        emptyText={t('admin.users.list.empty')}
+        emptyText={search ? t('admin.common.search.no_results', {value: search.value}) : t('admin.users.list.empty')}
         onRowClick={onSelect}
         selectedRowId={selectedUserId}
         pagination={

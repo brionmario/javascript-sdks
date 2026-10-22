@@ -10,11 +10,12 @@ import type {
   ManagedUser,
   ManagedUserListResponse,
   Preferences,
+  RoleAssigneeType,
   RoleAssignment,
   RoleAssignmentInput,
   RoleAssignmentListResponse,
 } from '@thunderid/browser';
-import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
+import {type Component, type PropType, type Ref, type SetupContext, type VNode, defineComponent, h, ref} from 'vue';
 import BaseRoleAssignments from './BaseRoleAssignments';
 import useGetAgents from '../../../../composables/agents/useGetAgents';
 import useGetGroups from '../../../../composables/groups/useGetGroups';
@@ -33,6 +34,7 @@ type RoleAssignmentsProps = Readonly<{
   className: string;
   description: string | undefined;
   editable: boolean;
+  filterable: boolean;
   preferences: Preferences | undefined;
   roleId: string;
   title: string | undefined;
@@ -58,6 +60,8 @@ const RoleAssignments: Component = defineComponent({
     editable: {default: false, type: Boolean},
     /** Component-level preferences, for example `i18n.bundles` overrides. */
     preferences: {default: undefined, type: Object as PropType<Preferences>},
+    /** Whether to show the assignee type filter, which narrows the list on the server. */
+    filterable: {default: true, type: Boolean},
     /** Identifier of the role. */
     roleId: {required: true, type: String},
     /** Heading of the section. Pass an empty string to hide it. */
@@ -65,9 +69,11 @@ const RoleAssignments: Component = defineComponent({
   },
   setup(props: RoleAssignmentsProps, {slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
-    const assignments: ResourceQueryResult<RoleAssignmentListResponse> = useGetRoleAssignments(() => props.roleId, {
-      limit: 100,
-    });
+    const typeFilter: Ref<RoleAssigneeType | null> = ref(null);
+    const assignments: ResourceQueryResult<RoleAssignmentListResponse> = useGetRoleAssignments(
+      () => props.roleId,
+      () => ({limit: 100, type: typeFilter.value ?? undefined}),
+    );
     const editable = (): boolean => props.editable;
     const users: ResourceQueryResult<ManagedUserListResponse> = useGetUsers({limit: 100}, {enabled: editable});
     const groups: ResourceQueryResult<GroupListResponse> = useGetGroups({limit: 100}, {enabled: editable});
@@ -112,8 +118,14 @@ const RoleAssignments: Component = defineComponent({
                   roleId: props.roleId,
                 })
             : undefined,
+          onTypeFilterChange: props.filterable
+            ? (type: RoleAssigneeType | null): void => {
+                typeFilter.value = type;
+              }
+            : undefined,
           preferences: props.preferences,
           title: props.title,
+          typeFilter: typeFilter.value,
         },
         {...slots},
       );

@@ -7,10 +7,11 @@ import {
   BasicAgent,
   Group,
   ManagedUser,
+  RoleAssigneeType,
   RoleAssignment,
   RoleAssignmentInput,
 } from '@thunderid/browser';
-import {FC, ReactElement, useMemo} from 'react';
+import {FC, ReactElement, useMemo, useState} from 'react';
 import BaseRoleAssignments, {BaseRoleAssignmentsProps} from './BaseRoleAssignments';
 import useGetAgents from '../../../../hooks/agents/useGetAgents';
 import useGetGroups from '../../../../hooks/groups/useGetGroups';
@@ -23,13 +24,26 @@ import {IdentityCandidate} from '../shared/IdentityPicker';
 
 export type RoleAssignmentsProps = Omit<
   BaseRoleAssignmentsProps,
-  'assignments' | 'candidates' | 'error' | 'isLoading' | 'isMutating' | 'onAssign' | 'onUnassign'
+  | 'assignments'
+  | 'candidates'
+  | 'error'
+  | 'isLoading'
+  | 'isMutating'
+  | 'onAssign'
+  | 'onTypeFilterChange'
+  | 'onUnassign'
+  | 'typeFilter'
 > & {
   /**
    * Whether assignments can be added and removed from this view.
    * @default false
    */
   editable?: boolean;
+  /**
+   * Whether to show the assignee type filter, which narrows the list on the server.
+   * @default true
+   */
+  filterable?: boolean;
   roleId: string;
 };
 
@@ -44,12 +58,14 @@ export type RoleAssignmentsProps = Omit<
  */
 const RoleAssignments: FC<RoleAssignmentsProps> = ({
   editable = false,
+  filterable = true,
   preferences,
   roleId,
   ...rest
 }: RoleAssignmentsProps): ReactElement => {
   const {t} = useTranslation(preferences?.i18n);
-  const assignments = useGetRoleAssignments(roleId, {limit: 100});
+  const [typeFilter, setTypeFilter] = useState<RoleAssigneeType | null>(null);
+  const assignments = useGetRoleAssignments(roleId, {limit: 100, type: typeFilter ?? undefined});
   const users = useGetUsers({limit: 100}, {enabled: editable});
   const groups = useGetGroups({limit: 100}, {enabled: editable});
   const agents = useGetAgents({limit: 100}, {enabled: editable});
@@ -89,6 +105,8 @@ const RoleAssignments: FC<RoleAssignmentsProps> = ({
               void unassign.mutate({assignments: [{id: assignment.id, type: assignment.type}], roleId})
           : undefined
       }
+      typeFilter={typeFilter}
+      onTypeFilterChange={filterable ? setTypeFilter : undefined}
       preferences={preferences}
       {...rest}
     />

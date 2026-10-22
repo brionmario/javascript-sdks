@@ -1,8 +1,9 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import type {Preferences} from '@thunderid/browser';
+import type {Preferences, SelectOption} from '@thunderid/browser';
 import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
+import AdminSearch, {type AdminSearchValue} from './AdminSearch';
 import AdminSection from './AdminSection';
 import useAdminTranslation, {type AdminTranslate} from './useAdminTranslation';
 import DataTable, {type DataTableColumn} from '../../../primitives/DataTable/DataTable';
@@ -45,9 +46,15 @@ export interface AdminListRenderProps<T> {
   offset: number;
   /** Shows the page that starts at `offset`. Undefined when the list is not paginated. */
   onPageChange?: (offset: number) => void;
+  /** Applies a search, or clears it with `null`. Undefined when the list cannot be searched. */
+  onSearch?: (search: AdminSearchValue | null) => void;
   /** Chooses a row. Undefined when rows are not selectable. */
   onSelect?: (row: T) => void;
   rows: T[];
+  /** The search currently applied, if any. */
+  search?: AdminSearchValue | null;
+  /** The attributes that can be searched, with translated labels. */
+  searchAttributes?: SelectOption[];
   selectedRowId?: string;
   /** Total number of rows on the server, or the number of rows given when unknown. */
   totalResults: number;
@@ -71,10 +78,19 @@ export const adminListProps = {
   offset: {default: 0, type: Number},
   /** Called with the offset of the page to show. Pagination is hidden when omitted. Also available as `@page-change`. */
   onPageChange: {default: undefined, type: Function as PropType<(offset: number) => void>},
+  /**
+   * Applies a search on the server, or clears it with `null`. The search form shows only when this and
+   * `searchAttributes` are set. Also available as `@search`.
+   */
+  onSearch: {default: undefined, type: Function as PropType<(search: AdminSearchValue | null) => void>},
   /** Called when a row is chosen. Rows are selectable only when set. Also available as `@select`. */
   onSelect: {default: undefined, type: Function as PropType<(row: never) => void>},
   /** Component-level preferences, for example `i18n.bundles` overrides. */
   preferences: {default: undefined, type: Object as PropType<Preferences>},
+  /** The search currently applied. While set, an empty page says nothing matched. */
+  search: {default: null, type: Object as PropType<AdminSearchValue | null>},
+  /** The attributes that can be searched, with translated labels. */
+  searchAttributes: {default: undefined, type: Array as PropType<SelectOption[]>},
   /** Heading of the list. Pass an empty string to hide it. */
   title: {default: undefined, type: String},
   /** Total number of rows on the server, used for pagination. */
@@ -107,6 +123,11 @@ const createAdminList = <T>(definition: AdminListDefinition<T>): Component =>
           | ((offset: number) => void)
           | undefined;
         const columns: DataTableColumn<T>[] = definition.columns(t);
+        const search: AdminSearchValue | null = props['search'] as AdminSearchValue | null;
+        const searchAttributes: SelectOption[] | undefined = props['searchAttributes'] as SelectOption[] | undefined;
+        const onSearch: ((next: AdminSearchValue | null) => void) | undefined = props['onSearch'] as
+          | ((next: AdminSearchValue | null) => void)
+          | undefined;
 
         if (slots['default']) {
           const slotProps: AdminListRenderProps<T> & Record<string, unknown> = {
@@ -116,8 +137,11 @@ const createAdminList = <T>(definition: AdminListDefinition<T>): Component =>
             limit: props['limit'] as number,
             offset: props['offset'] as number,
             onPageChange,
+            onSearch,
             onSelect: props['onSelect'] as ((row: T) => void) | undefined,
             rows,
+            search,
+            searchAttributes,
             selectedRowId: props[definition.selectedProp] as string | undefined,
             totalResults: (props['totalResults'] as number | undefined) ?? rows.length,
             [definition.rowsProp]: rows,
@@ -136,11 +160,14 @@ const createAdminList = <T>(definition: AdminListDefinition<T>): Component =>
           },
           {
             actions: slots['actions'],
-            default: (): VNode =>
+            default: (): (VNode | null)[] => [
+              onSearch && searchAttributes?.length
+                ? h(AdminSearch, {attributes: searchAttributes, onSearch, search, t})
+                : null,
               h(DataTable, {
                 caption: title?.length ? title : t(definition.titleKey),
                 columns,
-                emptyText: t(definition.emptyKey),
+                emptyText: search ? t('admin.common.search.no_results', {value: search.value}) : t(definition.emptyKey),
                 error: props['error'] as string | null,
                 getRowId: definition.getRowId,
                 isLoading: props['isLoading'] as boolean,
@@ -157,6 +184,7 @@ const createAdminList = <T>(definition: AdminListDefinition<T>): Component =>
                 selectedRowId: props[definition.selectedProp] as string | undefined,
                 t,
               }),
+            ],
           },
         );
       };

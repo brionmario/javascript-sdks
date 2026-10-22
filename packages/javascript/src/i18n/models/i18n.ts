@@ -231,6 +231,16 @@ export interface I18nTranslations {
   'admin.common.pagination.previous': string;
   'admin.common.pagination.next': string;
   'admin.common.pagination.range': string;
+  'admin.common.search.attribute': string;
+  'admin.common.search.submit': string;
+  'admin.common.search.clear': string;
+  'admin.common.search.placeholder': string;
+  'admin.common.search.no_results': string;
+  'admin.common.filters.type': string;
+  'admin.common.filters.all_types': string;
+  'admin.users.list.search.username': string;
+  'admin.users.list.search.email': string;
+  'admin.agents.list.search.name': string;
   'admin.users.list.title': string;
   'admin.users.list.columns.name': string;
   'admin.users.list.columns.type': string;

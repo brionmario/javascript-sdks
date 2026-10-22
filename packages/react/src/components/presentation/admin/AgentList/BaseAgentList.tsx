@@ -1,11 +1,12 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {BasicAgent, Preferences} from '@thunderid/browser';
+import {BasicAgent, Preferences, SelectOption} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode} from 'react';
 import useTranslation from '../../../../hooks/useTranslation';
 import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTable';
 import {AdminListRenderProps} from '../shared/AdminListRenderProps';
+import AdminSearch, {AdminSearchValue} from '../shared/AdminSearch';
 import AdminSection from '../shared/AdminSection';
 
 /**
@@ -40,10 +41,23 @@ export interface BaseAgentListProps {
    */
   onPageChange?: (offset: number) => void;
   /**
+   * Applies a search on the server, or clears it with `null`. The search form shows only when this and
+   * `searchAttributes` are set.
+   */
+  onSearch?: (search: AdminSearchValue | null) => void;
+  /**
    * Called when an agent is chosen. Rows are selectable only when set.
    */
   onSelect?: (agent: BasicAgent) => void;
   preferences?: Preferences;
+  /**
+   * The search currently applied, if any. While set, an empty page says nothing matched.
+   */
+  search?: AdminSearchValue | null;
+  /**
+   * The agent attributes that can be searched, with translated labels.
+   */
+  searchAttributes?: SelectOption[];
   selectedAgentId?: string;
   /**
    * Heading of the list. Pass an empty string to hide it.
@@ -67,8 +81,11 @@ const BaseAgentList: FC<BaseAgentListProps> = ({
   limit = 20,
   offset = 0,
   onPageChange,
+  onSearch,
   onSelect,
   preferences,
+  search = null,
+  searchAttributes,
   selectedAgentId,
   title,
   totalResults,
@@ -101,7 +118,10 @@ const BaseAgentList: FC<BaseAgentListProps> = ({
           offset,
           onPageChange,
           onSelect,
+          onSearch,
           rows: agents,
+          search,
+          searchAttributes,
           selectedRowId: selectedAgentId,
           totalResults: totalResults ?? agents.length,
           agents,
@@ -119,6 +139,9 @@ const BaseAgentList: FC<BaseAgentListProps> = ({
       actions={actions}
       preferences={preferences}
     >
+      {onSearch && searchAttributes?.length ? (
+        <AdminSearch attributes={searchAttributes} search={search} onSearch={onSearch} />
+      ) : null}
       <DataTable
         caption={title?.length ? title : t('admin.agents.list.title')}
         columns={columns}
@@ -126,7 +149,7 @@ const BaseAgentList: FC<BaseAgentListProps> = ({
         getRowId={(agent: BasicAgent): string => agent.id}
         isLoading={isLoading}
         error={error}
-        emptyText={t('admin.agents.list.empty')}
+        emptyText={search ? t('admin.common.search.no_results', {value: search.value}) : t('admin.agents.list.empty')}
         onRowClick={onSelect}
         selectedRowId={selectedAgentId}
         pagination={

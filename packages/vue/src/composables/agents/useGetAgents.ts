@@ -10,6 +10,10 @@ import useResourceQuery, {type ResourceQueryOptions, type ResourceQueryResult} f
  * Parameters for {@link useGetAgents}.
  */
 export interface UseGetAgentsParams {
+  /**
+   * Server-side filter on an agent attribute, for example `name eq "Calendar Agent"`.
+   */
+  filter?: string;
   limit?: number;
   offset?: number;
 }
@@ -17,7 +21,7 @@ export interface UseGetAgentsParams {
 /**
  * Fetches a page of agents.
  *
- * @param params - Pagination parameters. A ref or getter refetches when it changes.
+ * @param params - Pagination and filter parameters. A ref or getter refetches when it changes.
  * @param options - Query options, including a per-composable `fetcher`.
  * @returns The query state.
  */
@@ -29,14 +33,14 @@ const useGetAgents = (
 
   return useResourceQuery(
     () => {
-      const {limit, offset} = toValue(params);
+      const {filter, limit, offset} = toValue(params);
 
-      return [AgentQueryKeys.AGENTS, {limit, offset}];
+      return [AgentQueryKeys.AGENTS, {filter, limit, offset}];
     },
     (fetcher) => {
-      const {limit, offset} = toValue(params);
+      const {filter, limit, offset} = toValue(params);
 
-      return getAgents({...endpoint, fetcher, limit, offset});
+      return getAgents({...endpoint, fetcher, filter, limit, offset});
     },
     options,
   );
