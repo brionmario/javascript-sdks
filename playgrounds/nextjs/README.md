@@ -81,6 +81,14 @@ forward the applications collection.
 
 Without a server or an application the app still runs: checks that need one fail with the reason.
 
+## Custom rendering
+
+The admin components take a `children` render function, the same pattern as `<SignIn>`, and render it in place of their
+own UI with the component's data, state and handlers. The explorer's **Custom rendering** group draws `UserList` as an
+[MUI](https://mui.com) DataGrid with server-side paging, `GroupCreate` as an MUI form and `UserDetails` as an MUI card.
+MUI is a playground dependency only. The live stories still go through the server action, so the browser never holds the
+token.
+
 ## Checks
 
 Checks that would leave the page (redirect sign-in, sign-out) only run from their own **Run** button; **Run all checks**

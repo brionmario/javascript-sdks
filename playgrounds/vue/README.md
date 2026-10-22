@@ -54,6 +54,14 @@ The endpoint variables are passed to `<ThunderIDProvider :endpoints>`; unset one
 (`{baseUrl}/{path}`), and OAuth and discovery always stay on `VITE_THUNDERID_BASE_URL`. The Overview's Resource
 endpoints card reads them back from `useThunderID().endpoints`, so it shows what the provider received.
 
+## Custom rendering
+
+The admin components take a default scoped slot, the same pattern as `<SignIn>`, and render it in place of their own UI
+with the component's data, state and handlers (for a list: the rows, the default `columns`, `limit`, `offset`,
+`totalResults`, `onPageChange` and `onSelect`). The explorer's **Custom rendering** group draws `UserList` as a
+[PrimeVue](https://primevue.org) DataTable in lazy mode, `GroupCreate` with PrimeVue inputs and `UserDetails` as a
+PrimeVue card. PrimeVue is a playground dependency only.
+
 ## Checks
 
 Checks that would leave the page (redirect sign-in, sign-out) only run from their own **Run** button; **Run all checks**

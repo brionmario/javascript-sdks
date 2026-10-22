@@ -33,6 +33,7 @@ import {
 } from '@thunderid/react';
 import {ChangeEvent, FC} from 'react';
 import {ADMIN_COMPONENTS} from './adminStories';
+import {CUSTOM_RENDER_COMPONENTS} from './customRenderStories';
 import {bool, fromReact, isLive, jsx, num, omit, str} from './helpers';
 import Narrow from './Narrow';
 import type {Action, Args, ComponentDef, PropControl} from './types';
@@ -514,6 +515,7 @@ export const COMPONENTS: ComponentDef[] = [
   selectComponent('usertypeselect', 'UserTypeSelect', UserTypeSelect, 'User type', 'user types'),
   selectComponent('authflowselect', 'AuthFlowSelect', AuthFlowSelect, 'Sign-in flow', 'flows'),
   ...ADMIN_COMPONENTS,
+  ...CUSTOM_RENDER_COMPONENTS,
 ];
 
 export const STORY_COUNT: number = COMPONENTS.reduce(

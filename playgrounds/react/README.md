@@ -52,6 +52,23 @@ Unset, each management collection resolves to `VITE_THUNDERID_BASE_URL/<collecti
 
 Without a server or a client ID the app still runs: checks that need one fail with the reason.
 
+## Custom rendering
+
+Every admin component also takes a `children` render function, the same pattern as `<SignIn>`, and renders it in place
+of its own UI. The function receives the component's data, loading and error state, and handlers: for a list, the rows,
+the default `columns`, `limit`, `offset`, `totalResults`, `onPageChange` and `onSelect`; for a form, the values,
+`handleInputChange`, `handleSubmit` and `isValid`; for details, the record and its actions.
+
+The **Custom rendering** group in the explorer shows this with [MUI](https://mui.com), which only the playground depends
+on:
+
+- **UserList → MUI DataGrid**: the SDK's columns become grid columns, and the grid's server-side paging drives
+  `onPageChange`.
+- **GroupCreate → MUI form**: MUI text fields bound to `values` and `handleInputChange`.
+- **UserDetails → MUI card**: the user's visible attributes and groups as chips, with delete only when allowed.
+
+Each has a sample-data story (the `Base*` component) and a live story (the connected component).
+
 ## Checks
 
 Checks that would leave the page (redirect sign-in, sign-out) only run from their own **Run** button; **Run all checks**

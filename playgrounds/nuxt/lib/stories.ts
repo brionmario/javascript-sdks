@@ -21,6 +21,7 @@ import {
 } from '@thunderid/vue';
 import {defineComponent, h, ref, type Component, type PropType, type Ref, type VNode} from 'vue';
 import {ADMIN_COMPONENTS} from './adminStories';
+import {CUSTOM_RENDER_COMPONENTS} from './customRenderStories';
 import {tag} from './storyCode';
 import type {Action, Args, ArgValue, ComponentDef, PropControl} from './storyTypes';
 import {CheckboxStory, narrow, OtpFieldStory, PasswordFieldStory, SelectStory, TextFieldStory} from './storyWidgets';
@@ -853,6 +854,7 @@ export const COMPONENTS: ComponentDef[] = [
     'userTypes',
   ),
   ...ADMIN_COMPONENTS,
+  ...CUSTOM_RENDER_COMPONENTS,
 ];
 
 export const STORY_COUNT: number = COMPONENTS.reduce(
@@ -871,6 +873,7 @@ export const buildCode = (component: ComponentDef, args: Args): string => {
   );
   const script: string[] = [
     ...(vueImports.length ? [`import {${vueImports.join(', ')}} from 'vue';`] : []),
+    ...(snippet.otherImports ?? []),
     ...(imports.length ? [`import {${imports.join(', ')}} from '@thunderid/vue';`] : []),
   ];
   const body: string[] = snippet.script ?? [];

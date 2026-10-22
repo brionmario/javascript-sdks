@@ -71,6 +71,13 @@ There is no `APPLICATIONS` key: the module's management route does not relay tha
 Without a client ID the app still runs: the Nitro plugin does not initialize, and checks that need it fail with the
 reason.
 
+## Custom rendering
+
+The admin components take a default scoped slot, the same pattern as `<SignIn>`, and render it in place of their own UI
+with the component's data, state and handlers. The explorer's **Custom rendering** group draws `UserList` as a
+[PrimeVue](https://primevue.org) DataTable, `GroupCreate` with PrimeVue inputs and `UserDetails` as a PrimeVue card,
+registered through `plugins/primevue.ts`. PrimeVue is a playground dependency only.
+
 ## Checks
 
 Checks that would leave the page (redirect sign-in, sign-out) only run from their own **Run** button; **Run all checks**

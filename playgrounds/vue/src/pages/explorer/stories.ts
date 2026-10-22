@@ -44,6 +44,7 @@ import {
 } from '@thunderid/vue';
 import {Component, h} from 'vue';
 import {ADMIN_COMPONENTS} from './adminStories';
+import {CUSTOM_RENDER_COMPONENTS} from './customRenderStories';
 import {bool, CARD_VARIANT, handler, num, omit, quoted, SIZE, slot, SOURCE_CONTROL, str, tpl} from './storyKit';
 import type {Action, Args, ComponentDef} from './types';
 import {narrow, VModel} from './widgets';
@@ -1171,6 +1172,7 @@ export const COMPONENTS: ComponentDef[] = [
     ],
   },
   ...ADMIN_COMPONENTS,
+  ...CUSTOM_RENDER_COMPONENTS,
 ];
 
 export const STORY_COUNT: number = COMPONENTS.reduce(
