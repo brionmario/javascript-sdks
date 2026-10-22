@@ -3,6 +3,7 @@
 
 import MuiAlert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
@@ -45,6 +46,12 @@ export const Mui = ({children}: {children: ReactNode}): ReactElement => {
   );
 };
 
+// The grid sets a cell's line-height to the row height; reset it so multi-line cells, such as the SDK's
+// avatar and name, lay out as they do in the SDK's own table.
+const cell = (content: ReactNode): ReactNode => (
+  <Box sx={{alignItems: 'center', display: 'flex', height: '100%', lineHeight: 'normal'}}>{content}</Box>
+);
+
 /**
  * A list's render props drawn as an MUI DataGrid: the SDK's columns become grid columns, and the grid's
  * server-side pagination maps onto the SDK's offset-based paging.
@@ -65,7 +72,9 @@ export const ListGrid = <T extends GridValidRowModel & {id: string}>({
     field: column.id,
     flex: column.id === 'name' ? 2 : 1,
     headerName: column.header,
-    renderCell: ({row}: {row: T}) => column.render(row),
+    // The grid sets the cell's line-height to the row height; reset it so multi-line cells, such as the
+    // SDK's avatar and name, lay out as they do in the SDK's own table.
+    renderCell: (params: {row: T}): ReactNode => cell(column.render(params.row)),
     sortable: false,
   }));
 
