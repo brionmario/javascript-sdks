@@ -211,6 +211,13 @@ a:hover {
   margin: 0 0 6px;
 }
 
+.pg-heading h2 {
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  margin: 12px 0 6px;
+}
+
 .pg-heading p {
   font-size: 13.5px;
   color: rgba(255, 255, 255, 0.55);
