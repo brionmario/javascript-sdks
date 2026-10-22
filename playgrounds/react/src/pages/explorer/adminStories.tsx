@@ -46,7 +46,14 @@ import {
   SAMPLE_USERS,
   TYPE_OPTIONS,
 } from './adminSamples';
-import {DataTableStory, GroupMembersStory, Paged, RequiresId, RoleAssignmentsStory} from './AdminStoryWidgets';
+import {
+  DataTableStory,
+  GroupMembersStory,
+  Paged,
+  RequiresId,
+  RoleAssignmentsStory,
+  SampleSearch,
+} from './AdminStoryWidgets';
 import {withCustomStory} from './customRenderStories';
 import {bool, jsx, num, SOURCE_CONTROL, str} from './storyHelpers';
 import {Narrow} from './StoryWidgets';
@@ -166,6 +173,9 @@ const listCode = (args: Args, tag: string, rowsProp: string, selectedProp: strin
           'totalResults={data.totalResults}',
           'offset={offset}',
           'onPageChange={setOffset}',
+          ...(tag === 'UserList' || tag === 'AgentList'
+            ? ['searchAttributes={searchAttributes}', 'search={search}', 'onSearch={setSearch}']
+            : []),
           ...(bool(args, 'selectable') ? [`${selectedProp}={selectedId}`, ...onSelect] : []),
         ],
       },
@@ -326,20 +336,35 @@ const STORIES: ComponentDef[] = [
           <UserList {...liveListProps(args, action)} filter={str(args, 'filter') || undefined} />
         </Narrow>
       ) : (
-        <Paged<ManagedUser>
-          args={args}
+        <SampleSearch<ManagedUser>
           action={action}
+          attributes={[
+            {label: 'Username', value: 'username'},
+            {label: 'Email', value: 'email'},
+          ]}
           rows={SAMPLE_USERS}
-          getId={(user: ManagedUser) => user.id}
-          render={({offset, onPageChange, onSelect, rows, selectedId, total}) => (
-            <BaseUserList
-              {...baseListProps(args)}
-              users={rows}
-              totalResults={total}
-              offset={offset}
-              onPageChange={onPageChange}
-              onSelect={onSelect}
-              selectedUserId={selectedId}
+          valueOf={(user: ManagedUser, attribute: string) => user.attributes?.[attribute]}
+          render={({onSearch, rows: matching, search, searchAttributes}) => (
+            <Paged<ManagedUser>
+              key={JSON.stringify(search)}
+              args={args}
+              action={action}
+              rows={matching}
+              getId={(user: ManagedUser) => user.id}
+              render={({offset, onPageChange, onSelect, rows, selectedId, total}) => (
+                <BaseUserList
+                  {...baseListProps(args)}
+                  users={rows}
+                  totalResults={total}
+                  offset={offset}
+                  onPageChange={onPageChange}
+                  onSelect={onSelect}
+                  selectedUserId={selectedId}
+                  search={search}
+                  searchAttributes={searchAttributes}
+                  onSearch={onSearch}
+                />
+              )}
             />
           )}
         />
@@ -841,20 +866,32 @@ const STORIES: ComponentDef[] = [
           <AgentList {...liveListProps(args, action)} />
         </Narrow>
       ) : (
-        <Paged<BasicAgent>
-          args={args}
+        <SampleSearch<BasicAgent>
           action={action}
+          attributes={[{label: 'Name', value: 'name'}]}
           rows={SAMPLE_AGENTS}
-          getId={(agent: BasicAgent) => agent.id}
-          render={({offset, onPageChange, onSelect, rows, selectedId, total}) => (
-            <BaseAgentList
-              {...baseListProps(args)}
-              agents={rows}
-              totalResults={total}
-              offset={offset}
-              onPageChange={onPageChange}
-              onSelect={onSelect}
-              selectedAgentId={selectedId}
+          valueOf={(agent: BasicAgent, attribute: string) => (attribute === 'name' ? agent.name : undefined)}
+          render={({onSearch, rows: matching, search, searchAttributes}) => (
+            <Paged<BasicAgent>
+              key={JSON.stringify(search)}
+              args={args}
+              action={action}
+              rows={matching}
+              getId={(agent: BasicAgent) => agent.id}
+              render={({offset, onPageChange, onSelect, rows, selectedId, total}) => (
+                <BaseAgentList
+                  {...baseListProps(args)}
+                  agents={rows}
+                  totalResults={total}
+                  offset={offset}
+                  onPageChange={onPageChange}
+                  onSelect={onSelect}
+                  selectedAgentId={selectedId}
+                  search={search}
+                  searchAttributes={searchAttributes}
+                  onSearch={onSearch}
+                />
+              )}
             />
           )}
         />

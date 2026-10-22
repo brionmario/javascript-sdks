@@ -3,6 +3,7 @@
 
 import {
   type AdminListRenderProps,
+  type AdminSearchValue,
   BaseAgentCreate,
   BaseAgentDetails,
   BaseAgentList,
@@ -33,7 +34,7 @@ import {
   SAMPLE_USERS,
   TYPE_OPTIONS,
 } from './adminSamples';
-import {GroupMembersStory, Paged, RoleAssignmentsStory} from './AdminStoryWidgets';
+import {GroupMembersStory, Paged, RoleAssignmentsStory, SampleSearch} from './AdminStoryWidgets';
 import {
   AgentCard,
   AgentForm,
@@ -228,9 +229,17 @@ interface PagedListState<T> {
   offset: number;
   onPageChange: (offset: number) => void;
   onSelect?: (row: T) => void;
+  onSearch?: (search: AdminSearchValue | null) => void;
   rows: T[];
+  search?: AdminSearchValue | null;
+  searchAttributes?: {label: string; value: string}[];
   selectedId?: string;
   total: number;
+}
+
+interface SampleSearchConfig<T> {
+  attributes: {label: string; value: string}[];
+  valueOf: (row: T, attribute: string) => unknown;
 }
 
 /** Pages the sample rows and hands the Base list an MUI DataGrid as its render function. */
@@ -239,21 +248,41 @@ const pagedList = <T extends {id: string}>(
   action: Action,
   rows: T[],
   render: (state: PagedListState<T>) => ReactNode,
-): ReactElement => (
-  <Paged<T>
-    args={{...args, empty: false, selectable: true}}
-    action={action}
-    rows={rows}
-    getId={(row: T) => row.id}
-    render={(state) =>
-      render({
-        ...state,
-        grid: (props: AdminListRenderProps<T>) => <ListGrid<T> {...props} />,
-        limit: Math.max(1, num(args, 'limit')),
-      })
-    }
-  />
-);
+  searchConfig?: SampleSearchConfig<T>,
+): ReactElement => {
+  const paged = (
+    matching: T[],
+    search?: Pick<PagedListState<T>, 'onSearch' | 'search' | 'searchAttributes'>,
+  ): ReactElement => (
+    <Paged<T>
+      key={JSON.stringify(search?.search ?? null)}
+      args={{...args, empty: false, selectable: true}}
+      action={action}
+      rows={matching}
+      getId={(row: T) => row.id}
+      render={(state) =>
+        render({
+          ...state,
+          ...search,
+          grid: (props: AdminListRenderProps<T>) => <ListGrid<T> {...props} />,
+          limit: Math.max(1, num(args, 'limit')),
+        })
+      }
+    />
+  );
+
+  if (!searchConfig) return paged(rows);
+
+  return (
+    <SampleSearch<T>
+      action={action}
+      attributes={searchConfig.attributes}
+      rows={rows}
+      valueOf={searchConfig.valueOf}
+      render={({rows: matching, ...search}) => paged(matching, search)}
+    />
+  );
+};
 
 const RENDER: Record<string, (args: Args, action: Action) => ReactNode> = {
   agentcreate: (_args: Args, action: Action) => (
@@ -280,19 +309,31 @@ const RENDER: Record<string, (args: Args, action: Action) => ReactNode> = {
     </Narrow>
   ),
   agentlist: (args: Args, action: Action) =>
-    pagedList<BasicAgent>(args, action, SAMPLE_AGENTS, (state: PagedListState<BasicAgent>) => (
-      <BaseAgentList
-        agents={state.rows}
-        totalResults={state.total}
-        limit={state.limit}
-        offset={state.offset}
-        onPageChange={state.onPageChange}
-        onSelect={state.onSelect}
-        selectedAgentId={state.selectedId}
-      >
-        {state.grid}
-      </BaseAgentList>
-    )),
+    pagedList<BasicAgent>(
+      args,
+      action,
+      SAMPLE_AGENTS,
+      (state: PagedListState<BasicAgent>) => (
+        <BaseAgentList
+          agents={state.rows}
+          totalResults={state.total}
+          limit={state.limit}
+          offset={state.offset}
+          onPageChange={state.onPageChange}
+          onSelect={state.onSelect}
+          selectedAgentId={state.selectedId}
+          search={state.search}
+          searchAttributes={state.searchAttributes}
+          onSearch={state.onSearch}
+        >
+          {state.grid}
+        </BaseAgentList>
+      ),
+      {
+        attributes: [{label: 'Name', value: 'name'}],
+        valueOf: (agent: BasicAgent, attribute: string) => (attribute === 'name' ? agent.name : undefined),
+      },
+    ),
   groupcreate: (_args: Args, action: Action) => (
     <Narrow width={480}>
       <BaseGroupCreate
@@ -343,6 +384,12 @@ const RENDER: Record<string, (args: Args, action: Action) => ReactNode> = {
           candidates={candidates}
           onAdd={onAssign ? (identity) => onAssign(identity as Parameters<typeof onAssign>[0]) : undefined}
           onRemove={onUnassign ? (row) => onUnassign(row as Parameters<typeof onUnassign>[0]) : undefined}
+          typeFilter={rest.typeFilter}
+          onTypeFilterChange={
+            rest.onTypeFilterChange
+              ? (type) => rest.onTypeFilterChange?.(type as Parameters<NonNullable<typeof rest.onTypeFilterChange>>[0])
+              : undefined
+          }
         />
       )}
     </RoleAssignmentsStory>
@@ -401,19 +448,34 @@ const RENDER: Record<string, (args: Args, action: Action) => ReactNode> = {
     </Narrow>
   ),
   userlist: (args: Args, action: Action) =>
-    pagedList<ManagedUser>(args, action, SAMPLE_USERS, (state: PagedListState<ManagedUser>) => (
-      <BaseUserList
-        users={state.rows}
-        totalResults={state.total}
-        limit={state.limit}
-        offset={state.offset}
-        onPageChange={state.onPageChange}
-        onSelect={state.onSelect}
-        selectedUserId={state.selectedId}
-      >
-        {state.grid}
-      </BaseUserList>
-    )),
+    pagedList<ManagedUser>(
+      args,
+      action,
+      SAMPLE_USERS,
+      (state: PagedListState<ManagedUser>) => (
+        <BaseUserList
+          users={state.rows}
+          totalResults={state.total}
+          limit={state.limit}
+          offset={state.offset}
+          onPageChange={state.onPageChange}
+          onSelect={state.onSelect}
+          selectedUserId={state.selectedId}
+          search={state.search}
+          searchAttributes={state.searchAttributes}
+          onSearch={state.onSearch}
+        >
+          {state.grid}
+        </BaseUserList>
+      ),
+      {
+        attributes: [
+          {label: 'Username', value: 'username'},
+          {label: 'Email', value: 'email'},
+        ],
+        valueOf: (user: ManagedUser, attribute: string) => user.attributes?.[attribute],
+      },
+    ),
 };
 
 /**

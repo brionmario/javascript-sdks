@@ -19,6 +19,7 @@ import Typography from '@mui/material/Typography';
 import {DataGrid, type GridColDef, type GridPaginationModel, type GridValidRowModel} from '@mui/x-data-grid';
 import {
   type AdminListRenderProps,
+  type AdminSearchValue,
   type BaseAgentCreateRenderProps,
   type BaseAgentDetailsRenderProps,
   type BaseGroupCreateRenderProps,
@@ -63,8 +64,11 @@ export const ListGrid = <T extends GridValidRowModel & {id: string}>({
   limit,
   offset,
   onPageChange,
+  onSearch,
   onSelect,
   rows,
+  search,
+  searchAttributes,
   selectedRowId,
   totalResults,
 }: AdminListRenderProps<T>): ReactElement => {
@@ -80,6 +84,9 @@ export const ListGrid = <T extends GridValidRowModel & {id: string}>({
 
   return (
     <Stack spacing={1}>
+      {onSearch && searchAttributes?.length ? (
+        <SearchBar attributes={searchAttributes} search={search ?? null} onSearch={onSearch} />
+      ) : null}
       {error && <MuiAlert severity="error">{error}</MuiAlert>}
       <DataGrid<T>
         autoHeight
@@ -95,7 +102,74 @@ export const ListGrid = <T extends GridValidRowModel & {id: string}>({
         rowHeight={64}
         rowSelectionModel={{ids: new Set(selectedRowId ? [selectedRowId] : []), type: 'include'}}
         rows={rows}
+        localeText={search ? {noRowsLabel: `No matches for "${search.value}"`} : undefined}
       />
+    </Stack>
+  );
+};
+
+/** The list's search drawn with MUI: an attribute select, a search field and a clear chip. */
+const SearchBar = ({
+  attributes,
+  onSearch,
+  search,
+}: {
+  attributes: {label: string; value: string}[];
+  onSearch: (search: AdminSearchValue | null) => void;
+  search: AdminSearchValue | null;
+}): ReactElement => {
+  const [attribute, setAttribute] = useState<string>(search?.attribute ?? attributes[0]?.value ?? '');
+  const [value, setValue] = useState<string>(search?.value ?? '');
+  const label: string = attributes.find((option) => option.value === attribute)?.label ?? attribute;
+
+  return (
+    <Stack
+      component="form"
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSearch(value.trim() ? {attribute, value: value.trim()} : null);
+      }}
+    >
+      {attributes.length > 1 && (
+        <TextField
+          select
+          size="small"
+          label="Search by"
+          sx={{minWidth: 140}}
+          value={attribute}
+          onChange={(event) => setAttribute(event.target.value)}
+        >
+          {attributes.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
+      <TextField
+        size="small"
+        type="search"
+        label={label}
+        placeholder={`Exact ${label.toLowerCase()}`}
+        sx={{flex: 1}}
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+      />
+      <Button type="submit" variant="outlined">
+        Search
+      </Button>
+      {search && (
+        <Chip
+          label={`${search.attribute} = ${search.value}`}
+          onDelete={() => {
+            setValue('');
+            onSearch(null);
+          }}
+        />
+      )}
     </Stack>
   );
 };
@@ -371,7 +445,9 @@ export const IdentityGrid = ({
   isMutating,
   onAdd = undefined,
   onRemove = undefined,
+  onTypeFilterChange = undefined,
   rows,
+  typeFilter = null,
 }: {
   candidates?: Partial<Record<string, {id: string; label: string}[]>>;
   error: string | null;
@@ -379,7 +455,9 @@ export const IdentityGrid = ({
   isMutating: boolean;
   onAdd?: (identity: {id: string; type: string}) => void;
   onRemove?: (row: Identity) => void;
+  onTypeFilterChange?: (type: string | null) => void;
   rows: Identity[];
+  typeFilter?: string | null;
 }): ReactElement => {
   const types: string[] = Object.keys(candidates ?? {});
   const [type, setType] = useState<string>(types[0] ?? '');
@@ -417,6 +495,19 @@ export const IdentityGrid = ({
   return (
     <Stack spacing={1.5}>
       {error && <MuiAlert severity="error">{error}</MuiAlert>}
+      {onTypeFilterChange && (
+        <Stack direction="row" spacing={1}>
+          {['all', 'user', 'group', 'agent', 'app'].map((value: string) => (
+            <Chip
+              key={value}
+              label={value === 'all' ? 'All types' : value}
+              color={(typeFilter ?? 'all') === value ? 'primary' : 'default'}
+              variant={(typeFilter ?? 'all') === value ? 'filled' : 'outlined'}
+              onClick={() => onTypeFilterChange(value === 'all' ? null : value)}
+            />
+          ))}
+        </Stack>
+      )}
       {onAdd && candidates && (
         <Stack direction="row" spacing={1}>
           <TextField

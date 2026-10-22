@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  type AdminSearchValue,
   BaseGroupMembers,
   type BaseGroupMembersProps,
   BaseRoleAssignments,
@@ -9,6 +10,7 @@ import {
   DataTable,
   type GroupMember,
   type RoleAssignment,
+  type RoleAssigneeType,
   type RoleAssignmentInput,
   Typography,
 } from '@thunderid/react';
@@ -79,6 +81,46 @@ export const Paged = <T,>({action, args, getId, render, rows}: PagedProps<T>): R
   );
 };
 
+/**
+ * Searches sample rows the way the server does: the chosen attribute must equal the whole value. The
+ * story hands the filtered rows, the search and its handler to `render`.
+ */
+export const SampleSearch = <T,>({
+  action,
+  attributes,
+  render,
+  rows,
+  valueOf,
+}: {
+  action: Action;
+  attributes: {label: string; value: string}[];
+  render: (state: {
+    onSearch: (search: AdminSearchValue | null) => void;
+    rows: T[];
+    search: AdminSearchValue | null;
+    searchAttributes: {label: string; value: string}[];
+  }) => ReactNode;
+  rows: T[];
+  valueOf: (row: T, attribute: string) => unknown;
+}): ReactElement => {
+  const [search, setSearch] = useState<AdminSearchValue | null>(null);
+  const matching: T[] = search ? rows.filter((row: T) => valueOf(row, search.attribute) === search.value) : rows;
+
+  return (
+    <>
+      {render({
+        onSearch: (next: AdminSearchValue | null) => {
+          setSearch(next);
+          action('onSearch', next ? `${next.attribute} eq "${next.value}"` : 'cleared');
+        },
+        rows: matching,
+        search,
+        searchAttributes: attributes,
+      })}
+    </>
+  );
+};
+
 /* Members and assignments keep their rows in state so add and remove visibly work. */
 
 export const GroupMembersStory = ({
@@ -139,6 +181,7 @@ export const RoleAssignmentsStory = ({
   children?: BaseRoleAssignmentsProps['children'];
 }): ReactElement => {
   const [assignments, setAssignments] = useState<RoleAssignment[]>(SAMPLE_ASSIGNMENTS);
+  const [typeFilter, setTypeFilter] = useState<RoleAssigneeType | null>(null);
   const editable: boolean = bool(args, 'editable');
   const candidates: BaseRoleAssignmentsProps['candidates'] = CANDIDATES;
 
@@ -146,7 +189,14 @@ export const RoleAssignmentsStory = ({
     <Narrow width={640}>
       <BaseRoleAssignments
         title={str(args, 'title') || undefined}
-        assignments={assignments}
+        assignments={
+          typeFilter ? assignments.filter((assignment: RoleAssignment) => assignment.type === typeFilter) : assignments
+        }
+        typeFilter={typeFilter}
+        onTypeFilterChange={(type: RoleAssigneeType | null) => {
+          setTypeFilter(type);
+          action('onTypeFilterChange', type ?? 'all');
+        }}
         candidates={editable ? candidates : undefined}
         isLoading={bool(args, 'isLoading')}
         error={str(args, 'error') || null}
