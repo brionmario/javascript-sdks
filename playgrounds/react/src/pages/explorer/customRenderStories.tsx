@@ -2,29 +2,73 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  type AdminListRenderProps,
+  BaseAgentCreate,
+  BaseAgentDetails,
+  BaseAgentList,
   BaseGroupCreate,
-  type BaseGroupCreateRenderProps,
+  BaseGroupList,
+  type BaseGroupMembersRenderProps,
+  BaseRoleCreate,
+  BaseRoleList,
+  BaseRolePermissions,
+  type BaseRoleAssignmentsRenderProps,
+  BaseUserCreate,
   BaseUserDetails,
-  type BaseUserDetailsRenderProps,
-  type BaseUserListRenderProps,
-  GroupCreate,
+  BaseUserList,
+  type BasicAgent,
+  type Group,
   type ManagedUser,
-  UserDetails,
-  UserList,
+  type RoleSummary,
 } from '@thunderid/react';
-import {SAMPLE_MEMBERSHIPS, SAMPLE_USERS} from './adminSamples';
-import {RequiresId} from './AdminStoryWidgets';
-import {GroupForm, Mui, SampleUserGrid, UserCard, UserDataGrid} from './CustomRenderWidgets';
-import {bool, num, SOURCE_CONTROL, str} from './storyHelpers';
+import {ReactElement, ReactNode} from 'react';
+import {
+  RESOURCE_SERVER_NAMES,
+  SAMPLE_AGENT,
+  SAMPLE_AGENTS,
+  SAMPLE_GROUPS,
+  SAMPLE_MEMBERSHIPS,
+  SAMPLE_PERMISSIONS,
+  SAMPLE_ROLES,
+  SAMPLE_USERS,
+  TYPE_OPTIONS,
+} from './adminSamples';
+import {GroupMembersStory, Paged, RoleAssignmentsStory} from './AdminStoryWidgets';
+import {
+  AgentCard,
+  AgentForm,
+  IdentityGrid,
+  ListGrid,
+  Mui,
+  NamedForm,
+  PermissionCards,
+  UserCard,
+  UserForm,
+} from './CustomRenderWidgets';
+import {num, str} from './storyHelpers';
 import {Narrow} from './StoryWidgets';
-import type {Action, Args, ComponentDef} from './types';
+import type {Action, Args, ComponentDef, PropControl, Snippet} from './types';
 
-const isLive = (args: Args): boolean => str(args, 'source') === 'live';
+/** The `source` control, with the custom renderer as a third option. */
+const SOURCE_WITH_CUSTOM: PropControl = {
+  control: ['base', 'live', 'custom'],
+  description:
+    'base renders the Base component with sample data; live uses the SDK context; custom renders the Base component with sample data through its children render function, drawn with MUI.',
+  name: 'source',
+  type: "'base' | 'live' | 'custom' (playground only)",
+};
 
-const MUI_GRID_SNIPPET = `<UserList limit={10} onSelect={(user) => navigate(user.id)}>
-  {({users, columns, isLoading, limit, offset, totalResults, onPageChange, onSelect}) => (
+const isCustom = (args: Args): boolean => str(args, 'source') === 'custom';
+
+const MUI_CARD = "import {Button, Card, CardContent, CardHeader, Chip} from '@mui/material';";
+const MUI_GRID = "import {DataGrid} from '@mui/x-data-grid';";
+
+const listSnippet = (name: string, rows: string): Snippet => ({
+  imports: [name],
+  jsx: `<${name} limit={10} onSelect={(row) => navigate(row.id)}>
+  {({${rows}, columns, isLoading, limit, offset, totalResults, onPageChange, onSelect}) => (
     <DataGrid
-      rows={users}
+      rows={${rows}}
       columns={columns.map((column) => ({
         field: column.id,
         headerName: column.header,
@@ -38,25 +82,128 @@ const MUI_GRID_SNIPPET = `<UserList limit={10} onSelect={(user) => navigate(user
       onRowClick={({row}) => onSelect?.(row)}
     />
   )}
-</UserList>`;
+</${name}>`,
+  otherImports: [MUI_GRID],
+});
 
-const MUI_FORM_SNIPPET = `<GroupCreate onCreated={(group) => navigate(group.id)}>
+const formSnippet = (name: string, fields: string[]): Snippet => ({
+  imports: [name],
+  jsx: `<${name} onCreated={(created) => navigate(created.id)}>
   {({values, handleInputChange, handleSubmit, isValid, isSubmitting, error}) => (
     <Stack spacing={2}>
       {error && <Alert severity="error">{error}</Alert>}
-      <TextField
-        label="Name"
-        value={values.name}
-        onChange={(event) => handleInputChange('name', event.target.value)}
-      />
+${fields
+  .map(
+    (field: string) =>
+      `      <TextField label="${field}" value={values.${field}} onChange={(e) => handleInputChange('${field}', e.target.value)} />`,
+  )
+  .join('\n')}
       <Button variant="contained" disabled={!isValid} loading={isSubmitting} onClick={handleSubmit}>
-        Create group
+        Create
       </Button>
     </Stack>
   )}
-</GroupCreate>`;
+</${name}>`,
+  otherImports: ["import {Alert, Button, Stack, TextField} from '@mui/material';"],
+});
 
-const MUI_CARD_SNIPPET = `<UserDetails userId={userId} deletable>
+const identitySnippet = (name: string, idProp: string, rows: string, remove: string): Snippet => ({
+  imports: [name],
+  jsx: `<${name} ${idProp}={${idProp}} editable>
+  {({${rows}, ${remove}, isMutating}) => (
+    <DataGrid
+      rows={${rows}}
+      getRowId={(row) => \`\${row.type}:\${row.id}\`}
+      columns={[
+        {field: 'display', headerName: 'Name', flex: 1},
+        {field: 'type', headerName: 'Type'},
+        {
+          field: 'actions',
+          renderCell: ({row}) =>
+            ${remove} && (
+              <Button color="error" disabled={isMutating} onClick={() => ${remove}(row)}>
+                Remove
+              </Button>
+            ),
+        },
+      ]}
+    />
+  )}
+</${name}>`,
+  otherImports: [MUI_GRID, "import {Button} from '@mui/material';"],
+});
+
+const CODE: Record<string, () => Snippet> = {
+  agentcreate: () => formSnippet('AgentCreate', ['name', 'type', 'description']),
+  agentdetails: () => ({
+    imports: ['AgentDetails'],
+    jsx: `<AgentDetails agentId={agentId} deletable>
+  {({agent, groups, roles, onDelete}) => (
+    <Card>
+      <CardHeader title={agent?.name} subheader={agent?.type} />
+      <CardContent>
+        {groups.map((group) => <Chip key={group.id} color="primary" label={group.name} />)}
+        {roles.map((role) => <Chip key={role} label={role} />)}
+      </CardContent>
+      {onDelete && <Button color="error" onClick={onDelete}>Delete</Button>}
+    </Card>
+  )}
+</AgentDetails>`,
+    otherImports: [MUI_CARD],
+  }),
+  agentlist: () => listSnippet('AgentList', 'agents'),
+  groupcreate: () => formSnippet('GroupCreate', ['name', 'description']),
+  grouplist: () => listSnippet('GroupList', 'groups'),
+  groupmembers: () => identitySnippet('GroupMembers', 'groupId', 'members', 'onRemove'),
+  roleassignments: () => identitySnippet('RoleAssignments', 'roleId', 'assignments', 'onUnassign'),
+  rolecreate: () => formSnippet('RoleCreate', ['name', 'description']),
+  rolelist: () => listSnippet('RoleList', 'roles'),
+  rolepermissions: () => ({
+    imports: ['RolePermissions'],
+    jsx: `<RolePermissions roleId={roleId}>
+  {({permissions, resolveResourceServerName}) =>
+    permissions.map((entry) => (
+      <Card key={entry.resourceServerId}>
+        <CardHeader title={resolveResourceServerName(entry.resourceServerId)} />
+        <CardContent>
+          {entry.permissions.map((permission) => <Chip key={permission} label={permission} />)}
+        </CardContent>
+      </Card>
+    ))
+  }
+</RolePermissions>`,
+    otherImports: [MUI_CARD],
+  }),
+  usercreate: () => ({
+    imports: ['UserCreate'],
+    jsx: `<UserCreate onCreated={(user) => navigate(user.id)}>
+  {({userTypes, type, handleTypeChange, fields, values, handleInputChange, handleSubmit, isValid, isSubmitting}) => (
+    <Stack spacing={2}>
+      <TextField select label="User type" value={type} onChange={(e) => handleTypeChange(e.target.value)}>
+        {userTypes.map((option) => (
+          <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+        ))}
+      </TextField>
+      {fields.map((field) => (
+        <TextField
+          key={field.name}
+          label={field.name}
+          type={field.type}
+          value={values[field.name] ?? ''}
+          onChange={(e) => handleInputChange(field.name, e.target.value)}
+        />
+      ))}
+      <Button variant="contained" disabled={!isValid} loading={isSubmitting} onClick={handleSubmit}>
+        Create user
+      </Button>
+    </Stack>
+  )}
+</UserCreate>`,
+    otherImports: ["import {Button, MenuItem, Stack, TextField} from '@mui/material';"],
+  }),
+  userdetails: () => ({
+    imports: ['UserDetails'],
+    jsx: `<UserDetails userId={userId} deletable>
   {({user, displayName, attributes, groups, onDelete}) => (
     <Card>
       <CardHeader title={displayName} subheader={user?.type} />
@@ -69,144 +216,222 @@ const MUI_CARD_SNIPPET = `<UserDetails userId={userId} deletable>
       {onDelete && <Button color="error" onClick={onDelete}>Delete</Button>}
     </Card>
   )}
-</UserDetails>`;
+</UserDetails>`,
+    otherImports: [MUI_CARD],
+  }),
+  userlist: () => listSnippet('UserList', 'users'),
+};
+
+interface PagedListState<T> {
+  grid: (props: AdminListRenderProps<T>) => ReactNode;
+  limit: number;
+  offset: number;
+  onPageChange: (offset: number) => void;
+  onSelect?: (row: T) => void;
+  rows: T[];
+  selectedId?: string;
+  total: number;
+}
+
+/** Pages the sample rows and hands the Base list an MUI DataGrid as its render function. */
+const pagedList = <T extends {id: string}>(
+  args: Args,
+  action: Action,
+  rows: T[],
+  render: (state: PagedListState<T>) => ReactNode,
+): ReactElement => (
+  <Paged<T>
+    args={{...args, empty: false, selectable: true}}
+    action={action}
+    rows={rows}
+    getId={(row: T) => row.id}
+    render={(state) =>
+      render({
+        ...state,
+        grid: (props: AdminListRenderProps<T>) => <ListGrid<T> {...props} />,
+        limit: Math.max(1, num(args, 'limit')),
+      })
+    }
+  />
+);
+
+const RENDER: Record<string, (args: Args, action: Action) => ReactNode> = {
+  agentcreate: (_args: Args, action: Action) => (
+    <Narrow width={480}>
+      <BaseAgentCreate
+        agentTypes={TYPE_OPTIONS.agent}
+        onSubmit={(agent: {name: string}) => action('onSubmit', JSON.stringify(agent))}
+        onCancel={() => action('onCancel')}
+      >
+        {AgentForm}
+      </BaseAgentCreate>
+    </Narrow>
+  ),
+  agentdetails: (_args: Args, action: Action) => (
+    <Narrow width={480}>
+      <BaseAgentDetails
+        agent={SAMPLE_AGENT}
+        groups={SAMPLE_MEMBERSHIPS}
+        roles={['Agent operator', 'Viewer']}
+        onDelete={() => action('onDelete', SAMPLE_AGENT.id)}
+      >
+        {AgentCard}
+      </BaseAgentDetails>
+    </Narrow>
+  ),
+  agentlist: (args: Args, action: Action) =>
+    pagedList<BasicAgent>(args, action, SAMPLE_AGENTS, (state: PagedListState<BasicAgent>) => (
+      <BaseAgentList
+        agents={state.rows}
+        totalResults={state.total}
+        limit={state.limit}
+        offset={state.offset}
+        onPageChange={state.onPageChange}
+        onSelect={state.onSelect}
+        selectedAgentId={state.selectedId}
+      >
+        {state.grid}
+      </BaseAgentList>
+    )),
+  groupcreate: (_args: Args, action: Action) => (
+    <Narrow width={480}>
+      <BaseGroupCreate
+        onSubmit={(group: {name: string}) => action('onSubmit', JSON.stringify(group))}
+        onCancel={() => action('onCancel')}
+      >
+        {(form) => <NamedForm {...form} noun="group" />}
+      </BaseGroupCreate>
+    </Narrow>
+  ),
+  grouplist: (args: Args, action: Action) =>
+    pagedList<Group>(args, action, SAMPLE_GROUPS, (state: PagedListState<Group>) => (
+      <BaseGroupList
+        groups={state.rows}
+        totalResults={state.total}
+        limit={state.limit}
+        offset={state.offset}
+        onPageChange={state.onPageChange}
+        onSelect={state.onSelect}
+        selectedGroupId={state.selectedId}
+      >
+        {state.grid}
+      </BaseGroupList>
+    )),
+  groupmembers: (args: Args, action: Action) => (
+    <GroupMembersStory args={{...args, editable: true, error: '', isLoading: false}} action={action}>
+      {({candidates, members, onAdd, onRemove, ...rest}: BaseGroupMembersRenderProps) => (
+        <IdentityGrid
+          error={rest.error}
+          isLoading={rest.isLoading}
+          isMutating={rest.isMutating}
+          rows={members}
+          candidates={candidates}
+          onAdd={onAdd ? (identity) => onAdd(identity as Parameters<typeof onAdd>[0]) : undefined}
+          onRemove={onRemove ? (row) => onRemove(row as Parameters<typeof onRemove>[0]) : undefined}
+        />
+      )}
+    </GroupMembersStory>
+  ),
+  roleassignments: (args: Args, action: Action) => (
+    <RoleAssignmentsStory args={{...args, editable: true, error: '', isLoading: false}} action={action}>
+      {({assignments, candidates, onAssign, onUnassign, ...rest}: BaseRoleAssignmentsRenderProps) => (
+        <IdentityGrid
+          error={rest.error}
+          isLoading={rest.isLoading}
+          isMutating={rest.isMutating}
+          rows={assignments}
+          candidates={candidates}
+          onAdd={onAssign ? (identity) => onAssign(identity as Parameters<typeof onAssign>[0]) : undefined}
+          onRemove={onUnassign ? (row) => onUnassign(row as Parameters<typeof onUnassign>[0]) : undefined}
+        />
+      )}
+    </RoleAssignmentsStory>
+  ),
+  rolecreate: (_args: Args, action: Action) => (
+    <Narrow width={480}>
+      <BaseRoleCreate
+        onSubmit={(role: {name: string}) => action('onSubmit', JSON.stringify(role))}
+        onCancel={() => action('onCancel')}
+      >
+        {(form) => <NamedForm {...form} noun="role" />}
+      </BaseRoleCreate>
+    </Narrow>
+  ),
+  rolelist: (args: Args, action: Action) =>
+    pagedList<RoleSummary>(args, action, SAMPLE_ROLES, (state: PagedListState<RoleSummary>) => (
+      <BaseRoleList
+        roles={state.rows}
+        totalResults={state.total}
+        limit={state.limit}
+        offset={state.offset}
+        onPageChange={state.onPageChange}
+        onSelect={state.onSelect}
+        selectedRoleId={state.selectedId}
+      >
+        {state.grid}
+      </BaseRoleList>
+    )),
+  rolepermissions: () => (
+    <Narrow width={560}>
+      <BaseRolePermissions permissions={SAMPLE_PERMISSIONS} resourceServerNames={RESOURCE_SERVER_NAMES}>
+        {PermissionCards}
+      </BaseRolePermissions>
+    </Narrow>
+  ),
+  usercreate: (_args: Args, action: Action) => (
+    <Narrow width={480}>
+      <BaseUserCreate
+        userTypes={TYPE_OPTIONS.user}
+        onSubmit={(user: {type: string}) => action('onSubmit', `type=${user.type}`)}
+        onCancel={() => action('onCancel')}
+      >
+        {UserForm}
+      </BaseUserCreate>
+    </Narrow>
+  ),
+  userdetails: (_args: Args, action: Action) => (
+    <Narrow width={480}>
+      <BaseUserDetails
+        user={SAMPLE_USERS[0]}
+        groups={SAMPLE_MEMBERSHIPS}
+        onDelete={() => action('onDelete', SAMPLE_USERS[0].id)}
+      >
+        {UserCard}
+      </BaseUserDetails>
+    </Narrow>
+  ),
+  userlist: (args: Args, action: Action) =>
+    pagedList<ManagedUser>(args, action, SAMPLE_USERS, (state: PagedListState<ManagedUser>) => (
+      <BaseUserList
+        users={state.rows}
+        totalResults={state.total}
+        limit={state.limit}
+        offset={state.offset}
+        onPageChange={state.onPageChange}
+        onSelect={state.onSelect}
+        selectedUserId={state.selectedId}
+      >
+        {state.grid}
+      </BaseUserList>
+    )),
+};
 
 /**
- * Stories that replace an admin component's default UI through its `children` render function,
- * here with MUI. The same render props work with any component library.
+ * Adds a "Custom (MUI)" story after an admin component's other stories. It renders the Base component
+ * with sample data through its `children` render function, drawn with MUI.
  */
-export const CUSTOM_RENDER_COMPONENTS: ComponentDef[] = [
-  {
-    code: () => ({
-      imports: ['UserList'],
-      jsx: MUI_GRID_SNIPPET,
-      otherImports: ["import {DataGrid} from '@mui/x-data-grid';"],
-    }),
-    controls: [
-      SOURCE_CONTROL,
-      {control: 'number', description: 'Rows per page.', name: 'limit', type: 'number'},
-      {control: 'bool', description: 'Base only: isLoading.', name: 'isLoading', type: 'boolean'},
-      {control: 'text', description: 'Base only: error.', name: 'error', type: 'string | null'},
-    ],
-    defaults: {error: '', isLoading: false, limit: 3, source: 'base'},
-    group: 'Custom rendering',
-    id: 'custom-userlist-datagrid',
-    live: true,
-    name: 'UserList → MUI DataGrid',
-    render: (args: Args, action: Action) => (
-      <Mui>
-        <Narrow width={760}>
-          {isLive(args) ? (
-            <UserList
-              limit={Math.max(1, num(args, 'limit'))}
-              onSelect={(user: ManagedUser) => action('onSelect', user.id)}
-            >
-              {(props: BaseUserListRenderProps) => <UserDataGrid {...props} />}
-            </UserList>
-          ) : (
-            <SampleUserGrid action={action} args={args} />
-          )}
-        </Narrow>
-      </Mui>
-    ),
-    stories: [
-      {id: 'base', name: 'Sample data'},
-      {args: {isLoading: true}, id: 'loading', name: 'Loading'},
-      {args: {limit: 10, source: 'live'}, id: 'live', name: 'Live (needs sign-in)'},
-    ],
-  },
-  {
-    code: () => ({
-      imports: ['GroupCreate'],
-      jsx: MUI_FORM_SNIPPET,
-      otherImports: ["import {Alert, Button, Stack, TextField} from '@mui/material';"],
-    }),
-    controls: [
-      SOURCE_CONTROL,
-      {control: 'bool', description: 'Base only: isSubmitting.', name: 'isSubmitting', type: 'boolean'},
-      {control: 'text', description: 'Base only: error.', name: 'error', type: 'string | null'},
-    ],
-    defaults: {error: '', isSubmitting: false, source: 'base'},
-    group: 'Custom rendering',
-    id: 'custom-groupcreate-form',
-    live: true,
-    name: 'GroupCreate → MUI form',
-    render: (args: Args, action: Action) => (
-      <Mui>
-        <Narrow width={480}>
-          {isLive(args) ? (
-            <GroupCreate
-              onCreated={(group: {id: string}) => action('onCreated', group.id)}
-              onCancel={() => action('onCancel')}
-            >
-              {(props: BaseGroupCreateRenderProps) => <GroupForm {...props} />}
-            </GroupCreate>
-          ) : (
-            <BaseGroupCreate
-              error={str(args, 'error') || null}
-              isSubmitting={bool(args, 'isSubmitting')}
-              onCancel={() => action('onCancel')}
-              onSubmit={(group: {description?: string; name: string}) => action('onSubmit', JSON.stringify(group))}
-            >
-              {(props: BaseGroupCreateRenderProps) => <GroupForm {...props} />}
-            </BaseGroupCreate>
-          )}
-        </Narrow>
-      </Mui>
-    ),
-    stories: [
-      {id: 'base', name: 'Sample'},
-      {args: {error: 'A group with this name already exists.'}, id: 'error', name: 'Error'},
-      {args: {source: 'live'}, id: 'live', name: 'Live (needs sign-in)'},
-    ],
-  },
-  {
-    code: () => ({
-      imports: ['UserDetails'],
-      jsx: MUI_CARD_SNIPPET,
-      otherImports: ["import {Button, Card, CardContent, CardHeader, Chip} from '@mui/material';"],
-    }),
-    controls: [
-      SOURCE_CONTROL,
-      {control: 'text', description: 'Live only: the user to load.', name: 'userId', type: 'string'},
-      {control: 'bool', description: 'Passes onDelete.', name: 'deletable', type: 'boolean'},
-    ],
-    defaults: {deletable: true, source: 'base', userId: ''},
-    group: 'Custom rendering',
-    id: 'custom-userdetails-card',
-    live: true,
-    name: 'UserDetails → MUI card',
-    render: (args: Args, action: Action) => {
-      if (isLive(args) && !str(args, 'userId')) return <RequiresId name="userId" />;
+export const withCustomStory = (def: ComponentDef): ComponentDef => {
+  const render: ((args: Args, action: Action) => ReactNode) | undefined = RENDER[def.id];
+  const code: (() => Snippet) | undefined = CODE[def.id];
 
-      return (
-        <Mui>
-          <Narrow width={480}>
-            {isLive(args) ? (
-              <UserDetails
-                userId={str(args, 'userId')}
-                deletable={bool(args, 'deletable')}
-                onDeleted={() => action('onDeleted')}
-              >
-                {(props: BaseUserDetailsRenderProps) => <UserCard {...props} />}
-              </UserDetails>
-            ) : (
-              <BaseUserDetails
-                user={SAMPLE_USERS[0]}
-                groups={SAMPLE_MEMBERSHIPS}
-                onDelete={bool(args, 'deletable') ? () => action('onDelete', SAMPLE_USERS[0].id) : undefined}
-              >
-                {(props: BaseUserDetailsRenderProps) => <UserCard {...props} />}
-              </BaseUserDetails>
-            )}
-          </Narrow>
-        </Mui>
-      );
-    },
-    stories: [
-      {id: 'base', name: 'Sample user'},
-      {args: {deletable: false}, id: 'readonly', name: 'Without delete'},
-      {args: {source: 'live'}, id: 'live', name: 'Live (needs userId)'},
-    ],
-  },
-];
+  if (!render || !code) return def;
+
+  return {
+    ...def,
+    code: (args: Args) => (isCustom(args) ? code() : def.code(args)),
+    controls: def.controls.map((control: PropControl) => (control.name === 'source' ? SOURCE_WITH_CUSTOM : control)),
+    render: (args: Args, action: Action) =>
+      isCustom(args) ? <Mui>{render(args, action)}</Mui> : def.render(args, action),
+    stories: [...def.stories, {args: {source: 'custom'}, id: 'custom', name: 'Custom (MUI)'}],
+  };
+};

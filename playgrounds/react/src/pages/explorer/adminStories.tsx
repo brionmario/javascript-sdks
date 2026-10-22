@@ -47,6 +47,7 @@ import {
   TYPE_OPTIONS,
 } from './adminSamples';
 import {DataTableStory, GroupMembersStory, Paged, RequiresId, RoleAssignmentsStory} from './AdminStoryWidgets';
+import {withCustomStory} from './customRenderStories';
 import {bool, jsx, num, SOURCE_CONTROL, str} from './storyHelpers';
 import {Narrow} from './StoryWidgets';
 import type {Action, Args, ComponentDef, PropControl, Snippet} from './types';
@@ -173,7 +174,7 @@ const listCode = (args: Args, tag: string, rowsProp: string, selectedProp: strin
 };
 
 const LIST_CONTROLS: PropControl[] = [SOURCE_CONTROL, TITLE, DESCRIPTION, LIMIT, SELECTABLE, LOADING, ERROR, EMPTY];
-export const ADMIN_COMPONENTS: ComponentDef[] = [
+const STORIES: ComponentDef[] = [
   {
     code: (args: Args) => ({
       imports: ['DataTable'],
@@ -991,3 +992,6 @@ export const ADMIN_COMPONENTS: ComponentDef[] = [
     ],
   },
 ];
+
+/** The admin stories, each with a "Custom (MUI)" story that renders it through its render props. */
+export const ADMIN_COMPONENTS: ComponentDef[] = STORIES.map(withCustomStory);

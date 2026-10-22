@@ -81,7 +81,15 @@ export const Paged = <T,>({action, args, getId, render, rows}: PagedProps<T>): R
 
 /* Members and assignments keep their rows in state so add and remove visibly work. */
 
-export const GroupMembersStory = ({action, args}: {action: Action; args: Args}): ReactElement => {
+export const GroupMembersStory = ({
+  action,
+  args,
+  children = undefined,
+}: {
+  action: Action;
+  args: Args;
+  children?: BaseGroupMembersProps['children'];
+}): ReactElement => {
   const [members, setMembers] = useState<GroupMember[]>(SAMPLE_MEMBERS);
   const editable: boolean = bool(args, 'editable');
   const candidates: BaseGroupMembersProps['candidates'] = {agent: CANDIDATES.agent, user: CANDIDATES.user};
@@ -114,12 +122,22 @@ export const GroupMembersStory = ({action, args}: {action: Action; args: Args}):
               }
             : undefined
         }
-      />
+      >
+        {children}
+      </BaseGroupMembers>
     </Narrow>
   );
 };
 
-export const RoleAssignmentsStory = ({action, args}: {action: Action; args: Args}): ReactElement => {
+export const RoleAssignmentsStory = ({
+  action,
+  args,
+  children = undefined,
+}: {
+  action: Action;
+  args: Args;
+  children?: BaseRoleAssignmentsProps['children'];
+}): ReactElement => {
   const [assignments, setAssignments] = useState<RoleAssignment[]>(SAMPLE_ASSIGNMENTS);
   const editable: boolean = bool(args, 'editable');
   const candidates: BaseRoleAssignmentsProps['candidates'] = CANDIDATES;
@@ -154,7 +172,9 @@ export const RoleAssignmentsStory = ({action, args}: {action: Action; args: Args
               }
             : undefined
         }
-      />
+      >
+        {children}
+      </BaseRoleAssignments>
     </Narrow>
   );
 };

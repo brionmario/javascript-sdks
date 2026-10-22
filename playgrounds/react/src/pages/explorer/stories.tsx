@@ -40,7 +40,6 @@ import {
 } from '@thunderid/react';
 import {ChangeEvent, FC, ReactNode} from 'react';
 import {ADMIN_COMPONENTS} from './adminStories';
-import {CUSTOM_RENDER_COMPONENTS} from './customRenderStories';
 import {bool, jsx, num, omit, SOURCE_CONTROL, str} from './storyHelpers';
 import {Narrow, OtpFieldStory, PasswordFieldStory, SelectStory} from './StoryWidgets';
 import type {Action, Args, ComponentDef} from './types';
@@ -980,7 +979,6 @@ export const COMPONENTS: ComponentDef[] = [
     ],
   },
   ...ADMIN_COMPONENTS,
-  ...CUSTOM_RENDER_COMPONENTS,
 ];
 
 export const STORY_COUNT: number = COMPONENTS.reduce(

@@ -10,23 +10,24 @@ import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import Chip from '@mui/material/Chip';
 import CssBaseline from '@mui/material/CssBaseline';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
-import {DataGrid, type GridColDef, type GridPaginationModel} from '@mui/x-data-grid';
+import Typography from '@mui/material/Typography';
+import {DataGrid, type GridColDef, type GridPaginationModel, type GridValidRowModel} from '@mui/x-data-grid';
 import {
+  type AdminListRenderProps,
+  type BaseAgentCreateRenderProps,
+  type BaseAgentDetailsRenderProps,
   type BaseGroupCreateRenderProps,
+  type BaseRolePermissionsRenderProps,
+  type BaseUserCreateRenderProps,
   type BaseUserDetailsRenderProps,
-  BaseUserList,
-  type BaseUserListRenderProps,
   type DataTableColumn,
-  type ManagedUser,
   useTheme,
 } from '@thunderid/react';
 import {ReactElement, ReactNode, useMemo, useState} from 'react';
-import {SAMPLE_USERS} from './adminSamples';
-import {bool, num, str} from './storyHelpers';
-import type {Action, Args} from './types';
 
 /** MUI, themed to follow the playground's light or dark preview. */
 export const Mui = ({children}: {children: ReactNode}): ReactElement => {
@@ -45,10 +46,10 @@ export const Mui = ({children}: {children: ReactNode}): ReactElement => {
 };
 
 /**
- * The user list's render props drawn as an MUI DataGrid: the SDK's columns become grid columns, and
- * the grid's server-side pagination maps onto the SDK's offset-based paging.
+ * A list's render props drawn as an MUI DataGrid: the SDK's columns become grid columns, and the grid's
+ * server-side pagination maps onto the SDK's offset-based paging.
  */
-export const UserDataGrid = ({
+export const ListGrid = <T extends GridValidRowModel & {id: string}>({
   columns,
   error,
   isLoading,
@@ -59,25 +60,25 @@ export const UserDataGrid = ({
   rows,
   selectedRowId,
   totalResults,
-}: BaseUserListRenderProps): ReactElement => {
-  const gridColumns: GridColDef<ManagedUser>[] = columns.map((column: DataTableColumn<ManagedUser>) => ({
+}: AdminListRenderProps<T>): ReactElement => {
+  const gridColumns: GridColDef<T>[] = columns.map((column: DataTableColumn<T>) => ({
     field: column.id,
     flex: column.id === 'name' ? 2 : 1,
     headerName: column.header,
-    renderCell: ({row}: {row: ManagedUser}) => column.render(row),
+    renderCell: ({row}: {row: T}) => column.render(row),
     sortable: false,
   }));
 
   return (
     <Stack spacing={1}>
       {error && <MuiAlert severity="error">{error}</MuiAlert>}
-      <DataGrid<ManagedUser>
+      <DataGrid<T>
         autoHeight
         columns={gridColumns}
         disableColumnMenu
         loading={isLoading}
         onPaginationModelChange={(model: GridPaginationModel) => onPageChange?.(model.page * model.pageSize)}
-        onRowClick={onSelect ? ({row}: {row: ManagedUser}) => onSelect(row) : undefined}
+        onRowClick={onSelect ? ({row}: {row: T}) => onSelect(row) : undefined}
         pageSizeOptions={[limit]}
         paginationMode="server"
         paginationModel={{page: Math.floor(offset / limit), pageSize: limit}}
@@ -90,82 +91,187 @@ export const UserDataGrid = ({
   );
 };
 
-/** The group form's render props drawn with MUI inputs. */
-export const GroupForm = ({
+const FormCard = ({
+  children,
   error,
-  handleInputChange,
-  handleSubmit,
+  onCancel = undefined,
+  onSubmit,
   isSubmitting,
   isValid,
-  onCancel,
-  values,
-}: BaseGroupCreateRenderProps): ReactElement => (
+  submitLabel,
+  title,
+}: {
+  children: ReactNode;
+  error: string | null;
+  isSubmitting: boolean;
+  isValid: boolean;
+  onCancel?: () => void;
+  onSubmit: () => void;
+  submitLabel: string;
+  title: string;
+}): ReactElement => (
   <Card variant="outlined">
-    <CardHeader title="New group" subheader="Rendered with MUI from the SDK's render props" />
+    <CardHeader title={title} subheader="Rendered with MUI from the SDK's render props" />
     <CardContent>
       <Stack spacing={2}>
         {error && <MuiAlert severity="error">{error}</MuiAlert>}
-        <TextField
-          label="Name"
-          required
-          size="small"
-          value={values.name}
-          onChange={(event) => handleInputChange('name', event.target.value)}
-        />
-        <TextField
-          label="Description"
-          multiline
-          minRows={2}
-          size="small"
-          value={values.description}
-          onChange={(event) => handleInputChange('description', event.target.value)}
-        />
+        {children}
       </Stack>
     </CardContent>
     <CardActions sx={{justifyContent: 'flex-end'}}>
       {onCancel && <Button onClick={onCancel}>Cancel</Button>}
-      <Button variant="contained" disabled={!isValid || isSubmitting} loading={isSubmitting} onClick={handleSubmit}>
-        Create group
+      <Button variant="contained" disabled={!isValid || isSubmitting} loading={isSubmitting} onClick={onSubmit}>
+        {submitLabel}
       </Button>
     </CardActions>
   </Card>
 );
 
-/** The user details' render props drawn as an MUI card. */
-export const UserCard = ({
-  attributes,
-  displayName,
-  error,
-  groups,
+/** A group or role form's render props drawn with MUI inputs. */
+export const NamedForm = ({noun, ...form}: BaseGroupCreateRenderProps & {noun: 'group' | 'role'}): ReactElement => (
+  <FormCard
+    title={`New ${noun}`}
+    submitLabel={`Create ${noun}`}
+    error={form.error}
+    isSubmitting={form.isSubmitting}
+    isValid={form.isValid}
+    onCancel={form.onCancel}
+    onSubmit={form.handleSubmit}
+  >
+    <TextField
+      label="Name"
+      required
+      size="small"
+      value={form.values.name}
+      onChange={(event) => form.handleInputChange('name', event.target.value)}
+    />
+    <TextField
+      label="Description"
+      multiline
+      minRows={2}
+      size="small"
+      value={form.values.description}
+      onChange={(event) => form.handleInputChange('description', event.target.value)}
+    />
+  </FormCard>
+);
+
+/** The user form's render props drawn with an MUI select and text fields. */
+export const UserForm = (form: BaseUserCreateRenderProps): ReactElement => (
+  <FormCard
+    title="New user"
+    submitLabel="Create user"
+    error={form.error}
+    isSubmitting={form.isSubmitting}
+    isValid={form.isValid}
+    onCancel={form.onCancel}
+    onSubmit={form.handleSubmit}
+  >
+    <TextField
+      select
+      label="User type"
+      size="small"
+      value={form.type}
+      onChange={(event) => form.handleTypeChange(event.target.value)}
+    >
+      {form.userTypes.map((option: {label: string; value: string}) => (
+        <MenuItem key={option.value} value={option.value}>
+          {option.label}
+        </MenuItem>
+      ))}
+    </TextField>
+    {form.fields.map((field: {label?: string; name: string; required?: boolean; type?: string}) => (
+      <TextField
+        key={field.name}
+        label={field.label ?? field.name}
+        required={field.required}
+        type={field.type ?? 'text'}
+        size="small"
+        value={form.values[field.name] ?? ''}
+        onChange={(event) => form.handleInputChange(field.name, event.target.value)}
+      />
+    ))}
+  </FormCard>
+);
+
+/** The agent form's render props drawn with MUI inputs. */
+export const AgentForm = (form: BaseAgentCreateRenderProps): ReactElement => (
+  <FormCard
+    title="New agent"
+    submitLabel="Register agent"
+    error={form.error}
+    isSubmitting={form.isSubmitting}
+    isValid={form.isValid}
+    onCancel={form.onCancel}
+    onSubmit={form.handleSubmit}
+  >
+    <TextField
+      label="Name"
+      required
+      size="small"
+      value={form.values.name}
+      onChange={(event) => form.handleInputChange('name', event.target.value)}
+    />
+    <TextField
+      select
+      label="Agent type"
+      size="small"
+      value={form.values.type}
+      onChange={(event) => form.handleInputChange('type', event.target.value)}
+    >
+      {form.agentTypes.map((option: {label: string; value: string}) => (
+        <MenuItem key={option.value} value={option.value}>
+          {option.label}
+        </MenuItem>
+      ))}
+    </TextField>
+    <TextField
+      label="Description"
+      size="small"
+      value={form.values.description}
+      onChange={(event) => form.handleInputChange('description', event.target.value)}
+    />
+  </FormCard>
+);
+
+const ChipRow = ({
+  items,
+  color = undefined,
+}: {
+  color?: 'primary';
+  items: {id: string; label: string}[];
+}): ReactElement => (
+  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+    {items.length === 0 && <Typography variant="body2">None</Typography>}
+    {items.map((item: {id: string; label: string}) => (
+      <Chip key={item.id} size="small" color={color} variant={color ? 'filled' : 'outlined'} label={item.label} />
+    ))}
+  </Stack>
+);
+
+const DetailsCard = ({
+  children,
   isDeleting,
   isLoading,
-  onDelete,
-  user,
-}: BaseUserDetailsRenderProps): ReactElement => (
+  onDelete = undefined,
+  subheader = undefined,
+  title = undefined,
+}: {
+  children: ReactNode;
+  isDeleting: boolean;
+  isLoading: boolean;
+  onDelete?: () => void;
+  subheader?: string;
+  title?: string;
+}): ReactElement => (
   <Card variant="outlined">
-    {isLoading && !user ? (
+    {isLoading && !title ? (
       <CardContent>Loading…</CardContent>
     ) : (
       <>
-        <CardHeader
-          avatar={<Avatar>{displayName.slice(0, 1)}</Avatar>}
-          title={displayName}
-          subheader={user ? `${user.type} · ${user.ouHandle ?? user.ouId}` : undefined}
-        />
+        <CardHeader avatar={<Avatar>{(title ?? '?').slice(0, 1)}</Avatar>} title={title} subheader={subheader} />
         <CardContent>
-          <Stack spacing={1.5}>
-            {error && <MuiAlert severity="error">{error}</MuiAlert>}
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {Object.entries(attributes).map(([name, value]: [string, unknown]) => (
-                <Chip key={name} size="small" variant="outlined" label={`${name}: ${String(value)}`} />
-              ))}
-            </Stack>
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {groups.map((group: {id: string; name: string}) => (
-                <Chip key={group.id} size="small" color="primary" label={group.name} />
-              ))}
-            </Stack>
-          </Stack>
+          <Stack spacing={1.5}>{children}</Stack>
         </CardContent>
         {onDelete && (
           <CardActions sx={{justifyContent: 'flex-end'}}>
@@ -179,30 +285,183 @@ export const UserCard = ({
   </Card>
 );
 
-export const SampleUserGrid = ({action, args}: {action: Action; args: Args}): ReactElement => {
-  const [offset, setOffset] = useState<number>(0);
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const limit: number = Math.max(1, num(args, 'limit'));
+/** The user details' render props drawn as an MUI card. */
+export const UserCard = (details: BaseUserDetailsRenderProps): ReactElement => (
+  <DetailsCard
+    title={details.user ? details.displayName : undefined}
+    subheader={details.user ? `${details.user.type} · ${details.user.ouHandle ?? details.user.ouId}` : undefined}
+    isLoading={details.isLoading}
+    isDeleting={details.isDeleting}
+    onDelete={details.onDelete}
+  >
+    {details.error && <MuiAlert severity="error">{details.error}</MuiAlert>}
+    <ChipRow
+      items={Object.entries(details.attributes).map(([name, value]: [string, unknown]) => ({
+        id: name,
+        label: `${name}: ${String(value)}`,
+      }))}
+    />
+    <ChipRow color="primary" items={details.groups.map((group) => ({id: group.id, label: group.name}))} />
+  </DetailsCard>
+);
+
+/** The agent details' render props drawn as an MUI card. */
+export const AgentCard = (details: BaseAgentDetailsRenderProps): ReactElement => (
+  <DetailsCard
+    title={details.agent?.name}
+    subheader={details.agent ? `${details.agent.type} · ${details.agent.ouHandle ?? details.agent.ouId}` : undefined}
+    isLoading={details.isLoading}
+    isDeleting={details.isDeleting}
+    onDelete={details.onDelete}
+  >
+    {details.error && <MuiAlert severity="error">{details.error}</MuiAlert>}
+    {details.agent?.description && <Typography variant="body2">{details.agent.description}</Typography>}
+    <Typography variant="overline">Groups</Typography>
+    <ChipRow color="primary" items={details.groups.map((group) => ({id: group.id, label: group.name}))} />
+    <Typography variant="overline">Roles</Typography>
+    <ChipRow items={details.roles.map((role: string) => ({id: role, label: role}))} />
+  </DetailsCard>
+);
+
+/** The role permissions' render props drawn as one MUI card per resource server. */
+export const PermissionCards = ({
+  error,
+  isLoading,
+  permissions,
+  resolveResourceServerName,
+}: BaseRolePermissionsRenderProps): ReactElement => (
+  <Stack spacing={1.5}>
+    {isLoading && <Typography variant="body2">Loading…</Typography>}
+    {error && <MuiAlert severity="error">{error}</MuiAlert>}
+    {!isLoading && !error && permissions.length === 0 && <Typography variant="body2">No permissions.</Typography>}
+    {permissions.map((entry: {permissions: string[]; resourceServerId: string}) => (
+      <Card key={entry.resourceServerId} variant="outlined">
+        <CardHeader title={resolveResourceServerName(entry.resourceServerId)} subheader={entry.resourceServerId} />
+        <CardContent>
+          <ChipRow items={entry.permissions.map((permission: string) => ({id: permission, label: permission}))} />
+        </CardContent>
+      </Card>
+    ))}
+  </Stack>
+);
+
+interface Identity {
+  display?: string;
+  id: string;
+  type: string;
+}
+
+/**
+ * Group members or role assignments drawn as an MUI DataGrid with a remove action, and an MUI picker
+ * that adds from the candidates the render props hand over.
+ */
+export const IdentityGrid = ({
+  candidates = undefined,
+  error,
+  isLoading,
+  isMutating,
+  onAdd = undefined,
+  onRemove = undefined,
+  rows,
+}: {
+  candidates?: Partial<Record<string, {id: string; label: string}[]>>;
+  error: string | null;
+  isLoading: boolean;
+  isMutating: boolean;
+  onAdd?: (identity: {id: string; type: string}) => void;
+  onRemove?: (row: Identity) => void;
+  rows: Identity[];
+}): ReactElement => {
+  const types: string[] = Object.keys(candidates ?? {});
+  const [type, setType] = useState<string>(types[0] ?? '');
+  const [id, setId] = useState<string>('');
+  const present = new Set<string>(rows.map((row: Identity) => row.id));
+  const options: {id: string; label: string}[] = (candidates?.[type] ?? []).filter(
+    (option: {id: string}) => !present.has(option.id),
+  );
+  const columns: GridColDef<Identity & {key: string}>[] = [
+    {
+      field: 'display',
+      flex: 2,
+      headerName: 'Name',
+      sortable: false,
+      valueGetter: (_value, row) => row.display ?? row.id,
+    },
+    {field: 'type', flex: 1, headerName: 'Type', sortable: false},
+    ...(onRemove
+      ? [
+          {
+            field: 'actions',
+            headerName: '',
+            renderCell: (params: {row: Identity}) => (
+              <Button color="error" size="small" disabled={isMutating} onClick={() => onRemove(params.row)}>
+                Remove
+              </Button>
+            ),
+            sortable: false,
+            width: 110,
+          } satisfies GridColDef<Identity & {key: string}>,
+        ]
+      : []),
+  ];
 
   return (
-    <BaseUserList
-      users={SAMPLE_USERS.slice(offset, offset + limit)}
-      totalResults={SAMPLE_USERS.length}
-      isLoading={bool(args, 'isLoading')}
-      error={str(args, 'error') || null}
-      limit={limit}
-      offset={offset}
-      onPageChange={(next: number) => {
-        setOffset(next);
-        action('onPageChange', `offset=${next}`);
-      }}
-      onSelect={(user: ManagedUser) => {
-        setSelectedId(user.id);
-        action('onSelect', user.id);
-      }}
-      selectedUserId={selectedId}
-    >
-      {(props: BaseUserListRenderProps) => <UserDataGrid {...props} />}
-    </BaseUserList>
+    <Stack spacing={1.5}>
+      {error && <MuiAlert severity="error">{error}</MuiAlert>}
+      {onAdd && candidates && (
+        <Stack direction="row" spacing={1}>
+          <TextField
+            select
+            label="Type"
+            size="small"
+            sx={{minWidth: 120}}
+            value={type}
+            onChange={(event) => {
+              setType(event.target.value);
+              setId('');
+            }}
+          >
+            {types.map((value: string) => (
+              <MenuItem key={value} value={value}>
+                {value}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            label="Identity"
+            size="small"
+            sx={{flex: 1}}
+            value={id}
+            onChange={(event) => setId(event.target.value)}
+          >
+            {options.map((option: {id: string; label: string}) => (
+              <MenuItem key={option.id} value={option.id}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Button
+            variant="contained"
+            disabled={!id || isMutating}
+            onClick={() => {
+              onAdd({id, type});
+              setId('');
+            }}
+          >
+            Add
+          </Button>
+        </Stack>
+      )}
+      <DataGrid<Identity & {key: string}>
+        autoHeight
+        columns={columns}
+        disableColumnMenu
+        getRowId={(row: Identity & {key: string}) => row.key}
+        hideFooter
+        loading={isLoading}
+        rows={rows.map((row: Identity) => ({...row, key: `${row.type}:${row.id}`}))}
+      />
+    </Stack>
   );
 };
