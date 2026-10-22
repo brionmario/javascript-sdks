@@ -9,11 +9,43 @@ import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTabl
 import AdminSection from '../shared/AdminSection';
 import IdentityPicker, {IdentityCandidate} from '../shared/IdentityPicker';
 
+/**
+ * What {@link BaseGroupMembers} hands its `children` render function, so the members can be shown
+ * with any UI, such as a third-party data grid.
+ */
+export interface BaseGroupMembersRenderProps {
+  /**
+   * The identities that can be added, keyed by member type. Undefined when adding is not allowed.
+   */
+  candidates?: Partial<Record<GroupMemberType, IdentityCandidate[]>>;
+  /**
+   * The columns the default table shows, including the remove action when removing is allowed.
+   */
+  columns: DataTableColumn<GroupMember>[];
+  error: string | null;
+  isLoading: boolean;
+  isMutating: boolean;
+  members: GroupMember[];
+  /**
+   * Adds a member. Undefined when adding is not allowed.
+   */
+  onAdd?: (member: Pick<GroupMember, 'id' | 'type'>) => void;
+  /**
+   * Removes a member. Undefined when removing is not allowed.
+   */
+  onRemove?: (member: GroupMember) => void;
+}
+
 export interface BaseGroupMembersProps {
   /**
    * The identities that can be added, keyed by member type. Adding is hidden when omitted.
    */
   candidates?: Partial<Record<GroupMemberType, IdentityCandidate[]>>;
+  /**
+   * Renders custom UI in place of the default table and picker. Receives the members, the default
+   * columns, the candidates, the loading and error state, and the add and remove handlers.
+   */
+  children?: (props: BaseGroupMembersRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -34,6 +66,7 @@ export interface BaseGroupMembersProps {
  */
 const BaseGroupMembers: FC<BaseGroupMembersProps> = ({
   candidates,
+  children,
   className,
   description,
   error = null,
@@ -77,6 +110,23 @@ const BaseGroupMembers: FC<BaseGroupMembersProps> = ({
         </Button>
       ),
     });
+  }
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          candidates: onAdd ? candidates : undefined,
+          columns,
+          error,
+          isLoading,
+          isMutating,
+          members,
+          onAdd: candidates ? onAdd : undefined,
+          onRemove,
+        })}
+      </div>
+    );
   }
 
   return (

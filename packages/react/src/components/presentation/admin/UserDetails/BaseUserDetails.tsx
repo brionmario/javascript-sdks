@@ -13,11 +13,44 @@ import {ChipList, ConfirmButton, DetailList, Panel} from '../shared/AdminParts';
 import AdminSection from '../shared/AdminSection';
 import useAdminPartStyles from '../shared/useAdminPartStyles';
 
+/**
+ * What {@link BaseUserDetails} hands its `children` render function, so the user can be shown with any UI.
+ */
+export interface BaseUserDetailsRenderProps {
+  /**
+   * The user's attributes, without the hidden ones.
+   */
+  attributes: Record<string, unknown>;
+  /**
+   * The user's display name, or an empty string while there is no user.
+   */
+  displayName: string;
+  error: string | null;
+  groups: MembershipGroup[];
+  isDeleting: boolean;
+  isLoading: boolean;
+  isUpdating: boolean;
+  /**
+   * Deletes the user. Undefined when deletion is not allowed, including for read-only users.
+   */
+  onDelete?: () => void;
+  /**
+   * Saves the given attributes. Undefined when editing is not allowed, including for read-only users.
+   */
+  onUpdate?: (attributes: Record<string, unknown>) => void;
+  user?: ManagedUser;
+}
+
 export interface BaseUserDetailsProps {
   /**
    * Controls rendered next to the user's name.
    */
   actions?: ReactNode;
+  /**
+   * Renders custom UI in place of the default view. Receives the user, their visible attributes and
+   * groups, the loading and error state, and the delete and update handlers.
+   */
+  children?: (props: BaseUserDetailsRenderProps) => ReactNode;
   className?: string;
   error?: string | null;
   /**
@@ -59,6 +92,7 @@ const stringify = (value: unknown): string => {
  */
 const BaseUserDetails: FC<BaseUserDetailsProps> = ({
   actions,
+  children,
   className,
   error = null,
   groups = [],
@@ -74,6 +108,31 @@ const BaseUserDetails: FC<BaseUserDetailsProps> = ({
   const {t} = useTranslation(preferences?.i18n);
   const styles: Record<string, string> = useAdminPartStyles();
   const [draft, setDraft] = useState<Record<string, string> | null>(null);
+
+  if (children) {
+    const isWritable: boolean = Boolean(user) && !user?.isReadOnly;
+
+    return (
+      <div className={className}>
+        {children({
+          attributes: Object.fromEntries(
+            Object.entries(user?.attributes ?? {}).filter(
+              ([name]: [string, unknown]) => !hiddenAttributes.includes(name),
+            ),
+          ),
+          displayName: user ? resolveManagedIdentityName(user) : '',
+          error,
+          groups,
+          isDeleting,
+          isLoading,
+          isUpdating,
+          onDelete: isWritable ? onDelete : undefined,
+          onUpdate: isWritable ? onUpdate : undefined,
+          user,
+        })}
+      </div>
+    );
+  }
 
   if (isLoading && !user) {
     return (

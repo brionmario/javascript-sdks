@@ -25,6 +25,19 @@ export const adminFormProps = {
 } as const;
 
 /**
+ * What every admin create form hands its default scoped slot. Each form adds its values and setters.
+ */
+export interface AdminFormRenderProps {
+  error: string | null;
+  /** Submits the current values. Does nothing while they are not valid or a submission is in flight. */
+  handleSubmit: () => void;
+  isSubmitting: boolean;
+  /** Whether the values can be submitted. */
+  isValid: boolean;
+  onCancel?: () => void;
+}
+
+/**
  * The resolved values of {@link adminFormProps}.
  */
 export type AdminFormProps = Readonly<{

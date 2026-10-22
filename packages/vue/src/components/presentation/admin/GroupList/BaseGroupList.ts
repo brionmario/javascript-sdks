@@ -12,7 +12,8 @@ import type {AdminTranslate} from '../shared/useAdminTranslation';
  *
  * Props: `groups` (required), `selectedGroupId`, `isLoading`, `error`, `limit`, `offset`, `totalResults`,
  * `onPageChange`, `onSelect` (`@select`), `title`, `description`, `className`, `preferences`.
- * Slots: `actions`, rendered next to the title.
+ * Slots: `actions`, rendered next to the title; `default`, a scoped slot that replaces the table with custom UI and
+ * receives `AdminListRenderProps` (rows, default columns, loading and error state, pagination and selection).
  */
 const BaseGroupList: Component = createAdminList<Group>({
   block: 'group-list',

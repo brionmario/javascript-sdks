@@ -5,13 +5,25 @@ import {Group, Preferences} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode} from 'react';
 import useTranslation from '../../../../hooks/useTranslation';
 import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTable';
+import {AdminListRenderProps} from '../shared/AdminListRenderProps';
 import AdminSection from '../shared/AdminSection';
+
+/**
+ * What {@link BaseGroupList} hands its `children` render function. `groups` and `rows` are the same array.
+ */
+export type BaseGroupListRenderProps = AdminListRenderProps<Group> & {groups: Group[]};
 
 export interface BaseGroupListProps {
   /**
    * Controls rendered next to the title, such as a button that opens `GroupCreate`.
    */
   actions?: ReactNode;
+  /**
+   * Renders custom UI in place of the default table, for example a third-party data grid. Receives
+   * the groups, the default columns, the loading and error state, and the pagination and selection
+   * handlers.
+   */
+  children?: (props: BaseGroupListRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -46,6 +58,7 @@ export interface BaseGroupListProps {
  */
 const BaseGroupList: FC<BaseGroupListProps> = ({
   actions,
+  children,
   className,
   description,
   error = null,
@@ -75,6 +88,26 @@ const BaseGroupList: FC<BaseGroupListProps> = ({
       render: (group: Group): ReactNode => group.ouHandle ?? group.ouId,
     },
   ];
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          columns,
+          error,
+          isLoading,
+          limit,
+          offset,
+          onPageChange,
+          onSelect,
+          rows: groups,
+          selectedRowId: selectedGroupId,
+          totalResults: totalResults ?? groups.length,
+          groups,
+        })}
+      </div>
+    );
+  }
 
   return (
     <AdminSection

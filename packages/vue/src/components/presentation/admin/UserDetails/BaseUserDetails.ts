@@ -40,6 +40,26 @@ type BaseUserDetailsProps = Readonly<{
   user: ManagedUser | undefined;
 }>;
 
+/**
+ * What `BaseUserDetails` hands its default scoped slot, so the user can be shown with any UI.
+ */
+export interface BaseUserDetailsRenderProps {
+  /** The user's attributes, without the hidden ones. */
+  attributes: Record<string, unknown>;
+  /** The user's display name, or an empty string while there is no user. */
+  displayName: string;
+  error: string | null;
+  groups: MembershipGroup[];
+  isDeleting: boolean;
+  isLoading: boolean;
+  isUpdating: boolean;
+  /** Deletes the user. Undefined when deletion is not allowed, including for read-only users. */
+  onDelete?: () => void;
+  /** Saves the given attributes. Undefined when editing is not allowed, including for read-only users. */
+  onUpdate?: (attributes: Record<string, unknown>) => void;
+  user?: ManagedUser;
+}
+
 const stringify = (value: unknown): string => {
   if (value === null || value === undefined) {
     return '';
@@ -54,7 +74,8 @@ const cls = (element: string): string => withVendorCSSClassPrefix(`admin__${elem
  * Shows a user's attributes, type, organization unit and groups. Holds no data of its own: pass the
  * user and handle deletion and editing.
  *
- * Slots: `actions`, rendered next to the user's name.
+ * Slots: `actions`, rendered next to the user's name; `default`, a scoped slot that replaces the view
+ * with custom UI and receives {@link BaseUserDetailsRenderProps}.
  */
 const BaseUserDetails: Component = defineComponent({
   name: 'BaseUserDetails',
@@ -89,6 +110,28 @@ const BaseUserDetails: Component = defineComponent({
 
     return (): VNode => {
       const {user} = props;
+
+      if (slots['default']) {
+        const isWritable: boolean = Boolean(user) && !user?.isReadOnly;
+        const renderProps: BaseUserDetailsRenderProps = {
+          attributes: Object.fromEntries(
+            Object.entries(user?.attributes ?? {}).filter(
+              ([name]: [string, unknown]) => !props.hiddenAttributes.includes(name),
+            ),
+          ),
+          displayName: user ? resolveManagedIdentityName(user) : '',
+          error: props.error,
+          groups: props.groups,
+          isDeleting: props.isDeleting,
+          isLoading: props.isLoading,
+          isUpdating: props.isUpdating,
+          onDelete: isWritable ? props.onDelete : undefined,
+          onUpdate: isWritable ? props.onUpdate : undefined,
+          user,
+        };
+
+        return h('div', {class: props.className}, slots['default'](renderProps));
+      }
 
       if (props.isLoading && !user) {
         return h(

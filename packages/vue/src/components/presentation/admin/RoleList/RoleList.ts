@@ -11,7 +11,8 @@ import createConnectedAdminList from '../shared/createConnectedAdminList';
  * Lists the roles the signed-in user is allowed to see, a page at a time.
  *
  * Props: `limit`, `selectedRoleId`, `onSelect` (`@select`), `title`, `description`, `className`,
- * `preferences`. Slots: `actions`.
+ * `preferences`. Slots: `actions`; `default`, a scoped slot that replaces the table with custom UI and
+ * receives `AdminListRenderProps` (rows, default columns, loading and error state, pagination and selection).
  *
  * @example
  * ```vue

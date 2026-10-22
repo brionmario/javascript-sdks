@@ -87,7 +87,7 @@ const UserDetails: Component = defineComponent({
           preferences: props.preferences,
           user: current,
         },
-        slots['actions'] ? {actions: slots['actions']} : undefined,
+        {...slots},
       );
     };
   },

@@ -11,12 +11,33 @@ import {ChipList, ConfirmButton, DetailList, Panel} from '../shared/AdminParts';
 import AdminSection from '../shared/AdminSection';
 import useAdminPartStyles from '../shared/useAdminPartStyles';
 
+/**
+ * What {@link BaseAgentDetails} hands its `children` render function, so the agent can be shown with any UI.
+ */
+export interface BaseAgentDetailsRenderProps {
+  agent?: Agent;
+  error: string | null;
+  groups: MembershipGroup[];
+  isDeleting: boolean;
+  isLoading: boolean;
+  /**
+   * Deletes the agent. Undefined when deletion is not allowed, including for read-only agents.
+   */
+  onDelete?: () => void;
+  roles: string[];
+}
+
 export interface BaseAgentDetailsProps {
   /**
    * Controls rendered next to the agent's name.
    */
   actions?: ReactNode;
   agent?: Agent;
+  /**
+   * Renders custom UI in place of the default view. Receives the agent, its groups and roles, the
+   * loading and error state, and the delete handler.
+   */
+  children?: (props: BaseAgentDetailsRenderProps) => ReactNode;
   className?: string;
   error?: string | null;
   /**
@@ -43,6 +64,7 @@ export interface BaseAgentDetailsProps {
 const BaseAgentDetails: FC<BaseAgentDetailsProps> = ({
   actions,
   agent,
+  children,
   className,
   error = null,
   groups = [],
@@ -54,6 +76,22 @@ const BaseAgentDetails: FC<BaseAgentDetailsProps> = ({
 }: BaseAgentDetailsProps): ReactElement => {
   const {t} = useTranslation(preferences?.i18n);
   const styles: Record<string, string> = useAdminPartStyles();
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          agent,
+          error,
+          groups,
+          isDeleting,
+          isLoading,
+          onDelete: agent && !agent.isReadOnly ? onDelete : undefined,
+          roles,
+        })}
+      </div>
+    );
+  }
 
   if (isLoading && !agent) {
     return (

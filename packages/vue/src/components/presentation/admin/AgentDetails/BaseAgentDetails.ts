@@ -25,13 +25,28 @@ type BaseAgentDetailsProps = Readonly<{
   roles: string[];
 }>;
 
+/**
+ * What `BaseAgentDetails` hands its default scoped slot, so the agent can be shown with any UI.
+ */
+export interface BaseAgentDetailsRenderProps {
+  agent?: Agent;
+  error: string | null;
+  groups: MembershipGroup[];
+  isDeleting: boolean;
+  isLoading: boolean;
+  /** Deletes the agent. Undefined when deletion is not allowed, including for read-only agents. */
+  onDelete?: () => void;
+  roles: string[];
+}
+
 const cls = (element: string): string => withVendorCSSClassPrefix(`admin__${element}`);
 
 /**
  * Shows an agent's type, owner, organization unit, client identifier, groups and roles. Holds no data
  * of its own: pass the agent and handle deletion.
  *
- * Slots: `actions`, rendered next to the agent's name.
+ * Slots: `actions`, rendered next to the agent's name; `default`, a scoped slot that replaces the view
+ * with custom UI and receives {@link BaseAgentDetailsRenderProps}.
  */
 const BaseAgentDetails: Component = defineComponent({
   name: 'BaseAgentDetails',
@@ -58,6 +73,20 @@ const BaseAgentDetails: Component = defineComponent({
 
     return (): VNode => {
       const {agent} = props;
+
+      if (slots['default']) {
+        const renderProps: BaseAgentDetailsRenderProps = {
+          agent,
+          error: props.error,
+          groups: props.groups,
+          isDeleting: props.isDeleting,
+          isLoading: props.isLoading,
+          onDelete: agent && !agent.isReadOnly ? props.onDelete : undefined,
+          roles: props.roles,
+        };
+
+        return h('div', {class: props.className}, slots['default'](renderProps));
+      }
 
       if (props.isLoading && !agent) {
         return h(

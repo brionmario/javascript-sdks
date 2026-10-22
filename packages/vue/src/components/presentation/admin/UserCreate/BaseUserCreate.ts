@@ -17,7 +17,7 @@ import {DEFAULT_USER_CREATE_FIELDS, type UserCreateField} from './userCreateFiel
 import PasswordField from '../../../primitives/PasswordField/PasswordField';
 import Select from '../../../primitives/Select/Select';
 import TextField from '../../../primitives/TextField/TextField';
-import {type AdminFormProps, adminFormProps} from '../shared/adminFormProps';
+import {type AdminFormProps, type AdminFormRenderProps, adminFormProps} from '../shared/adminFormProps';
 import renderAdminForm from '../shared/renderAdminForm';
 import useAdminTranslation, {type AdminTranslate} from '../shared/useAdminTranslation';
 
@@ -29,6 +29,23 @@ export interface UserCreateSubmission {
   type: string;
 }
 
+/**
+ * What `BaseUserCreate` hands its default scoped slot, so the form can be built with any UI.
+ */
+export interface BaseUserCreateRenderProps extends AdminFormRenderProps {
+  /** The attributes to collect. */
+  fields: UserCreateField[];
+  /** Sets one attribute. */
+  handleInputChange: (name: string, value: string) => void;
+  /** Chooses the user type. */
+  handleTypeChange: (type: string) => void;
+  /** The chosen user type. */
+  type: string;
+  userTypes: SelectOption[];
+  /** The attribute values, keyed by attribute name. */
+  values: Record<string, string>;
+}
+
 type BaseUserCreateProps = AdminFormProps &
   Readonly<{
     fields: UserCreateField[];
@@ -37,7 +54,8 @@ type BaseUserCreateProps = AdminFormProps &
 
 /**
  * A form that collects a new user's type and attributes. Holds no data of its own: pass the user
- * types and handle the `submit` event, which carries a {@link UserCreateSubmission}.
+ * types and handle the `submit` event, which carries a {@link UserCreateSubmission}. Slots: `default`, a scoped slot that
+ * replaces the form with custom UI and receives {@link BaseUserCreateRenderProps}.
  */
 const BaseUserCreate: Component = defineComponent({
   name: 'BaseUserCreate',
@@ -49,7 +67,7 @@ const BaseUserCreate: Component = defineComponent({
     userTypes: {required: true, type: Array as PropType<SelectOption[]>},
   },
   emits: ['submit'],
-  setup(props: BaseUserCreateProps, {emit}: SetupContext): () => VNode {
+  setup(props: BaseUserCreateProps, {emit, slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const uid: string = useId();
     const chosenType: Ref<string> = ref('');
@@ -113,6 +131,17 @@ const BaseUserCreate: Component = defineComponent({
           emit('submit', {attributes, type} satisfies UserCreateSubmission);
         },
         props,
+        renderProps: {
+          fields: props.fields,
+          handleInputChange: setValue,
+          handleTypeChange: (value: string): void => {
+            chosenType.value = value;
+          },
+          type,
+          userTypes: props.userTypes,
+          values: values.value,
+        } satisfies Omit<BaseUserCreateRenderProps, keyof AdminFormRenderProps>,
+        slot: slots['default'],
         submitLabel: t('admin.users.create.submit'),
         t,
         title: t('admin.users.create.title'),

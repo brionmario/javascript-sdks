@@ -15,7 +15,7 @@ import {
 } from 'vue';
 import Select from '../../../primitives/Select/Select';
 import TextField from '../../../primitives/TextField/TextField';
-import {type AdminFormProps, adminFormProps} from '../shared/adminFormProps';
+import {type AdminFormProps, type AdminFormRenderProps, adminFormProps} from '../shared/adminFormProps';
 import renderAdminForm from '../shared/renderAdminForm';
 import useAdminTranslation, {type AdminTranslate} from '../shared/useAdminTranslation';
 
@@ -31,8 +31,19 @@ export interface AgentCreateSubmission {
 type BaseAgentCreateProps = AdminFormProps & Readonly<{agentTypes: SelectOption[]}>;
 
 /**
+ * What `BaseAgentCreate` hands its default scoped slot, so the form can be built with any UI.
+ */
+export interface BaseAgentCreateRenderProps extends AdminFormRenderProps {
+  agentTypes: SelectOption[];
+  /** Sets one field of the form. */
+  handleInputChange: (field: 'description' | 'name' | 'type', value: string) => void;
+  values: {description: string; name: string; type: string};
+}
+
+/**
  * A form that collects a new agent's name, type and description. Holds no data of its own: handle the
- * `submit` event, which carries a {@link AgentCreateSubmission}.
+ * `submit` event, which carries a {@link AgentCreateSubmission}. Slots: `default`, a scoped slot that
+ * replaces the form with custom UI and receives {@link BaseAgentCreateRenderProps}.
  */
 const BaseAgentCreate: Component = defineComponent({
   name: 'BaseAgentCreate',
@@ -42,7 +53,7 @@ const BaseAgentCreate: Component = defineComponent({
     agentTypes: {required: true, type: Array as PropType<SelectOption[]>},
   },
   emits: ['submit'],
-  setup(props: BaseAgentCreateProps, {emit}: SetupContext): () => VNode {
+  setup(props: BaseAgentCreateProps, {emit, slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const uid: string = useId();
     const name: Ref<string> = ref('');
@@ -92,6 +103,14 @@ const BaseAgentCreate: Component = defineComponent({
           } satisfies AgentCreateSubmission);
         },
         props,
+        renderProps: {
+          agentTypes: props.agentTypes,
+          handleInputChange: (field: 'description' | 'name' | 'type', value: string): void => {
+            ({description, name, type: chosenType})[field].value = value;
+          },
+          values: {description: description.value, name: name.value, type},
+        } satisfies Omit<BaseAgentCreateRenderProps, keyof AdminFormRenderProps>,
+        slot: slots['default'],
         submitLabel: t('admin.agents.create.submit'),
         t,
         title: t('admin.agents.create.title'),

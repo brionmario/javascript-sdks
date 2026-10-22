@@ -3,7 +3,7 @@
 
 import {type Component, type Ref, type SetupContext, type VNode, defineComponent, h, ref, useId} from 'vue';
 import TextField from '../../../primitives/TextField/TextField';
-import {type AdminFormProps, adminFormProps} from '../shared/adminFormProps';
+import {type AdminFormProps, type AdminFormRenderProps, adminFormProps} from '../shared/adminFormProps';
 import renderAdminForm from '../shared/renderAdminForm';
 import useAdminTranslation, {type AdminTranslate} from '../shared/useAdminTranslation';
 
@@ -16,8 +16,18 @@ export interface RoleCreateSubmission {
 }
 
 /**
+ * What `BaseRoleCreate` hands its default scoped slot, so the form can be built with any UI.
+ */
+export interface BaseRoleCreateRenderProps extends AdminFormRenderProps {
+  /** Sets one field of the form. */
+  handleInputChange: (field: 'description' | 'name', value: string) => void;
+  values: {description: string; name: string};
+}
+
+/**
  * A form that collects a new role's name and description. Holds no data of its own: handle the
- * `submit` event, which carries a {@link RoleCreateSubmission}.
+ * `submit` event, which carries a {@link RoleCreateSubmission}. Slots: `default`, a scoped slot that
+ * replaces the form with custom UI and receives {@link BaseRoleCreateRenderProps}.
  */
 const BaseRoleCreate: Component = defineComponent({
   name: 'BaseRoleCreate',
@@ -25,7 +35,7 @@ const BaseRoleCreate: Component = defineComponent({
     ...adminFormProps,
   },
   emits: ['submit'],
-  setup(props: AdminFormProps, {emit}: SetupContext): () => VNode {
+  setup(props: AdminFormProps, {emit, slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const uid: string = useId();
     const name: Ref<string> = ref('');
@@ -61,6 +71,13 @@ const BaseRoleCreate: Component = defineComponent({
           } satisfies RoleCreateSubmission);
         },
         props,
+        renderProps: {
+          handleInputChange: (field: 'description' | 'name', value: string): void => {
+            (field === 'name' ? name : description).value = value;
+          },
+          values: {description: description.value, name: name.value},
+        } satisfies Omit<BaseRoleCreateRenderProps, keyof AdminFormRenderProps>,
+        slot: slots['default'],
         submitLabel: t('admin.roles.create.submit'),
         t,
         title: t('admin.roles.create.title'),

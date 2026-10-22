@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Preferences} from '@thunderid/browser';
-import {ChangeEvent, FC, FormEvent, ReactElement, useState} from 'react';
+import {ChangeEvent, FC, FormEvent, ReactElement, ReactNode, useState} from 'react';
 import useTheme from '../../../../contexts/Theme/useTheme';
 import useTranslation from '../../../../hooks/useTranslation';
 import Alert from '../../../primitives/Alert/Alert';
@@ -19,7 +19,34 @@ export interface RoleCreateSubmission {
   name: string;
 }
 
+/**
+ * What {@link BaseRoleCreate} hands its `children` render function, so the form can be built with any UI.
+ */
+export interface BaseRoleCreateRenderProps {
+  error: string | null;
+  /**
+   * Sets one field of the form.
+   */
+  handleInputChange: (field: 'description' | 'name', value: string) => void;
+  /**
+   * Submits the current values. Does nothing while they are not valid.
+   */
+  handleSubmit: () => void;
+  isSubmitting: boolean;
+  /**
+   * Whether the values can be submitted.
+   */
+  isValid: boolean;
+  onCancel?: () => void;
+  values: {description: string; name: string};
+}
+
 export interface BaseRoleCreateProps {
+  /**
+   * Renders custom UI in place of the default form. Receives the values, their setters, the submit
+   * handler and the submission state.
+   */
+  children?: (props: BaseRoleCreateRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -35,6 +62,7 @@ export interface BaseRoleCreateProps {
  * submission.
  */
 const BaseRoleCreate: FC<BaseRoleCreateProps> = ({
+  children,
   className,
   description,
   error = null,
@@ -50,10 +78,35 @@ const BaseRoleCreate: FC<BaseRoleCreateProps> = ({
   const [name, setName] = useState<string>('');
   const [roleDescription, setRoleDescription] = useState<string>('');
 
+  const isValid: boolean = name.trim().length > 0;
+
+  const submit = (): void => {
+    if (isValid) {
+      onSubmit({description: roleDescription.trim() || undefined, name: name.trim()});
+    }
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    onSubmit({description: roleDescription.trim() || undefined, name: name.trim()});
+    submit();
   };
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          error,
+          handleInputChange: (field: 'description' | 'name', value: string): void =>
+            field === 'name' ? setName(value) : setRoleDescription(value),
+          handleSubmit: submit,
+          isSubmitting,
+          isValid,
+          onCancel,
+          values: {description: roleDescription, name},
+        })}
+      </div>
+    );
+  }
 
   return (
     <AdminSection
@@ -88,7 +141,7 @@ const BaseRoleCreate: FC<BaseRoleCreateProps> = ({
               {t('admin.common.actions.cancel')}
             </Button>
           )}
-          <Button type="submit" loading={isSubmitting} disabled={!name.trim() || isSubmitting}>
+          <Button type="submit" loading={isSubmitting} disabled={!isValid || isSubmitting}>
             {t('admin.roles.create.submit')}
           </Button>
         </div>

@@ -12,7 +12,7 @@ import type {
   ManagedUserListResponse,
   Preferences,
 } from '@thunderid/browser';
-import {type Component, type PropType, type VNode, defineComponent, h} from 'vue';
+import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
 import BaseGroupMembers from './BaseGroupMembers';
 import useGetAgents from '../../../../composables/agents/useGetAgents';
 import useAddGroupMembers, {type GroupMembersVariables} from '../../../../composables/groups/useAddGroupMembers';
@@ -58,7 +58,7 @@ const GroupMembers: Component = defineComponent({
     /** Heading of the section. Pass an empty string to hide it. */
     title: {default: undefined, type: String},
   },
-  setup(props: GroupMembersProps): () => VNode {
+  setup(props: GroupMembersProps, {slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const members: ResourceQueryResult<GroupMemberListResponse> = useGetGroupMembers(() => props.groupId, {
       limit: 100,
@@ -80,27 +80,31 @@ const GroupMembers: Component = defineComponent({
         })),
       };
 
-      return h(BaseGroupMembers, {
-        candidates: props.editable ? candidates : undefined,
-        className: props.className,
-        description: props.description,
-        error:
-          toManagementErrorMessage(t, members.error.value, 'admin.groups.members.error') ??
-          toManagementErrorMessage(t, add.error.value ?? remove.error.value, 'admin.groups.members.update_error'),
-        isLoading: members.isLoading.value,
-        isMutating: add.isLoading.value || remove.isLoading.value,
-        members: members.data.value?.members ?? [],
-        onAdd: props.editable
-          ? (member: Pick<GroupMember, 'id' | 'type'>): void =>
-              void add.mutate({groupId: props.groupId, members: [member]})
-          : undefined,
-        onRemove: props.editable
-          ? (member: GroupMember): void =>
-              void remove.mutate({groupId: props.groupId, members: [{id: member.id, type: member.type}]})
-          : undefined,
-        preferences: props.preferences,
-        title: props.title,
-      });
+      return h(
+        BaseGroupMembers,
+        {
+          candidates: props.editable ? candidates : undefined,
+          className: props.className,
+          description: props.description,
+          error:
+            toManagementErrorMessage(t, members.error.value, 'admin.groups.members.error') ??
+            toManagementErrorMessage(t, add.error.value ?? remove.error.value, 'admin.groups.members.update_error'),
+          isLoading: members.isLoading.value,
+          isMutating: add.isLoading.value || remove.isLoading.value,
+          members: members.data.value?.members ?? [],
+          onAdd: props.editable
+            ? (member: Pick<GroupMember, 'id' | 'type'>): void =>
+                void add.mutate({groupId: props.groupId, members: [member]})
+            : undefined,
+          onRemove: props.editable
+            ? (member: GroupMember): void =>
+                void remove.mutate({groupId: props.groupId, members: [{id: member.id, type: member.type}]})
+            : undefined,
+          preferences: props.preferences,
+          title: props.title,
+        },
+        {...slots},
+      );
     };
   },
 });

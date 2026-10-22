@@ -37,7 +37,7 @@ const GroupCreate: Component = defineComponent({
     title: adminFormProps.title,
   },
   emits: ['created'],
-  setup(props: GroupCreateProps, {emit}: SetupContext): () => VNode {
+  setup(props: GroupCreateProps, {emit, slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const resolvedOuId: ComputedRef<string | undefined> = useDefaultOuId(() => props.ouId);
     const creation: ResourceMutationResult<Group, CreateGroupRequest> = useCreateGroup({
@@ -51,18 +51,22 @@ const GroupCreate: Component = defineComponent({
     };
 
     return (): VNode =>
-      h(BaseGroupCreate, {
-        className: props.className,
-        description: props.description,
-        error: resolvedOuId.value
-          ? toManagementErrorMessage(t, creation.error.value, 'admin.groups.create.error')
-          : t('admin.common.errors.no_ou'),
-        isSubmitting: creation.isLoading.value,
-        onCancel: props.onCancel,
-        onSubmit: handleSubmit,
-        preferences: props.preferences,
-        title: props.title,
-      });
+      h(
+        BaseGroupCreate,
+        {
+          className: props.className,
+          description: props.description,
+          error: resolvedOuId.value
+            ? toManagementErrorMessage(t, creation.error.value, 'admin.groups.create.error')
+            : t('admin.common.errors.no_ou'),
+          isSubmitting: creation.isLoading.value,
+          onCancel: props.onCancel,
+          onSubmit: handleSubmit,
+          preferences: props.preferences,
+          title: props.title,
+        },
+        {...slots},
+      );
   },
 });
 

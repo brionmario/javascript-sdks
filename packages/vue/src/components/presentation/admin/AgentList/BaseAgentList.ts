@@ -12,7 +12,8 @@ import type {AdminTranslate} from '../shared/useAdminTranslation';
  *
  * Props: `agents` (required), `selectedAgentId`, `isLoading`, `error`, `limit`, `offset`, `totalResults`,
  * `onPageChange`, `onSelect` (`@select`), `title`, `description`, `className`, `preferences`.
- * Slots: `actions`, rendered next to the title.
+ * Slots: `actions`, rendered next to the title; `default`, a scoped slot that replaces the table with custom UI and
+ * receives `AdminListRenderProps` (rows, default columns, loading and error state, pagination and selection).
  */
 const BaseAgentList: Component = createAdminList<BasicAgent>({
   block: 'agent-list',

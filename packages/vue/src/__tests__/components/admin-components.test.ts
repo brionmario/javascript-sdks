@@ -1,14 +1,25 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import type {Group, ManagedUser, RoleResourcePermissions} from '@thunderid/browser';
 import {mount} from '@vue/test-utils';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {h} from 'vue';
+import {h, nextTick} from 'vue';
+import BaseAgentDetails from '../../components/presentation/admin/AgentDetails/BaseAgentDetails';
+import type {BaseAgentDetailsRenderProps} from '../../components/presentation/admin/AgentDetails/BaseAgentDetails';
 import BaseGroupCreate from '../../components/presentation/admin/GroupCreate/BaseGroupCreate';
+import type {BaseGroupCreateRenderProps} from '../../components/presentation/admin/GroupCreate/BaseGroupCreate';
 import GroupList from '../../components/presentation/admin/GroupList/GroupList';
 import BaseGroupMembers from '../../components/presentation/admin/GroupMembers/BaseGroupMembers';
+import type {BaseGroupMembersRenderProps} from '../../components/presentation/admin/GroupMembers/BaseGroupMembers';
 import RoleCreate from '../../components/presentation/admin/RoleCreate/RoleCreate';
+import BaseRolePermissions from '../../components/presentation/admin/RolePermissions/BaseRolePermissions';
+import type {BaseRolePermissionsRenderProps} from '../../components/presentation/admin/RolePermissions/BaseRolePermissions';
+import type {AdminListRenderProps} from '../../components/presentation/admin/shared/createAdminList';
+import BaseUserCreate from '../../components/presentation/admin/UserCreate/BaseUserCreate';
+import type {BaseUserCreateRenderProps} from '../../components/presentation/admin/UserCreate/BaseUserCreate';
 import BaseUserDetails from '../../components/presentation/admin/UserDetails/BaseUserDetails';
+import type {BaseUserDetailsRenderProps} from '../../components/presentation/admin/UserDetails/BaseUserDetails';
 import UserDetails from '../../components/presentation/admin/UserDetails/UserDetails';
 import BaseUserList from '../../components/presentation/admin/UserList/BaseUserList';
 import {createManagementContext, jsonResponse, translate} from '../helpers/managementContext';
@@ -286,6 +297,175 @@ describe('admin components (vue)', () => {
       expect(context.fetcher.mock.calls[0][0]).toBe('https://thunder.example/roles');
       expect(JSON.parse(context.fetcher.mock.calls[0][1].body as string)).toEqual({name: 'Auditor', ouId: 'ou-1'});
       expect(wrapper.emitted('created')![0][0]).toMatchObject({id: 'r1'});
+    });
+  });
+
+  describe('default scoped slot (render props)', () => {
+    it('hands a list its rows, default columns and pagination instead of rendering the table', async () => {
+      const onPageChange = vi.fn();
+      const {wrapper} = mountWith(
+        BaseUserList,
+        {limit: 20, offset: 20, onPageChange, totalResults: 45, users},
+        createManagementContext(),
+        {
+          default: (props: AdminListRenderProps<ManagedUser> & {users: ManagedUser[]}) =>
+            h('div', [
+              h('p', {class: 'summary'}, `${props.rows.length} of ${props.totalResults} from ${props.offset}`),
+              h('p', {class: 'columns'}, props.columns.map((column: {id: string}) => column.id).join(',')),
+              h('p', {class: 'named'}, props.users.map((user: ManagedUser) => user.id).join(',')),
+              h('button', {onClick: () => props.onPageChange?.(40)}, 'Next'),
+            ]),
+        },
+      );
+
+      expect(wrapper.find('table').exists()).toBe(false);
+      expect(wrapper.find('.summary').text()).toBe('2 of 45 from 20');
+      expect(wrapper.find('.columns').text()).toBe('name,type,ou');
+      expect(wrapper.find('.named').text()).toBe('u1,u2');
+      await wrapper.find('button').trigger('click');
+      expect(onPageChange).toHaveBeenCalledWith(40);
+    });
+
+    it('passes the rows a connected list fetched to its slot', async () => {
+      const context = createManagementContext();
+      context.fetcher.mockResolvedValue(
+        jsonResponse({count: 1, groups: [{id: 'g1', name: 'Admins', ouId: 'ou-1'}], startIndex: 1, totalResults: 1}),
+      );
+      const {wrapper} = mountWith(GroupList, {}, context, {
+        default: (props: AdminListRenderProps<Group> & {groups: Group[]}) =>
+          h(
+            'ul',
+            props.groups.map((group: Group) => h('li', {key: group.id}, group.name)),
+          ),
+      });
+
+      await vi.waitFor(() => expect(wrapper.findAll('li').map((item) => item.text())).toEqual(['Admins']));
+    });
+
+    it('lets a custom form set values and submit them', async () => {
+      const {wrapper} = mountWith(BaseGroupCreate, {}, createManagementContext(), {
+        default: (props: BaseGroupCreateRenderProps) =>
+          h('div', [
+            h('input', {
+              'aria-label': 'Group name',
+              onInput: (event: Event) => props.handleInputChange('name', (event.target as HTMLInputElement).value),
+              value: props.values.name,
+            }),
+            h('button', {disabled: !props.isValid, onClick: props.handleSubmit}, 'Save'),
+          ]),
+      });
+
+      expect(wrapper.find('button').attributes('disabled')).toBeDefined();
+      await wrapper.find('input').setValue('  Engineering ');
+      await wrapper.find('button').trigger('click');
+      expect(wrapper.emitted('submit')?.[0]).toEqual([{description: undefined, name: 'Engineering'}]);
+    });
+
+    it('defaults a custom user form to the first user type and submits non-empty attributes', async () => {
+      let renderProps: BaseUserCreateRenderProps | undefined;
+      const {wrapper} = mountWith(
+        BaseUserCreate,
+        {userTypes: [{label: 'Person', value: 'person'}]},
+        createManagementContext(),
+        {
+          default: (props: BaseUserCreateRenderProps) => {
+            renderProps = props;
+
+            return h('span', props.type);
+          },
+        },
+      );
+
+      renderProps?.handleInputChange('username', 'jane');
+      renderProps?.handleInputChange('email', 'jane@example.com');
+      renderProps?.handleInputChange('given_name', ' ');
+      await nextTick();
+      renderProps?.handleSubmit();
+      expect(wrapper.text()).toBe('person');
+      expect(wrapper.emitted('submit')?.[0]).toEqual([
+        {attributes: {email: 'jane@example.com', username: 'jane'}, type: 'person'},
+      ]);
+    });
+
+    it('hides credentials from custom user details and offers no delete for read-only users', () => {
+      let renderProps: BaseUserDetailsRenderProps | undefined;
+      mountWith(
+        BaseUserDetails,
+        {onDelete: vi.fn(), user: {...users[0], attributes: {password: 'x', username: 'jane'}, isReadOnly: true}},
+        createManagementContext(),
+        {
+          default: (props: BaseUserDetailsRenderProps) => {
+            renderProps = props;
+
+            return h('h2', props.displayName);
+          },
+        },
+      );
+
+      expect(renderProps?.attributes).toEqual({username: 'jane'});
+      expect(renderProps?.onDelete).toBeUndefined();
+    });
+
+    it('hands custom agent details the delete handler for writable agents', () => {
+      const onDelete = vi.fn();
+      let renderProps: BaseAgentDetailsRenderProps | undefined;
+      mountWith(
+        BaseAgentDetails,
+        {agent: {id: 'a1', name: 'Concierge', ouId: 'ou-1', type: 'assistant'}, onDelete, roles: ['viewer']},
+        createManagementContext(),
+        {
+          default: (props: BaseAgentDetailsRenderProps) => {
+            renderProps = props;
+
+            return h('span', props.agent?.name);
+          },
+        },
+      );
+
+      renderProps?.onDelete?.();
+      expect(onDelete).toHaveBeenCalled();
+      expect(renderProps?.roles).toEqual(['viewer']);
+    });
+
+    it('hands custom members UI the remove handler and the actions column', async () => {
+      const onRemove = vi.fn();
+      const member = {display: 'Jane Doe', id: 'u1', type: 'user'};
+      const {wrapper} = mountWith(BaseGroupMembers, {members: [member], onRemove}, createManagementContext(), {
+        default: (props: BaseGroupMembersRenderProps) =>
+          h('div', [
+            h('p', props.columns.map((column: {id: string}) => column.id).join(',')),
+            h('button', {onClick: () => props.onRemove?.(props.members[0])}, 'Drop'),
+          ]),
+      });
+
+      expect(wrapper.find('p').text()).toBe('member,type,actions');
+      await wrapper.find('button').trigger('click');
+      expect(onRemove).toHaveBeenCalledWith(member);
+    });
+
+    it('hands custom permissions UI only the granted servers, with their names', () => {
+      const {wrapper} = mountWith(
+        BaseRolePermissions,
+        {
+          permissions: [
+            {permissions: ['read'], resourceServerId: 'rs-1'},
+            {permissions: [], resourceServerId: 'rs-2'},
+          ],
+          resourceServerNames: {'rs-1': 'Orders API'},
+        },
+        createManagementContext(),
+        {
+          default: (props: BaseRolePermissionsRenderProps) =>
+            h(
+              'ul',
+              props.permissions.map((entry: RoleResourcePermissions) =>
+                h('li', `${props.resolveResourceServerName(entry.resourceServerId)}: ${entry.permissions.join(' ')}`),
+              ),
+            ),
+        },
+      );
+
+      expect(wrapper.findAll('li').map((item) => item.text())).toEqual(['Orders API: read']);
     });
   });
 });

@@ -97,7 +97,7 @@ const createConnectedAdminList = <TData, TRow>(definition: ConnectedAdminListDef
             title: props['title'],
             totalResults: definition.total(query.data.value),
           },
-          slots['actions'] ? {actions: slots['actions']} : undefined,
+          {...slots},
         );
     },
   });

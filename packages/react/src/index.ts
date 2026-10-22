@@ -200,6 +200,8 @@ export * from './components/presentation/UserProfile/BaseUserProfile';
 export {default as UserProfile} from './components/presentation/UserProfile/UserProfile';
 export * from './components/presentation/UserProfile/UserProfile';
 
+export * from './components/presentation/admin/shared/AdminListRenderProps';
+
 export {default as BaseUserList} from './components/presentation/admin/UserList/BaseUserList';
 export * from './components/presentation/admin/UserList/BaseUserList';
 

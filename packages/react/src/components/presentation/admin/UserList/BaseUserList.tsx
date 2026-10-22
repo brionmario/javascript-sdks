@@ -6,13 +6,25 @@ import {FC, ReactElement, ReactNode} from 'react';
 import useTranslation from '../../../../hooks/useTranslation';
 import {Avatar} from '../../../primitives/Avatar/Avatar';
 import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTable';
+import {AdminListRenderProps} from '../shared/AdminListRenderProps';
 import AdminSection from '../shared/AdminSection';
+
+/**
+ * What {@link BaseUserList} hands its `children` render function. `users` and `rows` are the same array.
+ */
+export type BaseUserListRenderProps = AdminListRenderProps<ManagedUser> & {users: ManagedUser[]};
 
 export interface BaseUserListProps {
   /**
    * Controls rendered next to the title, such as a button that opens `UserCreate`.
    */
   actions?: ReactNode;
+  /**
+   * Renders custom UI in place of the default table, for example a third-party data grid. Receives
+   * the users, the default columns, the loading and error state, and the pagination and selection
+   * handlers.
+   */
+  children?: (props: BaseUserListRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -47,6 +59,7 @@ export interface BaseUserListProps {
  */
 const BaseUserList: FC<BaseUserListProps> = ({
   actions,
+  children,
   className,
   description,
   error = null,
@@ -91,6 +104,26 @@ const BaseUserList: FC<BaseUserListProps> = ({
       render: (user: ManagedUser): ReactNode => user.ouHandle ?? user.ouId,
     },
   ];
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          columns,
+          error,
+          isLoading,
+          limit,
+          offset,
+          onPageChange,
+          onSelect,
+          rows: users,
+          selectedRowId: selectedUserId,
+          totalResults: totalResults ?? users.length,
+          users,
+        })}
+      </div>
+    );
+  }
 
   return (
     <AdminSection

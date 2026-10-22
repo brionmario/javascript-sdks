@@ -3,7 +3,7 @@
 
 import {toManagementErrorMessage} from '@thunderid/browser';
 import type {Preferences, Role} from '@thunderid/browser';
-import {type Component, type PropType, type VNode, defineComponent, h} from 'vue';
+import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
 import BaseRolePermissions from './BaseRolePermissions';
 import useGetRole from '../../../../composables/roles/useGetRole';
 import type {ResourceQueryResult} from '../../../../composables/useResourceQuery';
@@ -42,21 +42,25 @@ const RolePermissions: Component = defineComponent({
     /** Heading of the section. Pass an empty string to hide it. */
     title: {default: undefined, type: String},
   },
-  setup(props: RolePermissionsProps): () => VNode {
+  setup(props: RolePermissionsProps, {slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const role: ResourceQueryResult<Role> = useGetRole(() => props.roleId);
 
     return (): VNode =>
-      h(BaseRolePermissions, {
-        className: props.className,
-        description: props.description,
-        error: toManagementErrorMessage(t, role.error.value, 'admin.roles.permissions.error'),
-        isLoading: role.isLoading.value,
-        permissions: role.data.value?.permissions ?? [],
-        preferences: props.preferences,
-        resourceServerNames: props.resourceServerNames,
-        title: props.title,
-      });
+      h(
+        BaseRolePermissions,
+        {
+          className: props.className,
+          description: props.description,
+          error: toManagementErrorMessage(t, role.error.value, 'admin.roles.permissions.error'),
+          isLoading: role.isLoading.value,
+          permissions: role.data.value?.permissions ?? [],
+          preferences: props.preferences,
+          resourceServerNames: props.resourceServerNames,
+          title: props.title,
+        },
+        {...slots},
+      );
   },
 });
 

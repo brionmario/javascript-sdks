@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Preferences, SelectOption} from '@thunderid/browser';
-import {ChangeEvent, FC, FormEvent, ReactElement, useState} from 'react';
+import {ChangeEvent, FC, FormEvent, ReactElement, ReactNode, useState} from 'react';
 import useTheme from '../../../../contexts/Theme/useTheme';
 import useTranslation from '../../../../hooks/useTranslation';
 import Alert from '../../../primitives/Alert/Alert';
@@ -21,11 +21,39 @@ export interface AgentCreateSubmission {
   type: string;
 }
 
+/**
+ * What {@link BaseAgentCreate} hands its `children` render function, so the form can be built with any UI.
+ */
+export interface BaseAgentCreateRenderProps {
+  agentTypes: SelectOption[];
+  error: string | null;
+  /**
+   * Sets one field of the form.
+   */
+  handleInputChange: (field: 'description' | 'name' | 'type', value: string) => void;
+  /**
+   * Submits the current values. Does nothing while they are not valid.
+   */
+  handleSubmit: () => void;
+  isSubmitting: boolean;
+  /**
+   * Whether the values can be submitted.
+   */
+  isValid: boolean;
+  onCancel?: () => void;
+  values: {description: string; name: string; type: string};
+}
+
 export interface BaseAgentCreateProps {
   /**
    * The agent types to choose from. The first one is selected by default.
    */
   agentTypes: SelectOption[];
+  /**
+   * Renders custom UI in place of the default form. Receives the values, their setters, the agent
+   * types, the submit handler and the submission state.
+   */
+  children?: (props: BaseAgentCreateRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -42,6 +70,7 @@ export interface BaseAgentCreateProps {
  */
 const BaseAgentCreate: FC<BaseAgentCreateProps> = ({
   agentTypes,
+  children,
   className,
   description,
   error = null,
@@ -59,10 +88,41 @@ const BaseAgentCreate: FC<BaseAgentCreateProps> = ({
   const type: string = chosenType || (agentTypes[0]?.value ?? '');
   const [agentDescription, setAgentDescription] = useState<string>('');
 
+  const isValid: boolean = Boolean(name.trim()) && Boolean(type);
+
+  const submit = (): void => {
+    if (isValid) {
+      onSubmit({description: agentDescription.trim() || undefined, name: name.trim(), type});
+    }
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    onSubmit({description: agentDescription.trim() || undefined, name: name.trim(), type});
+    submit();
   };
+
+  if (children) {
+    const setters: Record<'description' | 'name' | 'type', (value: string) => void> = {
+      description: setAgentDescription,
+      name: setName,
+      type: setType,
+    };
+
+    return (
+      <div className={className}>
+        {children({
+          agentTypes,
+          error,
+          handleInputChange: (field: 'description' | 'name' | 'type', value: string): void => setters[field](value),
+          handleSubmit: submit,
+          isSubmitting,
+          isValid,
+          onCancel,
+          values: {description: agentDescription, name, type},
+        })}
+      </div>
+    );
+  }
 
   return (
     <AdminSection
@@ -105,7 +165,7 @@ const BaseAgentCreate: FC<BaseAgentCreateProps> = ({
               {t('admin.common.actions.cancel')}
             </Button>
           )}
-          <Button type="submit" loading={isSubmitting} disabled={!name.trim() || !type || isSubmitting}>
+          <Button type="submit" loading={isSubmitting} disabled={!isValid || isSubmitting}>
             {t('admin.agents.create.submit')}
           </Button>
         </div>

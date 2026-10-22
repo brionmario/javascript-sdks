@@ -69,7 +69,7 @@ const AgentDetails: Component = defineComponent({
           preferences: props.preferences,
           roles: roles.data.value?.roles ?? [],
         },
-        slots['actions'] ? {actions: slots['actions']} : undefined,
+        {...slots},
       );
   },
 });

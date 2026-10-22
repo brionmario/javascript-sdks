@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {withVendorCSSClassPrefix} from '@thunderid/browser';
-import {type VNode, type VNodeChild, h} from 'vue';
-import type {AdminFormProps} from './adminFormProps';
+import {type Slot, type VNode, type VNodeChild, h} from 'vue';
+import type {AdminFormProps, AdminFormRenderProps} from './adminFormProps';
 import AdminSection from './AdminSection';
 import type {AdminTranslate} from './useAdminTranslation';
 import Alert from '../../../primitives/Alert/Alert';
@@ -11,7 +11,7 @@ import Button from '../../../primitives/Button/Button';
 
 /**
  * Renders the frame of an admin create form: the section, the error, the fields and the cancel and
- * submit buttons.
+ * submit buttons. When a default scoped slot is given, renders it instead with the form state.
  *
  * @param options - What to render.
  * @returns The form.
@@ -22,6 +22,8 @@ const renderAdminForm = ({
   fields,
   onSubmit,
   props,
+  renderProps,
+  slot,
   submitLabel,
   t,
   title,
@@ -31,11 +33,31 @@ const renderAdminForm = ({
   fields: VNodeChild[];
   onSubmit: () => void;
   props: AdminFormProps;
+  /** The form's own values and setters, added to the default scoped slot's props. */
+  renderProps?: Record<string, unknown>;
+  /** The default scoped slot, which replaces the form with custom UI. */
+  slot?: Slot;
   submitLabel: string;
   t: AdminTranslate;
   title: string;
-}): VNode =>
-  h(
+}): VNode => {
+  if (slot) {
+    const shared: AdminFormRenderProps = {
+      error: props.error,
+      handleSubmit: (): void => {
+        if (canSubmit && !props.isSubmitting) {
+          onSubmit();
+        }
+      },
+      isSubmitting: props.isSubmitting,
+      isValid: canSubmit,
+      onCancel: props.onCancel,
+    };
+
+    return h('div', {class: props.className}, slot({...shared, ...renderProps}));
+  }
+
+  return h(
     AdminSection,
     {block, className: props.className, description: props.description, title: props.title ?? title},
     {
@@ -74,5 +96,6 @@ const renderAdminForm = ({
         ),
     },
   );
+};
 
 export default renderAdminForm;

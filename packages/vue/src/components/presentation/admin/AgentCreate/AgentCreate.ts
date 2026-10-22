@@ -42,7 +42,7 @@ const AgentCreate: Component = defineComponent({
     title: adminFormProps.title,
   },
   emits: ['created'],
-  setup(props: AgentCreateProps, {emit}: SetupContext): () => VNode {
+  setup(props: AgentCreateProps, {emit, slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const resolvedOuId: ComputedRef<string | undefined> = useDefaultOuId(() => props.ouId);
     const agentTypes: ResourceQueryResult<AgentTypeListResponse> = useGetAgentTypes({limit: 100});
@@ -63,19 +63,23 @@ const AgentCreate: Component = defineComponent({
     };
 
     return (): VNode =>
-      h(BaseAgentCreate, {
-        agentTypes: options.value,
-        className: props.className,
-        description: props.description,
-        error: resolvedOuId.value
-          ? toManagementErrorMessage(t, creation.error.value, 'admin.agents.create.error')
-          : t('admin.common.errors.no_ou'),
-        isSubmitting: creation.isLoading.value,
-        onCancel: props.onCancel,
-        onSubmit: handleSubmit,
-        preferences: props.preferences,
-        title: props.title,
-      });
+      h(
+        BaseAgentCreate,
+        {
+          agentTypes: options.value,
+          className: props.className,
+          description: props.description,
+          error: resolvedOuId.value
+            ? toManagementErrorMessage(t, creation.error.value, 'admin.agents.create.error')
+            : t('admin.common.errors.no_ou'),
+          isSubmitting: creation.isLoading.value,
+          onCancel: props.onCancel,
+          onSubmit: handleSubmit,
+          preferences: props.preferences,
+          title: props.title,
+        },
+        {...slots},
+      );
   },
 });
 

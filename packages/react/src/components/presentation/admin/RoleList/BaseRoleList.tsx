@@ -5,13 +5,25 @@ import {Preferences, RoleSummary} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode} from 'react';
 import useTranslation from '../../../../hooks/useTranslation';
 import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTable';
+import {AdminListRenderProps} from '../shared/AdminListRenderProps';
 import AdminSection from '../shared/AdminSection';
+
+/**
+ * What {@link BaseRoleList} hands its `children` render function. `roles` and `rows` are the same array.
+ */
+export type BaseRoleListRenderProps = AdminListRenderProps<RoleSummary> & {roles: RoleSummary[]};
 
 export interface BaseRoleListProps {
   /**
    * Controls rendered next to the title, such as a button that opens `RoleCreate`.
    */
   actions?: ReactNode;
+  /**
+   * Renders custom UI in place of the default table, for example a third-party data grid. Receives
+   * the roles, the default columns, the loading and error state, and the pagination and selection
+   * handlers.
+   */
+  children?: (props: BaseRoleListRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -46,6 +58,7 @@ export interface BaseRoleListProps {
  */
 const BaseRoleList: FC<BaseRoleListProps> = ({
   actions,
+  children,
   className,
   description,
   error = null,
@@ -75,6 +88,26 @@ const BaseRoleList: FC<BaseRoleListProps> = ({
       render: (role: RoleSummary): ReactNode => role.ouHandle ?? role.ouId,
     },
   ];
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          columns,
+          error,
+          isLoading,
+          limit,
+          offset,
+          onPageChange,
+          onSelect,
+          rows: roles,
+          selectedRowId: selectedRoleId,
+          totalResults: totalResults ?? roles.length,
+          roles,
+        })}
+      </div>
+    );
+  }
 
   return (
     <AdminSection

@@ -9,6 +9,8 @@ import I18nProvider from '../../../../contexts/I18n/I18nProvider';
 import ThemeProvider from '../../../../contexts/Theme/ThemeProvider';
 import ThunderIDContext, {ThunderIDContextProps} from '../../../../contexts/ThunderID/ThunderIDContext';
 import UserContext, {UserContextProps} from '../../../../contexts/User/UserContext';
+import BaseAgentCreate from '../AgentCreate/BaseAgentCreate';
+import BaseGroupCreate from '../GroupCreate/BaseGroupCreate';
 import BaseGroupMembers from '../GroupMembers/BaseGroupMembers';
 import GroupMembers from '../GroupMembers/GroupMembers';
 import BaseRoleAssignments from '../RoleAssignments/BaseRoleAssignments';
@@ -397,5 +399,172 @@ describe('RolePermissions', () => {
 
     expect((await screen.findByRole('list', {name: 'rs-1'})).textContent).toContain('system:user:view');
     expect(fetcher.mock.calls[0][0]).toBe(`${baseUrl}/roles/r-1`);
+  });
+});
+
+describe('render props', () => {
+  it('hands a list its rows, default columns and pagination instead of rendering the table', () => {
+    const onPageChange: Mock = vi.fn();
+
+    renderWithProviders(
+      <BaseUserList users={users} totalResults={45} limit={20} offset={20} onPageChange={onPageChange}>
+        {({columns, offset, rows, totalResults, onPageChange: changePage}): ReactNode => (
+          <div>
+            <p>{`${rows.length} of ${totalResults} from ${offset}`}</p>
+            <p>{columns.map((column: {id: string}) => column.id).join(',')}</p>
+            <button type="button" onClick={(): void => changePage?.(40)}>
+              Next
+            </button>
+          </div>
+        )}
+      </BaseUserList>,
+    );
+
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByText('2 of 45 from 20')).toBeTruthy();
+    expect(screen.getByText('name,type,ou')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', {name: 'Next'}));
+    expect(onPageChange).toHaveBeenCalledWith(40);
+  });
+
+  it('passes the rows a connected list fetched to its render function', async () => {
+    const fetcher: FetcherMock = vi
+      .fn<ApiFetcher>()
+      .mockResolvedValue(respond({count: 2, startIndex: 1, totalResults: 2, users}));
+
+    renderWithProviders(
+      <UserList>
+        {({isLoading, users: rows}): ReactNode => (
+          <ul aria-busy={isLoading}>
+            {rows.map((user: ManagedUser) => (
+              <li key={user.id}>{user.id}</li>
+            ))}
+          </ul>
+        )}
+      </UserList>,
+      {fetcher},
+    );
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('listitem').map((item: HTMLElement) => item.textContent)).toEqual(['u-1', 'u-2']),
+    );
+  });
+
+  it('lets a custom form set values and submit them', () => {
+    const onSubmit: Mock = vi.fn();
+
+    renderWithProviders(
+      <BaseGroupCreate onSubmit={onSubmit}>
+        {({handleInputChange, handleSubmit, isValid, values}): ReactNode => (
+          <div>
+            <input
+              aria-label="Group name"
+              value={values.name}
+              onChange={(event): void => handleInputChange('name', event.target.value)}
+            />
+            <button type="button" disabled={!isValid} onClick={handleSubmit}>
+              Save
+            </button>
+          </div>
+        )}
+      </BaseGroupCreate>,
+    );
+
+    expect((screen.getByRole('button', {name: 'Save'})).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Group name'), {target: {value: '  Engineering '}});
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+    expect(onSubmit).toHaveBeenCalledWith({description: undefined, name: 'Engineering'});
+  });
+
+  it('defaults a custom agent form to the first agent type', () => {
+    const onSubmit: Mock = vi.fn();
+    let submit: () => void = () => undefined;
+
+    renderWithProviders(
+      <BaseAgentCreate agentTypes={[{label: 'Assistant', value: 'assistant'}]} onSubmit={onSubmit}>
+        {({handleInputChange, handleSubmit, values}): ReactNode => {
+          submit = handleSubmit;
+
+          return (
+            <input
+              aria-label="Agent name"
+              value={values.name}
+              onChange={(event): void => handleInputChange('name', event.target.value)}
+            />
+          );
+        }}
+      </BaseAgentCreate>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Agent name'), {target: {value: 'Concierge'}});
+    submit();
+    expect(onSubmit).toHaveBeenCalledWith({description: undefined, name: 'Concierge', type: 'assistant'});
+  });
+
+  it('hides credentials from custom details and offers no delete for read-only users', () => {
+    const seen: {attributes?: Record<string, unknown>; onDelete?: () => void} = {};
+
+    renderWithProviders(
+      <BaseUserDetails
+        user={{...users[0], attributes: {password: 'x', username: 'aiko'}, isReadOnly: true}}
+        onDelete={vi.fn()}
+      >
+        {({attributes, displayName, onDelete}): ReactNode => {
+          seen.attributes = attributes;
+          seen.onDelete = onDelete;
+
+          return <h2>{displayName}</h2>;
+        }}
+      </BaseUserDetails>,
+    );
+
+    expect(screen.getByRole('heading', {name: 'Aiko Tanaka'})).toBeTruthy();
+    expect(seen.attributes).toEqual({username: 'aiko'});
+    expect(seen.onDelete).toBeUndefined();
+  });
+
+  it('hands custom members UI the remove handler and the actions column', () => {
+    const onRemove: Mock = vi.fn();
+
+    renderWithProviders(
+      <BaseGroupMembers members={[{display: 'Aiko Tanaka', id: 'u-1', type: 'user'}]} onRemove={onRemove}>
+        {({columns, members, onRemove: remove}): ReactNode => (
+          <div>
+            <p>{columns.map((column: {id: string}) => column.id).join(',')}</p>
+            <button type="button" onClick={(): void => remove?.(members[0])}>
+              Drop
+            </button>
+          </div>
+        )}
+      </BaseGroupMembers>,
+    );
+
+    expect(screen.getByText('member,type,actions')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', {name: 'Drop'}));
+    expect(onRemove).toHaveBeenCalledWith({display: 'Aiko Tanaka', id: 'u-1', type: 'user'});
+  });
+
+  it('hands custom permissions UI only the granted servers, with their names', () => {
+    renderWithProviders(
+      <BaseRolePermissions
+        permissions={[
+          {permissions: ['read'], resourceServerId: 'rs-1'},
+          {permissions: [], resourceServerId: 'rs-2'},
+        ]}
+        resourceServerNames={{'rs-1': 'Orders API'}}
+      >
+        {({permissions, resolveResourceServerName}): ReactNode => (
+          <ul>
+            {permissions.map((entry: {permissions: string[]; resourceServerId: string}) => (
+              <li
+                key={entry.resourceServerId}
+              >{`${resolveResourceServerName(entry.resourceServerId)}: ${entry.permissions.join(' ')}`}</li>
+            ))}
+          </ul>
+        )}
+      </BaseRolePermissions>,
+    );
+
+    expect(screen.getAllByRole('listitem').map((item: HTMLElement) => item.textContent)).toEqual(['Orders API: read']);
   });
 });

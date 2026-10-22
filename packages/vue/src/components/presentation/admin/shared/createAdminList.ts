@@ -30,6 +30,30 @@ export interface AdminListDefinition<T> {
 }
 
 /**
+ * What an admin list hands its default scoped slot, so the rows can be shown with any UI, such as a
+ * third-party data grid. The rows are also passed under the list's own name, for example `users`.
+ */
+export interface AdminListRenderProps<T> {
+  /**
+   * The columns the default table shows, with translated headers and cell renderers, to reuse in a
+   * custom table.
+   */
+  columns: DataTableColumn<T>[];
+  error: string | null;
+  isLoading: boolean;
+  limit: number;
+  offset: number;
+  /** Shows the page that starts at `offset`. Undefined when the list is not paginated. */
+  onPageChange?: (offset: number) => void;
+  /** Chooses a row. Undefined when rows are not selectable. */
+  onSelect?: (row: T) => void;
+  rows: T[];
+  selectedRowId?: string;
+  /** Total number of rows on the server, or the number of rows given when unknown. */
+  totalResults: number;
+}
+
+/**
  * Props shared by every admin list. The rows and selected row props are added per list.
  */
 export const adminListProps = {
@@ -59,7 +83,8 @@ export const adminListProps = {
 
 /**
  * Creates a presentational admin list: a titled section with an accessible, paginated table. Holds no
- * data of its own. Slots: `actions`, rendered next to the title.
+ * data of its own. Slots: `actions`, rendered next to the title, and `default`, a scoped slot that
+ * replaces the table with custom UI and receives {@link AdminListRenderProps}.
  *
  * @param definition - What the list shows.
  * @returns The component.
@@ -81,6 +106,25 @@ const createAdminList = <T>(definition: AdminListDefinition<T>): Component =>
         const onPageChange: ((offset: number) => void) | undefined = props['onPageChange'] as
           | ((offset: number) => void)
           | undefined;
+        const columns: DataTableColumn<T>[] = definition.columns(t);
+
+        if (slots['default']) {
+          const slotProps: AdminListRenderProps<T> & Record<string, unknown> = {
+            columns,
+            error: props['error'] as string | null,
+            isLoading: props['isLoading'] as boolean,
+            limit: props['limit'] as number,
+            offset: props['offset'] as number,
+            onPageChange,
+            onSelect: props['onSelect'] as ((row: T) => void) | undefined,
+            rows,
+            selectedRowId: props[definition.selectedProp] as string | undefined,
+            totalResults: (props['totalResults'] as number | undefined) ?? rows.length,
+            [definition.rowsProp]: rows,
+          };
+
+          return h('div', {class: props['className'] as string}, slots['default'](slotProps));
+        }
 
         return h(
           AdminSection,
@@ -95,7 +139,7 @@ const createAdminList = <T>(definition: AdminListDefinition<T>): Component =>
             default: (): VNode =>
               h(DataTable, {
                 caption: title?.length ? title : t(definition.titleKey),
-                columns: definition.columns(t),
+                columns,
                 emptyText: t(definition.emptyKey),
                 error: props['error'] as string | null,
                 getRowId: definition.getRowId,

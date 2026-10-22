@@ -9,12 +9,46 @@ import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTabl
 import AdminSection from '../shared/AdminSection';
 import IdentityPicker, {IdentityCandidate} from '../shared/IdentityPicker';
 
+/**
+ * What {@link BaseRoleAssignments} hands its `children` render function, so the assignments can be
+ * shown with any UI, such as a third-party data grid.
+ */
+export interface BaseRoleAssignmentsRenderProps {
+  assignments: RoleAssignment[];
+  /**
+   * The identities the role can be assigned to, keyed by assignee type. Undefined when assigning is
+   * not allowed.
+   */
+  candidates?: Partial<Record<RoleAssigneeType, IdentityCandidate[]>>;
+  /**
+   * The columns the default table shows, including the remove action when unassigning is allowed.
+   */
+  columns: DataTableColumn<RoleAssignment>[];
+  error: string | null;
+  isLoading: boolean;
+  isMutating: boolean;
+  /**
+   * Assigns the role. Undefined when assigning is not allowed.
+   */
+  onAssign?: (assignment: RoleAssignmentInput) => void;
+  /**
+   * Removes an assignment. Undefined when unassigning is not allowed.
+   */
+  onUnassign?: (assignment: RoleAssignment) => void;
+}
+
 export interface BaseRoleAssignmentsProps {
   assignments: RoleAssignment[];
   /**
    * The identities the role can be assigned to, keyed by assignee type. Assigning is hidden when omitted.
    */
   candidates?: Partial<Record<RoleAssigneeType, IdentityCandidate[]>>;
+  /**
+   * Renders custom UI in place of the default table and picker. Receives the assignments, the
+   * default columns, the candidates, the loading and error state, and the assign and unassign
+   * handlers.
+   */
+  children?: (props: BaseRoleAssignmentsRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -36,6 +70,7 @@ export interface BaseRoleAssignmentsProps {
 const BaseRoleAssignments: FC<BaseRoleAssignmentsProps> = ({
   assignments,
   candidates,
+  children,
   className,
   description,
   error = null,
@@ -78,6 +113,23 @@ const BaseRoleAssignments: FC<BaseRoleAssignmentsProps> = ({
         </Button>
       ),
     });
+  }
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          assignments,
+          candidates: onAssign ? candidates : undefined,
+          columns,
+          error,
+          isLoading,
+          isMutating,
+          onAssign: candidates ? onAssign : undefined,
+          onUnassign,
+        })}
+      </div>
+    );
   }
 
   return (

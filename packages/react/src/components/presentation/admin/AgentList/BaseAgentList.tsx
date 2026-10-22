@@ -5,7 +5,13 @@ import {BasicAgent, Preferences} from '@thunderid/browser';
 import {FC, ReactElement, ReactNode} from 'react';
 import useTranslation from '../../../../hooks/useTranslation';
 import DataTable, {DataTableColumn} from '../../../primitives/DataTable/DataTable';
+import {AdminListRenderProps} from '../shared/AdminListRenderProps';
 import AdminSection from '../shared/AdminSection';
+
+/**
+ * What {@link BaseAgentList} hands its `children` render function. `agents` and `rows` are the same array.
+ */
+export type BaseAgentListRenderProps = AdminListRenderProps<BasicAgent> & {agents: BasicAgent[]};
 
 export interface BaseAgentListProps {
   /**
@@ -15,6 +21,12 @@ export interface BaseAgentListProps {
   className?: string;
   description?: string;
   agents: BasicAgent[];
+  /**
+   * Renders custom UI in place of the default table, for example a third-party data grid. Receives
+   * the agents, the default columns, the loading and error state, and the pagination and selection
+   * handlers.
+   */
+  children?: (props: BaseAgentListRenderProps) => ReactNode;
   error?: string | null;
   isLoading?: boolean;
   /**
@@ -47,6 +59,7 @@ export interface BaseAgentListProps {
 const BaseAgentList: FC<BaseAgentListProps> = ({
   actions,
   agents,
+  children,
   className,
   description,
   error = null,
@@ -76,6 +89,26 @@ const BaseAgentList: FC<BaseAgentListProps> = ({
       render: (agent: BasicAgent): ReactNode => agent.ouHandle ?? agent.ouId,
     },
   ];
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          columns,
+          error,
+          isLoading,
+          limit,
+          offset,
+          onPageChange,
+          onSelect,
+          rows: agents,
+          selectedRowId: selectedAgentId,
+          totalResults: totalResults ?? agents.length,
+          agents,
+        })}
+      </div>
+    );
+  }
 
   return (
     <AdminSection

@@ -37,7 +37,7 @@ const RoleCreate: Component = defineComponent({
     title: adminFormProps.title,
   },
   emits: ['created'],
-  setup(props: RoleCreateProps, {emit}: SetupContext): () => VNode {
+  setup(props: RoleCreateProps, {emit, slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const resolvedOuId: ComputedRef<string | undefined> = useDefaultOuId(() => props.ouId);
     const creation: ResourceMutationResult<Role, CreateRoleRequest> = useCreateRole({
@@ -51,18 +51,22 @@ const RoleCreate: Component = defineComponent({
     };
 
     return (): VNode =>
-      h(BaseRoleCreate, {
-        className: props.className,
-        description: props.description,
-        error: resolvedOuId.value
-          ? toManagementErrorMessage(t, creation.error.value, 'admin.roles.create.error')
-          : t('admin.common.errors.no_ou'),
-        isSubmitting: creation.isLoading.value,
-        onCancel: props.onCancel,
-        onSubmit: handleSubmit,
-        preferences: props.preferences,
-        title: props.title,
-      });
+      h(
+        BaseRoleCreate,
+        {
+          className: props.className,
+          description: props.description,
+          error: resolvedOuId.value
+            ? toManagementErrorMessage(t, creation.error.value, 'admin.roles.create.error')
+            : t('admin.common.errors.no_ou'),
+          isSubmitting: creation.isLoading.value,
+          onCancel: props.onCancel,
+          onSubmit: handleSubmit,
+          preferences: props.preferences,
+          title: props.title,
+        },
+        {...slots},
+      );
   },
 });
 

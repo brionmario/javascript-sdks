@@ -211,37 +211,56 @@ export {default as BaseLanguageSwitcher} from './components/presentation/languag
 // ── UI Components — Admin (management) ──
 export {default as DataTable} from './components/primitives/DataTable/DataTable';
 export type {DataTableColumn, DataTablePagination} from './components/primitives/DataTable/DataTable';
+export type {AdminListRenderProps} from './components/presentation/admin/shared/createAdminList';
+export type {AdminFormRenderProps} from './components/presentation/admin/shared/adminFormProps';
 export {default as BaseUserList} from './components/presentation/admin/UserList/BaseUserList';
 export {default as UserList} from './components/presentation/admin/UserList/UserList';
 export {default as BaseUserCreate} from './components/presentation/admin/UserCreate/BaseUserCreate';
-export type {UserCreateSubmission} from './components/presentation/admin/UserCreate/BaseUserCreate';
+export type {
+  BaseUserCreateRenderProps,
+  UserCreateSubmission,
+} from './components/presentation/admin/UserCreate/BaseUserCreate';
 export {DEFAULT_USER_CREATE_FIELDS} from './components/presentation/admin/UserCreate/userCreateFields';
 export type {UserCreateField} from './components/presentation/admin/UserCreate/userCreateFields';
 export {default as UserCreate} from './components/presentation/admin/UserCreate/UserCreate';
 export {default as BaseUserDetails} from './components/presentation/admin/UserDetails/BaseUserDetails';
+export type {BaseUserDetailsRenderProps} from './components/presentation/admin/UserDetails/BaseUserDetails';
 export {default as UserDetails} from './components/presentation/admin/UserDetails/UserDetails';
 export {default as BaseGroupList} from './components/presentation/admin/GroupList/BaseGroupList';
 export {default as GroupList} from './components/presentation/admin/GroupList/GroupList';
 export {default as BaseGroupCreate} from './components/presentation/admin/GroupCreate/BaseGroupCreate';
-export type {GroupCreateSubmission} from './components/presentation/admin/GroupCreate/BaseGroupCreate';
+export type {
+  BaseGroupCreateRenderProps,
+  GroupCreateSubmission,
+} from './components/presentation/admin/GroupCreate/BaseGroupCreate';
 export {default as GroupCreate} from './components/presentation/admin/GroupCreate/GroupCreate';
 export {default as BaseGroupMembers} from './components/presentation/admin/GroupMembers/BaseGroupMembers';
+export type {BaseGroupMembersRenderProps} from './components/presentation/admin/GroupMembers/BaseGroupMembers';
 export {default as GroupMembers} from './components/presentation/admin/GroupMembers/GroupMembers';
 export {default as BaseRoleList} from './components/presentation/admin/RoleList/BaseRoleList';
 export {default as RoleList} from './components/presentation/admin/RoleList/RoleList';
 export {default as BaseRoleCreate} from './components/presentation/admin/RoleCreate/BaseRoleCreate';
-export type {RoleCreateSubmission} from './components/presentation/admin/RoleCreate/BaseRoleCreate';
+export type {
+  BaseRoleCreateRenderProps,
+  RoleCreateSubmission,
+} from './components/presentation/admin/RoleCreate/BaseRoleCreate';
 export {default as RoleCreate} from './components/presentation/admin/RoleCreate/RoleCreate';
 export {default as BaseRoleAssignments} from './components/presentation/admin/RoleAssignments/BaseRoleAssignments';
+export type {BaseRoleAssignmentsRenderProps} from './components/presentation/admin/RoleAssignments/BaseRoleAssignments';
 export {default as RoleAssignments} from './components/presentation/admin/RoleAssignments/RoleAssignments';
 export {default as BaseRolePermissions} from './components/presentation/admin/RolePermissions/BaseRolePermissions';
+export type {BaseRolePermissionsRenderProps} from './components/presentation/admin/RolePermissions/BaseRolePermissions';
 export {default as RolePermissions} from './components/presentation/admin/RolePermissions/RolePermissions';
 export {default as BaseAgentList} from './components/presentation/admin/AgentList/BaseAgentList';
 export {default as AgentList} from './components/presentation/admin/AgentList/AgentList';
 export {default as BaseAgentCreate} from './components/presentation/admin/AgentCreate/BaseAgentCreate';
-export type {AgentCreateSubmission} from './components/presentation/admin/AgentCreate/BaseAgentCreate';
+export type {
+  AgentCreateSubmission,
+  BaseAgentCreateRenderProps,
+} from './components/presentation/admin/AgentCreate/BaseAgentCreate';
 export {default as AgentCreate} from './components/presentation/admin/AgentCreate/AgentCreate';
 export {default as BaseAgentDetails} from './components/presentation/admin/AgentDetails/BaseAgentDetails';
+export type {BaseAgentDetailsRenderProps} from './components/presentation/admin/AgentDetails/BaseAgentDetails';
 export {default as AgentDetails} from './components/presentation/admin/AgentDetails/AgentDetails';
 export type {IdentityCandidate} from './components/presentation/admin/shared/IdentityPicker';
 

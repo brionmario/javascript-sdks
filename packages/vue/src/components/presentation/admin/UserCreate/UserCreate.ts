@@ -72,7 +72,7 @@ const UserCreate: Component = defineComponent({
     title: adminFormProps.title,
   },
   emits: ['created'],
-  setup(props: UserCreateProps, {emit}: SetupContext): () => VNode {
+  setup(props: UserCreateProps, {emit, slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const resolvedOuId: ComputedRef<string | undefined> = useDefaultOuId(() => props.ouId);
     const userTypes: ResourceQueryResult<ManagedUserTypeListResponse> = useGetUserTypes(
@@ -101,20 +101,24 @@ const UserCreate: Component = defineComponent({
         return h(InviteUser, {...props.inviteProps});
       }
 
-      return h(BaseUserCreate, {
-        className: props.className,
-        description: props.description,
-        error: resolvedOuId.value
-          ? toManagementErrorMessage(t, creation.error.value, 'admin.users.create.error')
-          : t('admin.common.errors.no_ou'),
-        fields: props.fields,
-        isSubmitting: creation.isLoading.value,
-        onCancel: props.onCancel,
-        onSubmit: handleSubmit,
-        preferences: props.preferences,
-        title: props.title,
-        userTypes: options.value,
-      });
+      return h(
+        BaseUserCreate,
+        {
+          className: props.className,
+          description: props.description,
+          error: resolvedOuId.value
+            ? toManagementErrorMessage(t, creation.error.value, 'admin.users.create.error')
+            : t('admin.common.errors.no_ou'),
+          fields: props.fields,
+          isSubmitting: creation.isLoading.value,
+          onCancel: props.onCancel,
+          onSubmit: handleSubmit,
+          preferences: props.preferences,
+          title: props.title,
+          userTypes: options.value,
+        },
+        {...slots},
+      );
     };
   },
 });

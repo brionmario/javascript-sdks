@@ -12,7 +12,8 @@ import createConnectedAdminList from '../shared/createConnectedAdminList';
  *
  * Props: `filter` (server-side filter expression, for example `username sw "a"`), `limit`,
  * `selectedUserId`, `onSelect` (`@select`), `title`, `description`, `className`, `preferences`.
- * Slots: `actions`.
+ * Slots: `actions`; `default`, a scoped slot that replaces the table with custom UI and
+ * receives `AdminListRenderProps` (rows, default columns, loading and error state, pagination and selection).
  *
  * @example
  * ```vue

@@ -14,7 +14,7 @@ import type {
   RoleAssignmentInput,
   RoleAssignmentListResponse,
 } from '@thunderid/browser';
-import {type Component, type PropType, type VNode, defineComponent, h} from 'vue';
+import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
 import BaseRoleAssignments from './BaseRoleAssignments';
 import useGetAgents from '../../../../composables/agents/useGetAgents';
 import useGetGroups from '../../../../composables/groups/useGetGroups';
@@ -63,7 +63,7 @@ const RoleAssignments: Component = defineComponent({
     /** Heading of the section. Pass an empty string to hide it. */
     title: {default: undefined, type: String},
   },
-  setup(props: RoleAssignmentsProps): () => VNode {
+  setup(props: RoleAssignmentsProps, {slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
     const assignments: ResourceQueryResult<RoleAssignmentListResponse> = useGetRoleAssignments(() => props.roleId, {
       limit: 100,
@@ -85,34 +85,38 @@ const RoleAssignments: Component = defineComponent({
         })),
       };
 
-      return h(BaseRoleAssignments, {
-        assignments: assignments.data.value?.assignments ?? [],
-        candidates: props.editable ? candidates : undefined,
-        className: props.className,
-        description: props.description,
-        error:
-          toManagementErrorMessage(t, assignments.error.value, 'admin.roles.assignments.error') ??
-          toManagementErrorMessage(
-            t,
-            assign.error.value ?? unassign.error.value,
-            'admin.roles.assignments.update_error',
-          ),
-        isLoading: assignments.isLoading.value,
-        isMutating: assign.isLoading.value || unassign.isLoading.value,
-        onAssign: props.editable
-          ? (assignment: RoleAssignmentInput): void =>
-              void assign.mutate({assignments: [assignment], roleId: props.roleId})
-          : undefined,
-        onUnassign: props.editable
-          ? (assignment: RoleAssignment): void =>
-              void unassign.mutate({
-                assignments: [{id: assignment.id, type: assignment.type}],
-                roleId: props.roleId,
-              })
-          : undefined,
-        preferences: props.preferences,
-        title: props.title,
-      });
+      return h(
+        BaseRoleAssignments,
+        {
+          assignments: assignments.data.value?.assignments ?? [],
+          candidates: props.editable ? candidates : undefined,
+          className: props.className,
+          description: props.description,
+          error:
+            toManagementErrorMessage(t, assignments.error.value, 'admin.roles.assignments.error') ??
+            toManagementErrorMessage(
+              t,
+              assign.error.value ?? unassign.error.value,
+              'admin.roles.assignments.update_error',
+            ),
+          isLoading: assignments.isLoading.value,
+          isMutating: assign.isLoading.value || unassign.isLoading.value,
+          onAssign: props.editable
+            ? (assignment: RoleAssignmentInput): void =>
+                void assign.mutate({assignments: [assignment], roleId: props.roleId})
+            : undefined,
+          onUnassign: props.editable
+            ? (assignment: RoleAssignment): void =>
+                void unassign.mutate({
+                  assignments: [{id: assignment.id, type: assignment.type}],
+                  roleId: props.roleId,
+                })
+            : undefined,
+          preferences: props.preferences,
+          title: props.title,
+        },
+        {...slots},
+      );
     };
   },
 });

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type {GroupMember, GroupMemberType, Preferences} from '@thunderid/browser';
-import {type Component, type PropType, type VNode, type VNodeChild, defineComponent, h} from 'vue';
+import {type Component, type PropType, type SetupContext, type VNode, type VNodeChild, defineComponent, h} from 'vue';
 import Button from '../../../primitives/Button/Button';
 import DataTable, {type DataTableColumn} from '../../../primitives/DataTable/DataTable';
 import AdminSection from '../shared/AdminSection';
@@ -26,8 +26,30 @@ type BaseGroupMembersProps = Readonly<{
 const MEMBER_TYPES: GroupMemberType[] = ['user', 'agent', 'group'];
 
 /**
+ * What `BaseGroupMembers` hands its default scoped slot, so the members can be shown with any UI, such
+ * as a third-party data grid.
+ */
+export interface BaseGroupMembersRenderProps {
+  /** The identities that can be added, keyed by member type. Undefined when adding is not allowed. */
+  candidates?: Partial<Record<GroupMemberType, IdentityCandidate[]>>;
+  /** The columns the default table shows, including the remove action when removing is allowed. */
+  columns: DataTableColumn<GroupMember>[];
+  error: string | null;
+  isLoading: boolean;
+  isMutating: boolean;
+  members: GroupMember[];
+  /** Adds a member. Undefined when adding is not allowed. */
+  onAdd?: (member: Pick<GroupMember, 'id' | 'type'>) => void;
+  /** Removes a member. Undefined when removing is not allowed. */
+  onRemove?: (member: GroupMember) => void;
+}
+
+/**
  * Lists a group's members and optionally adds and removes them. Holds no data of its own: pass the
  * members, the identities that can be added, and handle the changes.
+ *
+ * Slots: `default`, a scoped slot that replaces the table and picker with custom UI and receives
+ * {@link BaseGroupMembersRenderProps}.
  */
 const BaseGroupMembers: Component = defineComponent({
   name: 'BaseGroupMembers',
@@ -57,7 +79,7 @@ const BaseGroupMembers: Component = defineComponent({
     /** Heading of the section. Pass an empty string to hide it. */
     title: {default: undefined, type: String},
   },
-  setup(props: BaseGroupMembersProps): () => VNode {
+  setup(props: BaseGroupMembersProps, {slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
 
     return (): VNode => {
@@ -93,6 +115,21 @@ const BaseGroupMembers: Component = defineComponent({
               {default: (): string => t('admin.common.actions.remove')},
             ),
         });
+      }
+
+      if (slots['default']) {
+        const renderProps: BaseGroupMembersRenderProps = {
+          candidates: onAdd ? candidates : undefined,
+          columns,
+          error: props.error,
+          isLoading: props.isLoading,
+          isMutating: props.isMutating,
+          members: props.members,
+          onAdd: candidates ? onAdd : undefined,
+          onRemove,
+        };
+
+        return h('div', {class: props.className}, slots['default'](renderProps));
       }
 
       return h(

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {type Preferences, type RoleResourcePermissions, withVendorCSSClassPrefix} from '@thunderid/browser';
-import {type Component, type PropType, type VNode, defineComponent, h} from 'vue';
+import {type Component, type PropType, type SetupContext, type VNode, defineComponent, h} from 'vue';
 import Alert from '../../../primitives/Alert/Alert';
 import Spinner from '../../../primitives/Spinner/Spinner';
 import AdminSection from '../shared/AdminSection';
@@ -22,8 +22,23 @@ type BaseRolePermissionsProps = Readonly<{
 }>;
 
 /**
+ * What `BaseRolePermissions` hands its default scoped slot, so the permissions can be shown with any UI.
+ */
+export interface BaseRolePermissionsRenderProps {
+  error: string | null;
+  isLoading: boolean;
+  /** The resource servers the role grants at least one permission on, with those permissions. */
+  permissions: RoleResourcePermissions[];
+  /** Returns a resource server's display name, or its identifier when the name is missing. */
+  resolveResourceServerName: (resourceServerId: string) => string;
+}
+
+/**
  * Shows the permissions a role grants, grouped by resource server. Holds no data of its own: pass the
  * permissions.
+ *
+ * Slots: `default`, a scoped slot that replaces the view with custom UI and receives
+ * {@link BaseRolePermissionsRenderProps}.
  */
 const BaseRolePermissions: Component = defineComponent({
   name: 'BaseRolePermissions',
@@ -44,8 +59,10 @@ const BaseRolePermissions: Component = defineComponent({
     /** Heading of the section. Pass an empty string to hide it. */
     title: {default: undefined, type: String},
   },
-  setup(props: BaseRolePermissionsProps): () => VNode {
+  setup(props: BaseRolePermissionsProps, {slots}: SetupContext): () => VNode {
     const t: AdminTranslate = useAdminTranslation(() => props.preferences);
+    const resolveResourceServerName = (resourceServerId: string): string =>
+      props.resourceServerNames?.[resourceServerId] ?? resourceServerId;
 
     const renderContent = (): VNode | VNode[] => {
       if (props.isLoading) {
@@ -68,7 +85,7 @@ const BaseRolePermissions: Component = defineComponent({
       }
 
       return granted.map((entry: RoleResourcePermissions) => {
-        const name: string = props.resourceServerNames?.[entry.resourceServerId] ?? entry.resourceServerId;
+        const name: string = resolveResourceServerName(entry.resourceServerId);
 
         return h(
           Panel,
@@ -85,8 +102,19 @@ const BaseRolePermissions: Component = defineComponent({
       });
     };
 
-    return (): VNode =>
-      h(
+    return (): VNode => {
+      if (slots['default']) {
+        const renderProps: BaseRolePermissionsRenderProps = {
+          error: props.error,
+          isLoading: props.isLoading,
+          permissions: props.permissions.filter((entry: RoleResourcePermissions) => entry.permissions.length > 0),
+          resolveResourceServerName,
+        };
+
+        return h('div', {class: props.className}, slots['default'](renderProps));
+      }
+
+      return h(
         AdminSection,
         {
           block: 'role-permissions',
@@ -97,6 +125,7 @@ const BaseRolePermissions: Component = defineComponent({
         },
         {default: renderContent},
       );
+    };
   },
 });
 

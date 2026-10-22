@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Preferences, SelectOption} from '@thunderid/browser';
-import {ChangeEvent, FC, FormEvent, ReactElement, useState} from 'react';
+import {ChangeEvent, FC, FormEvent, ReactElement, ReactNode, useState} from 'react';
 import {DEFAULT_USER_CREATE_FIELDS, UserCreateField} from './userCreateFields';
 import useTheme from '../../../../contexts/Theme/useTheme';
 import useTranslation from '../../../../hooks/useTranslation';
@@ -21,7 +21,50 @@ export interface UserCreateSubmission {
   type: string;
 }
 
+/**
+ * What {@link BaseUserCreate} hands its `children` render function, so the form can be built with any UI.
+ */
+export interface BaseUserCreateRenderProps {
+  error: string | null;
+  /**
+   * The attributes to collect.
+   */
+  fields: UserCreateField[];
+  /**
+   * Sets one attribute.
+   */
+  handleInputChange: (name: string, value: string) => void;
+  /**
+   * Submits the chosen type and the non-empty attributes. Does nothing while they are not valid.
+   */
+  handleSubmit: () => void;
+  /**
+   * Chooses the user type.
+   */
+  handleTypeChange: (type: string) => void;
+  isSubmitting: boolean;
+  /**
+   * Whether a type is chosen and every required attribute has a value.
+   */
+  isValid: boolean;
+  onCancel?: () => void;
+  /**
+   * The chosen user type.
+   */
+  type: string;
+  userTypes: SelectOption[];
+  /**
+   * The attribute values, keyed by attribute name.
+   */
+  values: Record<string, string>;
+}
+
 export interface BaseUserCreateProps {
+  /**
+   * Renders custom UI in place of the default form. Receives the fields, the values and their
+   * setters, the user types, the submit handler and the submission state.
+   */
+  children?: (props: BaseUserCreateRenderProps) => ReactNode;
   className?: string;
   description?: string;
   error?: string | null;
@@ -46,6 +89,7 @@ export interface BaseUserCreateProps {
  * types and handle the submission.
  */
 const BaseUserCreate: FC<BaseUserCreateProps> = ({
+  children,
   className,
   description,
   error = null,
@@ -64,8 +108,16 @@ const BaseUserCreate: FC<BaseUserCreateProps> = ({
   const type: string = chosenType || (userTypes[0]?.value ?? '');
   const [values, setValues] = useState<Record<string, string>>({});
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
+  const isComplete: boolean =
+    Boolean(type) && fields.every((field: UserCreateField) => !field.required || Boolean(values[field.name]?.trim()));
+
+  const setValue = (name: string, value: string): void =>
+    setValues((previous: Record<string, string>) => ({...previous, [name]: value}));
+
+  const submit = (): void => {
+    if (!isComplete) {
+      return;
+    }
 
     const attributes: Record<string, string> = Object.fromEntries(
       Object.entries(values).filter(([, value]: [string, string]) => value.trim() !== ''),
@@ -74,8 +126,30 @@ const BaseUserCreate: FC<BaseUserCreateProps> = ({
     onSubmit({attributes, type});
   };
 
-  const isComplete: boolean =
-    Boolean(type) && fields.every((field: UserCreateField) => !field.required || Boolean(values[field.name]?.trim()));
+  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    submit();
+  };
+
+  if (children) {
+    return (
+      <div className={className}>
+        {children({
+          error,
+          fields,
+          handleInputChange: setValue,
+          handleSubmit: submit,
+          handleTypeChange: setType,
+          isSubmitting,
+          isValid: isComplete,
+          onCancel,
+          type,
+          userTypes,
+          values,
+        })}
+      </div>
+    );
+  }
 
   return (
     <AdminSection
@@ -108,9 +182,7 @@ const BaseUserCreate: FC<BaseUserCreateProps> = ({
             required={field.required}
             autoComplete={field.type === 'password' ? 'new-password' : 'off'}
             value={values[field.name] ?? ''}
-            onChange={(event: ChangeEvent<HTMLInputElement>): void =>
-              setValues((previous: Record<string, string>) => ({...previous, [field.name]: event.target.value}))
-            }
+            onChange={(event: ChangeEvent<HTMLInputElement>): void => setValue(field.name, event.target.value)}
           />
         ))}
         <div className={styles['formActions']}>

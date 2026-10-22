@@ -14,7 +14,8 @@ import type {AdminTranslate} from '../shared/useAdminTranslation';
  *
  * Props: `users` (required), `selectedUserId`, `isLoading`, `error`, `limit`, `offset`, `totalResults`,
  * `onPageChange`, `onSelect` (`@select`), `title`, `description`, `className`, `preferences`.
- * Slots: `actions`, rendered next to the title, such as a button that opens `UserCreate`.
+ * Slots: `actions`, rendered next to the title, such as a button that opens `UserCreate`; `default`, a scoped slot that replaces the table with custom UI and
+ * receives `AdminListRenderProps` (rows, default columns, loading and error state, pagination and selection).
  */
 const BaseUserList: Component = createAdminList<ManagedUser>({
   block: 'user-list',
