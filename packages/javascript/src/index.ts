@@ -443,6 +443,7 @@ export {
   EmbeddedFlowEventType,
 } from './models/embedded-flow';
 export type {
+  EmbeddedFlowSessionData,
   EmbeddedFlowComponent,
   EmbeddedFlowComponentAction,
   EmbeddedFlowResponseData,

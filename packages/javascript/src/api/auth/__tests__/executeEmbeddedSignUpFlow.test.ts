@@ -119,6 +119,52 @@ describe('executeEmbeddedSignUpFlow', (): void => {
     });
   });
 
+  describe('session data posted with the callback', (): void => {
+    const BASE_URL = 'https://localhost:8090';
+
+    const respond = (body: Record<string, unknown>): {json: () => Promise<unknown>; ok: boolean} => ({
+      json: () => Promise.resolve(body),
+      ok: true,
+    });
+
+    it('posts the sessions the registration flow started', async (): Promise<void> => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respond({
+            flowStatus: EmbeddedSignUpFlowStatus.Incomplete,
+            sessionData: [{expiresIn: 28800, flowIdentifier: 'flow-a', sessionHandle: 'handle-a'}],
+          }),
+        )
+        .mockResolvedValueOnce(respond({assertion: 'signed-assertion', flowStatus: EmbeddedSignUpFlowStatus.Complete}))
+        .mockResolvedValueOnce(respond({redirect_uri: 'https://client.example.com/cb?code=xyz'}));
+
+      await executeEmbeddedSignUpFlow({authId: 'auth-signup', baseUrl: BASE_URL, payload: {executionId: 'e-1'}});
+      await executeEmbeddedSignUpFlow({
+        authId: 'auth-signup',
+        baseUrl: BASE_URL,
+        payload: {action: 'submit', executionId: 'e-1'},
+      });
+
+      expect(captureRequestBody()).toEqual({
+        assertion: 'signed-assertion',
+        authId: 'auth-signup',
+        sessionData: [{flowIdentifier: 'flow-a', sessionHandle: 'handle-a'}],
+      });
+    });
+
+    it('posts no sessionData when the flow started none', async (): Promise<void> => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(respond({assertion: 'signed-assertion', flowStatus: EmbeddedSignUpFlowStatus.Complete}))
+        .mockResolvedValueOnce(respond({redirect_uri: 'https://client.example.com/cb?code=xyz'}));
+
+      await executeEmbeddedSignUpFlow({authId: 'auth-none', baseUrl: BASE_URL, payload: {executionId: 'e-2'}});
+
+      expect(captureRequestBody()).toEqual({assertion: 'signed-assertion', authId: 'auth-none'});
+    });
+  });
+
   it('throws when payload is missing', async (): Promise<void> => {
     await expect(executeEmbeddedSignUpFlow({url: URL})).rejects.toThrow('Registration payload is required');
   });

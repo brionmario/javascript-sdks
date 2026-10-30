@@ -1,8 +1,12 @@
 // Copyright 2025-2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import {collectFlowSessions, takeFlowSessions} from './flowSessions';
 import ThunderIDAPIError from '../../errors/ThunderIDAPIError';
-import {EmbeddedFlowExecuteRequestConfig as EmbeddedFlowExecuteRequestConfig} from '../../models/embedded-flow';
+import {
+  EmbeddedFlowExecuteRequestConfig as EmbeddedFlowExecuteRequestConfig,
+  EmbeddedFlowSessionData,
+} from '../../models/embedded-flow';
 import {EmbeddedSignUpFlowResponse, EmbeddedSignUpFlowStatus} from '../../models/embedded-signup-flow';
 import injectRequestedPermissions from '../../utils/injectRequestedPermissions';
 
@@ -83,14 +87,22 @@ const executeEmbeddedSignUpFlow = async ({
 
   const flowResponse: EmbeddedSignUpFlowResponse = await response.json();
 
+  if (authId) {
+    collectFlowSessions(authId, flowResponse);
+  }
+
   // IMPORTANT: Only applicable for ThunderID V2 platform.
   // Check if the flow is complete and has an assertion and authId is provided, then call OAuth2 auth callback.
   if (flowResponse.flowStatus === EmbeddedSignUpFlowStatus.Complete && (flowResponse as any).assertion && authId) {
     try {
+      // When the application asked for the device_sso scope, the server keeps the posted sessions with
+      // the code, so the code exchange can return them as the device secret.
+      const sessionData: EmbeddedFlowSessionData[] = takeFlowSessions(authId);
       const oauth2Response: Response = await fetch(`${baseUrl}/oauth2/auth/callback`, {
         body: JSON.stringify({
           assertion: (flowResponse as any).assertion,
           authId,
+          ...(sessionData.length > 0 ? {sessionData} : {}),
         }),
         credentials: 'include',
         headers: {

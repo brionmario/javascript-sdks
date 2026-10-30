@@ -4,6 +4,7 @@
 import {
   EmbeddedFlowResponseData,
   EmbeddedFlowResponseType,
+  EmbeddedFlowSessionData,
   EmbeddedFlowType,
   FlowExecutionError,
 } from './embedded-flow';
@@ -163,6 +164,17 @@ export interface EmbeddedSignInFlowResponse extends ExtendedEmbeddedSignInFlowRe
    * Relayed to the OAuth2 auth callback so the waiting authorization request is failed.
    */
   errorAssertion?: string;
+
+  /**
+   * SSO sessions this step started. A step that starts one need not be the last, so they can arrive on
+   * an INCOMPLETE response.
+   */
+  sessionData?: EmbeddedFlowSessionData[];
+
+  /**
+   * Flow identifiers whose SSO session this step ended.
+   */
+  clearedSessions?: string[];
 
   /**
    * Per-step challenge token for replay protection.

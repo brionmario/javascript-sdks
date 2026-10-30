@@ -1,8 +1,9 @@
 // Copyright 2025-2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import {collectFlowSessions, takeFlowSessions} from './flowSessions';
 import ThunderIDAPIError from '../../errors/ThunderIDAPIError';
-import {EmbeddedFlowExecuteRequestConfig} from '../../models/embedded-flow';
+import {EmbeddedFlowExecuteRequestConfig, EmbeddedFlowSessionData} from '../../models/embedded-flow';
 import {EmbeddedSignInFlowResponse, EmbeddedSignInFlowStatus} from '../../models/embedded-signin-flow';
 import injectRequestedPermissions from '../../utils/injectRequestedPermissions';
 import logger from '../../utils/logger';
@@ -17,7 +18,7 @@ const readErrorAssertion = (body: string): string | undefined => {
 
 const postAuthCallback = async (
   baseUrl: string | undefined,
-  body: Record<string, string>,
+  body: Record<string, unknown>,
   headers: HeadersInit | undefined,
 ): Promise<Record<string, unknown>> => {
   const oauth2Response: Response = await fetch(`${baseUrl}/oauth2/auth/callback`, {
@@ -58,6 +59,9 @@ const relayFailure = async (
   headers?: HeadersInit,
   flowResponse?: EmbeddedSignInFlowResponse,
 ): Promise<EmbeddedSignInFlowResponse> => {
+  // A failed sign-in issues no code, so the sessions it collected are not posted.
+  takeFlowSessions(authId);
+
   const oauth2Result: Record<string, unknown> = await postAuthCallback(
     baseUrl,
     {assertion: errorAssertion, authId},
@@ -158,13 +162,20 @@ const executeEmbeddedSignInFlow = async ({
 
   const flowResponse: EmbeddedSignInFlowResponse = await response.json();
 
+  if (authId) {
+    collectFlowSessions(authId, flowResponse);
+  }
+
   // IMPORTANT: Only applicable for ThunderID V2 platform.
   // Check if the flow is complete and has an assertion and authId is provided, then call OAuth2 auth callback.
   if (flowResponse.flowStatus === EmbeddedSignInFlowStatus.Complete && flowResponse.assertion && authId) {
     try {
+      // When the application asked for the device_sso scope, the server keeps the posted sessions with
+      // the code, so the code exchange can return them as the device secret.
+      const sessionData: EmbeddedFlowSessionData[] = takeFlowSessions(authId);
       const oauth2Result: Record<string, unknown> = await postAuthCallback(
         baseUrl,
-        {assertion: flowResponse.assertion, authId},
+        {assertion: flowResponse.assertion, authId, ...(sessionData.length > 0 ? {sessionData} : {})},
         requestConfig.headers,
       );
 
