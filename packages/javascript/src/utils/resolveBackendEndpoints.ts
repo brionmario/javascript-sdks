@@ -1,6 +1,7 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import resolveApiBaseUrl from './resolveApiBaseUrl';
 import {BackendEndpoints, ResolvedBackendEndpoints} from '../models/backend';
 
 const DEFAULT_BACKEND_BASE_PATH = '/api/auth';
@@ -17,14 +18,19 @@ export interface BackendEndpointConfig {
  * Resolves the backend endpoints from `endpoints.backend`, or returns `undefined` when it is not set
  * and sign-in does not run on a backend.
  *
+ * In backend mode `baseUrl` is the backend. Each endpoint given as a path (starting with `/`) is
+ * resolved against it, and an absolute URL is used as it is. Without `baseUrl` the paths stay
+ * relative to the app's origin. The API base, whose requests go through the proxy, is
+ * `endpoints.backend.apiBaseUrl`, falling back to `baseUrl` and then to the app's origin.
+ *
  * @param config - The client config.
- * @param origin - The app's origin, used as the API base when `baseUrl` is not set.
+ * @param origin - The app's origin, the API base when neither `apiBaseUrl` nor `baseUrl` is set.
  * @returns The resolved endpoints, or `undefined` when `endpoints.backend` is not set.
  *
  * @example
  * ```typescript
- * resolveBackendEndpoints({endpoints: {backend: {signIn: '/auth/signin'}}}, window.location.origin);
- * // {signIn: '/auth/signin', session: '/api/auth/session', ..., apiBaseUrl: 'https://...'}
+ * resolveBackendEndpoints({baseUrl: 'https://bff.example.com', endpoints: {backend: {}}}, window.location.origin);
+ * // {signIn: 'https://bff.example.com/api/auth/signin', ..., apiBaseUrl: 'https://bff.example.com'}
  * ```
  */
 const resolveBackendEndpoints = (
@@ -37,21 +43,28 @@ const resolveBackendEndpoints = (
     return undefined;
   }
 
+  const backendBase: string = (config?.baseUrl ?? '').replace(/\/+$/, '');
+  const resolve = (endpoint: string | undefined, fallback: string): string => {
+    const value: string = endpoint ?? `${DEFAULT_BACKEND_BASE_PATH}/${fallback}`;
+
+    return value.startsWith('/') && !value.startsWith('//') ? `${backendBase}${value}` : value;
+  };
+
   return {
-    // `||`, not `??`: an empty baseUrl, which the providers default to, falls back to the origin too.
+    // `||`, not `??`: an empty base, which the providers default to, falls back to the origin too.
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    apiBaseUrl: (config?.baseUrl || origin).replace(/\/+$/, ''),
+    apiBaseUrl: (resolveApiBaseUrl(config) || origin).replace(/\/+$/, ''),
     bypass: {
       attachToken: endpoints.bypass?.attachToken ?? true,
       urls: (endpoints.bypass?.urls ?? []).map((url: string) => url.replace(/\/+$/, '')),
     },
-    checkSession: endpoints.checkSession ?? `${DEFAULT_BACKEND_BASE_PATH}/checksession`,
-    proxy: (endpoints.proxy ?? `${DEFAULT_BACKEND_BASE_PATH}/proxy`).replace(/\/+$/, ''),
-    refresh: endpoints.refresh ?? `${DEFAULT_BACKEND_BASE_PATH}/refresh`,
-    session: endpoints.session ?? `${DEFAULT_BACKEND_BASE_PATH}/session`,
-    signIn: endpoints.signIn ?? `${DEFAULT_BACKEND_BASE_PATH}/signin`,
-    signOut: endpoints.signOut ?? `${DEFAULT_BACKEND_BASE_PATH}/signout`,
-    token: endpoints.token ?? `${DEFAULT_BACKEND_BASE_PATH}/token`,
+    checkSession: resolve(endpoints.checkSession, 'checksession'),
+    proxy: resolve(endpoints.proxy, 'proxy').replace(/\/+$/, ''),
+    refresh: resolve(endpoints.refresh, 'refresh'),
+    session: resolve(endpoints.session, 'session'),
+    signIn: resolve(endpoints.signIn, 'signin'),
+    signOut: resolve(endpoints.signOut, 'signout'),
+    token: resolve(endpoints.token, 'token'),
   };
 };
 

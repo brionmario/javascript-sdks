@@ -17,6 +17,7 @@ import {
   EmbeddedRecoveryFlowResponse,
   createPackageComponentLogger,
   getVendorPrefix,
+  resolveApiBaseUrl,
   resolveResourceEndpoint,
   AttributeSchema,
   SPAUtils,
@@ -86,12 +87,15 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userSchema, setUserSchema] = useState<Record<string, AttributeSchema> | null>(null);
-  const [baseUrl, setBaseUrl] = useState<string>(initialBaseUrl ?? '');
+  // The base the SDK's API requests are built on. In backend mode `baseUrl` is the backend, and the
+  // API is under `endpoints.backend.apiBaseUrl`.
+  const apiBaseUrl: string = resolveApiBaseUrl({baseUrl: initialBaseUrl, endpoints: rest.endpoints}) ?? '';
+  const [baseUrl, setBaseUrl] = useState<string>(apiBaseUrl);
   const [config, setConfig] = useState<ThunderIDReactConfig>({
     afterSignInUrl: afterSignInUrl ?? window.location.origin,
     afterSignOutUrl: afterSignOutUrl ?? window.location.origin,
     applicationId,
-    baseUrl,
+    baseUrl: initialBaseUrl ?? '',
     clientId,
     organizationChain,
     organizationHandle,
@@ -112,8 +116,8 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
   const pendingSessionUpdateRef: RefObject<Promise<void> | null> = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
-    setBaseUrl(initialBaseUrl ?? '');
-  }, [initialBaseUrl]);
+    setBaseUrl(apiBaseUrl);
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     (async (): Promise<void> => {
@@ -136,7 +140,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       // If there's a `user_org` claim in the ID token,
       // Treat this login as a organization login.
       if (decodedToken?.['user_org']) {
-        resolvedBaseUrl = `${(await client.getConfiguration()).baseUrl}/o`;
+        resolvedBaseUrl = `${resolveApiBaseUrl(await client.getConfiguration()) ?? ''}/o`;
         setBaseUrl(resolvedBaseUrl);
       }
 
@@ -496,7 +500,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       // baseUrl, discovery) reflects the new configuration instead of the pre-reinitialization state.
       const reinitializedConfig: ThunderIDReactConfig = await client.getConfiguration();
       setConfig(reinitializedConfig);
-      setBaseUrl(reinitializedConfig.baseUrl ?? '');
+      setBaseUrl(resolveApiBaseUrl(reinitializedConfig) ?? '');
       setWellKnown(await client.getDiscoveryResponse());
 
       return result;

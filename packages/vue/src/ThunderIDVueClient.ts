@@ -22,6 +22,7 @@ import {
   EmbeddedSignUpFlowStatus,
   StorageManager,
   AuthClientConfig,
+  resolveApiBaseUrl,
   resolveResourceEndpoint,
 } from '@thunderid/browser';
 import getUsersMe from './api/account/getUsersMe';
@@ -89,7 +90,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
       const opts: {baseUrl?: string; url?: string} | undefined =
         typeof options === 'object' && options !== null ? options : undefined;
       const configData: AuthClientConfig<T> = await this.getStorageManager().getConfigData();
-      const baseUrl: string | undefined = opts?.baseUrl ?? configData?.baseUrl;
+      const baseUrl: string | undefined = opts?.baseUrl ?? resolveApiBaseUrl(configData);
 
       const profile: User = await getUsersMe({
         baseUrl,
@@ -114,7 +115,7 @@ class ThunderIDVueClient<T extends ThunderIDVueConfig = ThunderIDVueConfig> exte
     return this.withLoading(async () => {
       try {
         const configData: AuthClientConfig<T> = await this.getStorageManager().getConfigData();
-        const baseUrl: string | undefined = options?.baseUrl ?? configData?.baseUrl;
+        const baseUrl: string | undefined = options?.baseUrl ?? resolveApiBaseUrl(configData);
 
         const profile: User = await getUsersMe({
           baseUrl,

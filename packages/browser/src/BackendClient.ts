@@ -274,12 +274,13 @@ class BackendClient {
   }
 
   /**
-   * The headers and credentials mode every backend request is sent with.
+   * The headers and credentials mode every backend request is sent with. The cookies go with every
+   * request, so a backend on another origin works too when its CORS allows credentials.
    */
   static requestInit(headers: Record<string, string> = {}): Pick<RequestInit, 'credentials'> & {
     headers: Record<string, string>;
   } {
-    return {credentials: 'same-origin', headers: {...headers, [BACKEND_REQUEST_HEADER]: BACKEND_REQUEST_HEADER_VALUE}};
+    return {credentials: 'include', headers: {...headers, [BACKEND_REQUEST_HEADER]: BACKEND_REQUEST_HEADER_VALUE}};
   }
 
   private async loadSession(): Promise<BackendSession> {

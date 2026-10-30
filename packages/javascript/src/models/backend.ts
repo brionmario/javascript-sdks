@@ -3,14 +3,20 @@
 
 /**
  * The app backend's auth endpoints, set under `endpoints.backend`. Setting them hands sign-in to the
- * app's backend (the Backend for Frontend pattern): the backend, on the app's own origin, runs the
- * OAuth flow and keeps the tokens. The browser only holds an `HttpOnly` cookie it cannot read, and
- * API calls go through the backend, which attaches the access token.
+ * app's backend (the Backend for Frontend pattern): the backend runs the OAuth flow and keeps the
+ * tokens. The browser only holds an `HttpOnly` cookie it cannot read, and API calls go through the
+ * backend, which attaches the access token.
  *
- * Any endpoint left unset defaults to a fixed path under `/api/auth`.
+ * In this mode the top-level `baseUrl` is the backend, and defaults to the app's origin. An endpoint
+ * given as a path is resolved against it; an absolute URL is used as it is. Any endpoint left unset
+ * defaults to a fixed path under `/api/auth`.
+ *
+ * The backend belongs on the app's own origin, as RFC 10017 recommends. A backend on another origin
+ * has to allow it with CORS, credentials included, and its cookies have to reach it.
  *
  * @example
- * endpoints: {backend: {signIn: '/api/auth/signin'}}
+ * baseUrl: 'https://app.example.com',
+ * endpoints: {backend: {signIn: '/api/auth/signin', apiBaseUrl: 'https://api.example.com'}}
  */
 export interface BackendEndpoints {
   /** Starts sign-in. Defaults to `/api/auth/signin`. */
@@ -27,10 +33,16 @@ export interface BackendEndpoints {
   /** Ends the session. Defaults to `/api/auth/signout`. */
   signOut?: string;
   /**
-   * Prefix of the API proxy. Requests under `baseUrl`, or under the app's origin when `baseUrl` is
-   * not set, are sent through it. Defaults to `/api/auth/proxy`.
+   * Prefix of the API proxy. Requests under `apiBaseUrl` are sent through it. Defaults to
+   * `/api/auth/proxy`.
    */
   proxy?: string;
+  /**
+   * Base URL of the API behind the proxy: requests under it are sent through `proxy`, and the SDK
+   * builds its API requests, such as `/users/me` and the management APIs, on it. Defaults to
+   * `baseUrl`, then to the app's origin.
+   */
+  apiBaseUrl?: string;
   /**
    * Issues the access token for `bypass`, as an OAuth token response without a refresh token.
    * Defaults to `/api/auth/token`.
@@ -61,7 +73,6 @@ export interface BackendBypass {
  * The backend endpoints, fully resolved, with the API base whose requests go through the proxy.
  */
 export type ResolvedBackendEndpoints = Required<Omit<BackendEndpoints, 'bypass'>> & {
-  apiBaseUrl: string;
   bypass: Required<BackendBypass>;
 };
 
