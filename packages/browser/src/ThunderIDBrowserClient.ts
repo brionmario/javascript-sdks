@@ -26,6 +26,7 @@ import {
   generateFlattenedUserProfile,
   getTokenPermissions,
   getUsersMe,
+  resolveApiBaseUrl,
   resolveBackendEndpoints,
   resolveResourceEndpoint,
 } from '@thunderid/javascript';
@@ -602,7 +603,8 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
 
     const configData = await this.getStorageManager().getConfigData();
     const profile: User = await getUsersMe({
-      baseUrl: options?.baseUrl ?? (configData as any)?.baseUrl,
+      // In backend mode `baseUrl` is the backend; the API is under `endpoints.backend.apiBaseUrl`.
+      baseUrl: options?.baseUrl ?? resolveApiBaseUrl(configData as any),
       fetcher: createHttpClientFetcher(this._browserInstanceId),
       url: resolveResourceEndpoint('usersMe', configData as any, options?.url),
     });

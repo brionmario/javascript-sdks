@@ -1,9 +1,11 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {cleanup, render, waitFor} from '@testing-library/react';
+import {cleanup, render, screen, waitFor} from '@testing-library/react';
+import {ReactElement} from 'react';
 import {Mock, afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import ThunderIDProvider from '../ThunderIDProvider';
+import useThunderID from '../useThunderID';
 
 type Noop = Mock<() => void>;
 type SignInHookHandler = () => Promise<void>;
@@ -247,5 +249,28 @@ describe('ThunderIDProvider updateSession single-flight', () => {
 
     await mocks.client.handlers['sign-in']();
     expect(mocks.getUsersMe).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('ThunderIDProvider in backend mode', () => {
+  it('initializes the client with the backend as baseUrl and builds API requests on apiBaseUrl', async () => {
+    function ReadBaseUrl(): ReactElement {
+      return <div data-testid="base-url">{useThunderID().baseUrl}</div>;
+    }
+
+    render(
+      <ThunderIDProvider
+        baseUrl="https://app.example.com"
+        clientId="test-client"
+        endpoints={{backend: {apiBaseUrl: 'https://api.example.com'}}}
+        preferences={{resolveFromMeta: false}}
+      >
+        <ReadBaseUrl />
+      </ThunderIDProvider>,
+    );
+
+    await waitFor(() => expect(mocks.client.initialize).toHaveBeenCalled());
+    expect(mocks.client.initialize.mock.calls[0][0]).toMatchObject({baseUrl: 'https://app.example.com'});
+    expect(screen.getByTestId('base-url').textContent).toBe('https://api.example.com');
   });
 });

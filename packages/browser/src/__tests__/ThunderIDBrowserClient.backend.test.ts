@@ -10,10 +10,14 @@ import ThunderIDBrowserClient from '../ThunderIDBrowserClient';
 const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), {headers: {'Content-Type': 'application/json'}, status});
 
+// In backend mode `baseUrl` is the backend, and the API whose requests go through its proxy is
+// `endpoints.backend.apiBaseUrl`.
+const BFF = 'https://app.example.com';
+
 const CONFIG = {
-  baseUrl: 'https://auth.example.com',
+  baseUrl: BFF,
   clientId: 'my-app',
-  endpoints: {backend: {bypass: {urls: ['https://dp.example.com']}}},
+  endpoints: {backend: {apiBaseUrl: 'https://auth.example.com', bypass: {urls: ['https://dp.example.com']}}},
   storage: 'browserMemory',
 };
 
@@ -81,7 +85,7 @@ describe('ThunderIDBrowserClient with sign-in on the backend', () => {
     const response = await client.httpRequest({method: 'GET', url: 'https://auth.example.com/users'});
 
     expect(response?.data).toEqual({users: []});
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/proxy/users');
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BFF}/api/auth/proxy/users`);
   });
 
   it('gets the access token from the backend and stores it like a client credentials token', async () => {
@@ -91,7 +95,7 @@ describe('ThunderIDBrowserClient with sign-in on the backend', () => {
     expect(await client.getAccessToken()).toBe('t1');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/token');
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BFF}/api/auth/token`);
   });
 
   it('requests a new access token when the stored one is about to expire', async () => {
@@ -110,8 +114,26 @@ describe('ThunderIDBrowserClient with sign-in on the backend', () => {
 
     expect(await scoped.getGrantedPermissions()).toEqual(['openid', 'system:user', 'system:group:view']);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/session');
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BFF}/api/auth/session`);
     FetchHttpClient.destroyInstance(8);
+  });
+
+  it('builds /users/me on the API base and sends it through the proxy', async () => {
+    fetchMock.mockResolvedValueOnce(json(200, {id: 'u1', username: 'ada'}));
+
+    await client.getUserProfile();
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BFF}/api/auth/proxy/users/me`);
+  });
+
+  it('does not run OIDC discovery against the backend', async () => {
+    fetchMock.mockResolvedValueOnce(json(200, SIGNED_IN));
+    const fresh = new ThunderIDBrowserClient<any>(9);
+    await fresh.initialize(CONFIG);
+    await fresh.isSignedIn();
+
+    expect(fetchMock.mock.calls.map((call: unknown[]) => String(call[0]))).toEqual([`${BFF}/api/auth/session`]);
+    FetchHttpClient.destroyInstance(9);
   });
 
   it('grants nothing when the session has no scope, without asking for the access token', async () => {
@@ -166,7 +188,7 @@ describe('ThunderIDBrowserClient with sign-in on the backend', () => {
     await vi.waitFor(() => expect(afterSignOut).toHaveBeenCalled());
 
     expect(afterSignOut).toHaveBeenCalledWith('https://auth.example.com/oauth2/logout?client_id=my-app');
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/signout');
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BFF}/api/auth/signout`);
   });
 });
 

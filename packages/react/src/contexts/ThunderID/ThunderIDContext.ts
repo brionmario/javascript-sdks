@@ -29,6 +29,10 @@ import ThunderIDReactClient from '../../ThunderIDReactClient';
 export type ThunderIDContextProps = {
   afterSignInUrl: string | undefined;
   applicationId: string | undefined;
+  /**
+   * The base URL the SDK's API requests are built on: the ThunderID tenant, or in backend mode
+   * `endpoints.backend.apiBaseUrl` (falling back to `baseUrl`, the backend).
+   */
   baseUrl: string | undefined;
   clientId: string | undefined;
   /**

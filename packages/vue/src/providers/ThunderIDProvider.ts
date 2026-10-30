@@ -19,6 +19,7 @@ import {
   EmbeddedSignInFlowResponse,
   Preferences,
   getVendorPrefix,
+  resolveApiBaseUrl,
   resolveResourceEndpoint,
   SPAUtils,
 } from '@thunderid/browser';
@@ -216,7 +217,10 @@ const ThunderIDProvider: Component = defineComponent({
     const user: ShallowRef<any | null> = shallowRef<any | null>(null);
     const userProfile: ShallowRef<UserProfile | null> = shallowRef<UserProfile | null>(null);
     const userSchema: Ref<Record<string, AttributeSchema> | null> = ref<Record<string, AttributeSchema> | null>(null);
-    const resolvedBaseUrl: Ref<string> = ref<string>(props.baseUrl);
+    // The base the SDK's API requests are built on. In backend mode `baseUrl` is the backend, and the
+    // API is under `endpoints.backend.apiBaseUrl`.
+    const apiBaseUrl: string = resolveApiBaseUrl({baseUrl: props.baseUrl, endpoints: props.endpoints}) ?? '';
+    const resolvedBaseUrl: Ref<string> = ref<string>(apiBaseUrl);
 
     let isUpdatingSession = false;
     let signInCheckInterval: ReturnType<typeof setInterval> | undefined;
@@ -254,7 +258,7 @@ const ThunderIDProvider: Component = defineComponent({
         const decodedToken: IdToken = await client.getDecodedIdToken();
 
         if (decodedToken?.['user_org']) {
-          baseUrl = `${(await client.getConfiguration()).baseUrl}/o`;
+          baseUrl = `${resolveApiBaseUrl(await client.getConfiguration()) ?? ''}/o`;
           resolvedBaseUrl.value = baseUrl;
         }
 
@@ -370,7 +374,7 @@ const ThunderIDProvider: Component = defineComponent({
     const context: ThunderIDContext = {
       afterSignInUrl: props.afterSignInUrl,
       applicationId: props.applicationId,
-      baseUrl: props.baseUrl,
+      baseUrl: apiBaseUrl,
       endpoints: props.endpoints,
       clearSession: async (...args: any[]): Promise<void> => {
         await client.clearSession(...args);

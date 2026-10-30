@@ -430,11 +430,15 @@ class ThunderIDJavaScriptClient<T = Config> implements ThunderIDClient<T> {
 
     const {discovery, baseUrl, endpoints} = configData as any;
     const wellKnownOverride: string | undefined = endpoints?.wellKnown;
+    const isBackendMode = Boolean((configData as {endpoints?: {backend?: unknown}}).endpoints?.backend);
 
-    // Discovery is enabled by default; only skip if explicitly disabled.
+    // Discovery is enabled by default; only skip if explicitly disabled. In backend mode `baseUrl` is
+    // the backend, which runs OAuth itself, so there is nothing to discover there.
     const resolvedWellKnownEndpoint: string | undefined =
       wellKnownOverride ||
-      (discovery?.wellKnown?.enabled !== false && baseUrl ? `${baseUrl}${WELL_KNOWN_PATH}` : undefined);
+      (discovery?.wellKnown?.enabled !== false && baseUrl && !isBackendMode
+        ? `${baseUrl}${WELL_KNOWN_PATH}`
+        : undefined);
 
     if (resolvedWellKnownEndpoint) {
       let response: Response | undefined;

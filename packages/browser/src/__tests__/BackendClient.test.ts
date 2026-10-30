@@ -38,7 +38,7 @@ describe('BackendClient', () => {
     vi.unstubAllGlobals();
   });
 
-  it('reads the session with the CSRF header and same-origin credentials, and caches it', async () => {
+  it('reads the session with the CSRF header and credentials included, and caches it', async () => {
     fetchMock.mockResolvedValue(json(200, {isSignedIn: true, user: {sub: 'u1'}}));
     const backend = new BackendClient(ENDPOINTS);
 
@@ -48,7 +48,7 @@ describe('BackendClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/auth/session');
-    expect(init.credentials).toBe('same-origin');
+    expect(init.credentials).toBe('include');
     expect(init.headers[BACKEND_REQUEST_HEADER]).toBe('XMLHttpRequest');
   });
 
@@ -134,7 +134,7 @@ describe('BackendHttpClient', () => {
     expect(response.data).toEqual({id: 'u1'});
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/auth/proxy/users');
-    expect(init.credentials).toBe('same-origin');
+    expect(init.credentials).toBe('include');
     expect(init.headers[BACKEND_REQUEST_HEADER]).toBe('XMLHttpRequest');
     expect(init.headers.Authorization).toBeUndefined();
     expect(init.body).toBe('{"name":"a"}');
@@ -307,7 +307,7 @@ describe('BackendClient bypass', () => {
     expect(backend.isBypassed('/orders')).toBe(false);
   });
 
-  it('requests the access token with the CSRF header and same-origin credentials', async () => {
+  it('requests the access token with the CSRF header and credentials included', async () => {
     fetchMock.mockResolvedValueOnce(json(200, {access_token: 't1', expires_in: 300, token_type: 'Bearer'}));
 
     expect(await new BackendClient(ENDPOINTS).requestAccessToken()).toEqual({
@@ -318,7 +318,7 @@ describe('BackendClient bypass', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/auth/token');
     expect(init.method).toBe('POST');
-    expect(init.credentials).toBe('same-origin');
+    expect(init.credentials).toBe('include');
     expect(init.headers[BACKEND_REQUEST_HEADER]).toBe('XMLHttpRequest');
   });
 
