@@ -50,6 +50,8 @@ export interface ThunderIDContext {
   exchangeToken: (config: TokenExchangeRequestConfig) => Promise<TokenResponse | Response>;
   // ── Token ──
   getAccessToken: () => Promise<string>;
+  /** The permissions the signed-in user's access token grants; in backend mode, from the backend's session. */
+  getGrantedPermissions: () => Promise<string[]>;
   getDecodedIdToken: () => Promise<IdToken>;
   getIdToken: () => Promise<string>;
   getStorageManager: () => StorageManager<any>;

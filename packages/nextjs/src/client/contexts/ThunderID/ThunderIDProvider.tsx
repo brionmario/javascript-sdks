@@ -345,6 +345,8 @@ const ThunderIDClientProvider: FC<PropsWithChildren<ThunderIDClientProviderProps
       exchangeToken: unsupported('exchangeToken'),
       getAccessToken: unsupported('getAccessToken'),
       getDecodedIdToken: unsupported('getDecodedIdToken'),
+      // The Next.js useGrantedPermissions reads them through a server action instead.
+      getGrantedPermissions: unsupported('getGrantedPermissions'),
       getIdToken: unsupported('getIdToken'),
       getStorageManager: () => Promise.resolve(null),
       http: {

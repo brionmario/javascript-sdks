@@ -63,6 +63,12 @@ export type ThunderIDContextProps = {
    */
   getAccessToken: () => Promise<string>;
   /**
+   * Retrieves the permissions the signed-in user's access token grants. In backend mode they come from
+   * the backend's session, so the token stays on the backend.
+   * @returns A promise that resolves to the granted permissions.
+   */
+  getGrantedPermissions: () => Promise<string[]>;
+  /**
    * Function to retrieve the decoded ID token.
    * This function decodes the ID token and returns its payload.
    * It can be used to access user claims and other information contained in the ID token.
@@ -247,6 +253,7 @@ const ThunderIDContext: Context<ThunderIDContextProps | null> = createContext<nu
   },
   exchangeToken: null as unknown as ThunderIDContextProps['exchangeToken'],
   getAccessToken: null as unknown as ThunderIDContextProps['getAccessToken'],
+  getGrantedPermissions: null as unknown as ThunderIDContextProps['getGrantedPermissions'],
   getDecodedIdToken: null as unknown as ThunderIDContextProps['getDecodedIdToken'],
   getIdToken: null as unknown as ThunderIDContextProps['getIdToken'],
   getStorageManager: () => Promise.resolve(null),

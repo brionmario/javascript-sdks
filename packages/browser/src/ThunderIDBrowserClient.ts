@@ -24,6 +24,7 @@ import {
   TokenConstants,
   createPackageComponentLogger,
   generateFlattenedUserProfile,
+  getTokenPermissions,
   getUsersMe,
   resolveBackendEndpoints,
   resolveResourceEndpoint,
@@ -618,6 +619,26 @@ class ThunderIDBrowserClient<T = BrowserAuthConfig> extends ThunderIDJavaScriptC
     }
 
     return super.getAccessToken(sessionId);
+  }
+
+  /**
+   * The permissions the signed-in user's access token grants, for example to hide a page the user
+   * cannot use. The server still checks every request.
+   *
+   * In backend mode they come only from the backend's session (`scope`): the token stays on the backend,
+   * so a session without `scope` grants nothing. Otherwise they are read from the access token's `scope`
+   * or `scopes` claim.
+   *
+   * @returns The granted permissions, or an empty list when none can be read.
+   */
+  public async getGrantedPermissions(): Promise<string[]> {
+    if (this._backend) {
+      const {scope} = await this._backend.getSession();
+
+      return typeof scope === 'string' ? scope.split(' ').filter((entry: string) => entry.length > 0) : [];
+    }
+
+    return getTokenPermissions(await this.getAccessToken());
   }
 
   /**

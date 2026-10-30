@@ -379,6 +379,7 @@ const ThunderIDProvider: Component = defineComponent({
       scopes: props.scopes,
       exchangeToken: (config: any): Promise<TokenResponse | Response> => client.exchangeToken(config),
       getAccessToken: (): Promise<string> => client.getAccessToken(),
+      getGrantedPermissions: (): Promise<string[]> => client.getGrantedPermissions(),
       getDecodedIdToken: (): Promise<IdToken> => client.getDecodedIdToken(),
       getIdToken: (): Promise<string> => client.getIdToken(),
       getStorageManager: () => client.getStorageManager(),

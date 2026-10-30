@@ -438,6 +438,11 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
     [client],
   );
 
+  const getGrantedPermissions: () => Promise<string[]> = useCallback(
+    async (): Promise<string[]> => client.getGrantedPermissions(),
+    [client],
+  );
+
   const getStorageManager: ThunderIDContextProps['getStorageManager'] = useCallback(async () => {
     const storageManager: Awaited<ReturnType<ThunderIDContextProps['getStorageManager']>> =
       storageManagerRef.current ?? (await client.getStorageManager());
@@ -514,6 +519,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       exchangeToken,
       getAccessToken,
       getDecodedIdToken,
+      getGrantedPermissions,
       getIdToken,
       getStorageManager,
       http: {
@@ -570,6 +576,7 @@ const ThunderIDProvider: FC<PropsWithChildren<ThunderIDProviderProps>> = ({
       exchangeToken,
       httpOptions?.fetcher,
       getAccessToken,
+      getGrantedPermissions,
       getStorageManager,
       instanceId,
       invalidator,
