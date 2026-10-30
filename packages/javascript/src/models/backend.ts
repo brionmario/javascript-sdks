@@ -74,4 +74,9 @@ export interface BackendSession {
   user?: Record<string, unknown>;
   /** When the access token expires, in seconds since the epoch. */
   expiresAt?: number;
+  /**
+   * The scopes the access token was granted, space separated, as the token response's `scope`
+   * (RFC 6749 §5.1). The app reads its permissions from here, so the token can stay on the backend.
+   */
+  scope?: string;
 }

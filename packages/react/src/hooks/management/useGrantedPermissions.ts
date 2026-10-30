@@ -1,7 +1,7 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {getTokenPermissions, hasPermission} from '@thunderid/browser';
+import {hasPermission} from '@thunderid/browser';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import useThunderID from '../../contexts/ThunderID/useThunderID';
 
@@ -21,7 +21,8 @@ export interface GrantedPermissions {
 
 /**
  * Reads the permissions the signed-in user's access token grants, for example to hide a page the
- * user cannot use.
+ * user cannot use. In backend mode they come from the backend's session, so the token stays on the
+ * backend.
  *
  * @returns The granted permissions and a `can` check.
  *
@@ -32,7 +33,7 @@ export interface GrantedPermissions {
  * ```
  */
 const useGrantedPermissions = (): GrantedPermissions => {
-  const {getAccessToken, isSignedIn} = useThunderID();
+  const {getGrantedPermissions, isSignedIn} = useThunderID();
   const [granted, setGranted] = useState<string[] | null>(null);
 
   useEffect(() => {
@@ -42,19 +43,18 @@ const useGrantedPermissions = (): GrantedPermissions => {
 
     let active = true;
 
-    void getAccessToken()
-      .then((token: string) => getTokenPermissions(token))
+    void getGrantedPermissions()
       .catch((): string[] => [])
-      .then((tokenPermissions: string[]) => {
+      .then((grantedPermissions: string[]) => {
         if (active) {
-          setGranted(tokenPermissions);
+          setGranted(grantedPermissions);
         }
       });
 
     return (): void => {
       active = false;
     };
-  }, [getAccessToken, isSignedIn]);
+  }, [getGrantedPermissions, isSignedIn]);
 
   const permissions: string[] = useMemo(() => (isSignedIn ? (granted ?? []) : []), [granted, isSignedIn]);
   const isLoading: boolean = isSignedIn && granted === null;

@@ -255,15 +255,8 @@ describe('useGrantedPermissions (vue)', () => {
     mounted.splice(0).forEach((wrapper) => wrapper.unmount());
   });
 
-  const tokenWithScopes = (scope: string): string => {
-    const encode = (value: object): string =>
-      btoa(JSON.stringify(value)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-    return `${encode({alg: 'none'})}.${encode({scope, sub: 'u1'})}.signature`;
-  };
-
-  it('reads the permissions from the access token and checks them by prefix', async () => {
-    const context = createManagementContext({accessToken: tokenWithScopes('openid system:user system:group:view')});
+  it('reads the granted permissions from the client and checks them by prefix', async () => {
+    const context = createManagementContext({grantedPermissions: ['openid', 'system:user', 'system:group:view']});
     const {result} = withSetup(() => useGrantedPermissions(), context);
 
     expect(result.isLoading.value).toBe(true);
@@ -280,6 +273,6 @@ describe('useGrantedPermissions (vue)', () => {
     await nextTick();
     expect(result.isLoading.value).toBe(false);
     expect(result.permissions.value).toEqual([]);
-    expect(context.thunderID.getAccessToken).not.toHaveBeenCalled();
+    expect(context.thunderID.getGrantedPermissions).not.toHaveBeenCalled();
   });
 });

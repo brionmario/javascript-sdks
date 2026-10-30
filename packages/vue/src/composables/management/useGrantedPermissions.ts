@@ -1,7 +1,7 @@
 // Copyright 2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {getTokenPermissions, hasPermission} from '@thunderid/browser';
+import {hasPermission} from '@thunderid/browser';
 import {type ComputedRef, type Ref, computed, getCurrentScope, onScopeDispose, shallowRef, watch} from 'vue';
 import useThunderID from '../useThunderID';
 
@@ -21,7 +21,8 @@ export interface GrantedPermissions {
 
 /**
  * Reads the permissions the signed-in user's access token grants, for example to hide a page the
- * user cannot use.
+ * user cannot use. In backend mode they come from the backend's session, so the token stays on the
+ * backend.
  *
  * @returns The granted permissions and a `can` check.
  *
@@ -37,7 +38,7 @@ export interface GrantedPermissions {
  * ```
  */
 const useGrantedPermissions = (): GrantedPermissions => {
-  const {getAccessToken, isSignedIn} = useThunderID();
+  const {getGrantedPermissions, isSignedIn} = useThunderID();
   const granted: Ref<string[] | null> = shallowRef<string[] | null>(null);
   let generation = 0;
 
@@ -53,12 +54,11 @@ const useGrantedPermissions = (): GrantedPermissions => {
         return;
       }
 
-      void getAccessToken()
-        .then((token: string) => getTokenPermissions(token))
+      void getGrantedPermissions()
         .catch((): string[] => [])
-        .then((tokenPermissions: string[]) => {
+        .then((grantedPermissions: string[]) => {
           if (current === generation) {
-            granted.value = tokenPermissions;
+            granted.value = grantedPermissions;
           }
         });
     },

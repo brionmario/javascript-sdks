@@ -103,6 +103,22 @@ describe('ThunderIDBrowserClient with sign-in on the backend', () => {
     expect(await client.getAccessToken()).toBe('t2');
   });
 
+  it('reads the granted permissions from the session, without the access token', async () => {
+    fetchMock.mockResolvedValueOnce(json(200, {...SIGNED_IN, scope: 'openid system:user  system:group:view'}));
+    const scoped = new ThunderIDBrowserClient<any>(8);
+    await scoped.initialize(CONFIG);
+
+    expect(await scoped.getGrantedPermissions()).toEqual(['openid', 'system:user', 'system:group:view']);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/session');
+    FetchHttpClient.destroyInstance(8);
+  });
+
+  it('grants nothing when the session has no scope, without asking for the access token', async () => {
+    expect(await client.getGrantedPermissions()).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('shares one token request between concurrent callers', async () => {
     fetchMock.mockResolvedValueOnce(json(200, {access_token: 't1', expires_in: 300}));
 

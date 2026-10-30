@@ -31,7 +31,11 @@ export const translate = (key: string, params?: Record<string, string | number>)
 export interface ManagementTestContext {
   fetcher: MockFetcher;
   provide: Record<symbol, unknown>;
-  thunderID: {getAccessToken: Mock<() => Promise<string>>; invalidator: ResourceInvalidator};
+  thunderID: {
+    getAccessToken: Mock<() => Promise<string>>;
+    getGrantedPermissions: Mock<() => Promise<string[]>>;
+    invalidator: ResourceInvalidator;
+  };
 }
 
 /**
@@ -43,16 +47,19 @@ export const createManagementContext = ({
   fetcher = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(),
   isSignedIn = true,
   accessToken = 'token',
+  grantedPermissions = [],
 }: {
   accessToken?: string;
   endpoints?: Record<string, string>;
   fetcher?: MockFetcher;
+  grantedPermissions?: string[];
   isSignedIn?: boolean;
 } = {}): ManagementTestContext => {
   const thunderID = {
     baseUrl: 'https://thunder.example',
     endpoints,
     getAccessToken: vi.fn(() => Promise.resolve(accessToken)),
+    getGrantedPermissions: vi.fn(() => Promise.resolve(grantedPermissions)),
     http: {fetcher, request: vi.fn(), requestAll: vi.fn()},
     instanceId: 0,
     invalidator: createResourceInvalidator(),

@@ -1,7 +1,7 @@
 // Copyright 2025 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {getRedirectBasedSignUpUrl} from '@thunderid/browser';
+import {getRedirectBasedSignUpUrl, getTokenPermissions} from '@thunderid/browser';
 import {VendorConstants} from '@thunderid/node';
 import type {AttributeSchema, FlowMetadataResponse, UserProfile} from '@thunderid/node';
 import {ThunderIDPlugin, THUNDERID_KEY} from '@thunderid/vue';
@@ -209,6 +209,8 @@ export default defineNuxtPlugin((nuxtApp: NuxtApp) => {
     }
   };
 
+  const getGrantedPermissions = async (): Promise<string[]> => getTokenPermissions(await getAccessToken());
+
   const noop = async (): Promise<any> => undefined;
 
   // ── 4. Provide THUNDERID_KEY at the app level ────────────────────────────
@@ -222,6 +224,7 @@ export default defineNuxtPlugin((nuxtApp: NuxtApp) => {
     endpoints: publicConfig.endpoints,
     exchangeToken: noop,
     getAccessToken,
+    getGrantedPermissions,
     getDecodedIdToken: noop,
     getIdToken: noop,
     http: {
