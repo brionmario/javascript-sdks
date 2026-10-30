@@ -6,6 +6,7 @@
 import {
   AuthFlowSelect,
   ChangeCredential,
+  DeviceGrant,
   SignedIn,
   SignedOut,
   SignIn,
@@ -222,6 +223,43 @@ export const COMPONENTS: ComponentDef[] = [
     stories: [
       {id: 'base', name: 'Base'},
       {args: {children: '', source: 'live'}, id: 'live', name: 'Live (signs out)'},
+    ],
+  },
+  {
+    code: (args: Args) => ({
+      imports: ['DeviceGrant'],
+      jsx: jsx('DeviceGrant', args, {
+        defaults: {size: 'medium', variant: 'default'},
+        extra: ['onComplete={handleComplete}', 'onError={handleError}'],
+      }),
+    }),
+    controls: [
+      {control: SIZE, description: 'Spacing and control size.', name: 'size', type: "'small' | 'medium' | 'large'"},
+      {
+        control: VARIANT,
+        description: 'Card variant of the flow container.',
+        name: 'variant',
+        type: 'CardVariant',
+      },
+    ],
+    defaults: {size: 'medium', variant: 'default'},
+    group: 'Auth flows',
+    id: 'devicegrant',
+    live: true,
+    name: 'DeviceGrant',
+    render: (args: Args, action: Action) => (
+      <Narrow width={400}>
+        <DeviceGrant
+          size={str(args, 'size') as 'medium'}
+          variant={str(args, 'variant') as 'default' | 'outlined' | 'elevated'}
+          onComplete={() => action('onComplete')}
+          onError={(error: Error) => action('onError', error.message)}
+        />
+      </Narrow>
+    ),
+    stories: [
+      {id: 'default', name: 'Default'},
+      {args: {size: 'small', variant: 'elevated'}, id: 'compact', name: 'Compact'},
     ],
   },
   {

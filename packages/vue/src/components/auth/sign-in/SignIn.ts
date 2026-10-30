@@ -34,6 +34,7 @@ import {useOAuthCallback, type OAuthCallbackPayload} from '../../../composables/
 import useFlowMeta from '../../../composables/useFlowMeta';
 import useI18n from '../../../composables/useI18n';
 import useThunderID from '../../../composables/useThunderID';
+import {getConsentOptionalKey} from '../flow/Consent';
 import {extractErrorMessage, normalizeFlowResponse} from '../../../utils/flowTransformer';
 import {initiateOAuthRedirect} from '../../../utils/oauth';
 import {handlePasskeyAuthentication, handlePasskeyRegistration} from '../../../utils/passkey';
@@ -346,7 +347,7 @@ const SignIn: Component = defineComponent({
               elements: [
                 ...(p.essential ?? []).map((e) => ({approved: !isDeny, name: e.name})),
                 ...(p.optional ?? []).map((e) => {
-                  const key = `__consent_opt__${p.purposeId}__${e.name}`;
+                  const key: string = getConsentOptionalKey(p.purposeId, e.name);
                   return getConsentElementDecision(
                     p.purposeId,
                     e,

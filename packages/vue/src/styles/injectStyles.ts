@@ -28,6 +28,8 @@ import CHANGE_CREDENTIAL_CSS from '../components/account/change-credential/Chang
 import USER_DROPDOWN_CSS from '../components/account/user-dropdown/UserDropdown.css';
 import USER_PROFILE_CSS from '../components/account/user-profile/UserProfile.css';
 import ADMIN_CSS from '../components/admin/shared/Admin.css';
+import BASE_DEVICE_GRANT_CSS from '../components/auth/device-grant/BaseDeviceGrant.css';
+import CONSENT_CSS from '../components/auth/flow/Consent.css';
 import BASE_SIGN_IN_CSS from '../components/auth/sign-in/BaseSignIn.css';
 import ATTRIBUTION_CSS from '../components/common/attribution/Attribution.css';
 import LANGUAGE_SWITCHER_CSS from '../components/common/language-switcher/LanguageSwitcher.css';
@@ -78,6 +80,8 @@ const STYLES: string = [
   DATA_TABLE_CSS,
   // Auth
   BASE_SIGN_IN_CSS,
+  CONSENT_CSS,
+  BASE_DEVICE_GRANT_CSS,
   // Presentation
   CHANGE_CREDENTIAL_CSS,
   LANGUAGE_SWITCHER_CSS,

@@ -70,6 +70,12 @@ const useStyles = (
           return theme.colors.secondary.main;
         case 'error':
           return theme.colors.error.main;
+        case 'success':
+          return theme.colors.success.main;
+        case 'warning':
+          return theme.colors.warning.main;
+        case 'info':
+          return theme.colors.info.main;
         case 'textPrimary':
           return theme.colors.text.primary;
         case 'textSecondary':

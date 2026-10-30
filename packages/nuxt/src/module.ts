@@ -283,6 +283,7 @@ export default defineNuxtModule<ThunderIDNuxtConfig>({
     // ── Embedded auth flows ──────────────────────────────────────────────────
     addComponent({filePath: resolve('./runtime/components/auth/SignIn'), name: 'SignIn'});
     addComponent({filePath: resolve('./runtime/components/auth/SignUp'), name: 'SignUp'});
+    addComponent({filePath: resolve('./runtime/components/auth/DeviceGrant'), name: 'DeviceGrant'});
 
     // ── User ─────────────────────────────────────────────────────────────────
     addComponent({filePath: resolve('./runtime/components/account/User'), name: 'User'});

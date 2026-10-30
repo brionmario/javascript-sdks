@@ -10,6 +10,33 @@ import SignIn from '../../../components/auth/sign-in/SignIn';
 import {FLOW_KEY, FLOW_META_KEY, I18N_KEY, THUNDERID_KEY} from '../../../keys';
 
 describe('BaseSignIn', () => {
+  it('applies semantic colors from server-provided flow text', () => {
+    const wrapper = mount(BaseSignIn, {
+      global: {
+        provide: {
+          [FLOW_KEY as symbol]: {
+            addMessage: vi.fn(),
+            clearMessages: vi.fn(),
+            messages: ref([]),
+            subtitle: ref(null),
+            title: ref(null),
+          },
+          [FLOW_META_KEY as symbol]: {meta: ref(null)},
+          [I18N_KEY as symbol]: {currentLanguage: ref('en-US'), t: (key: string): string => key},
+        },
+      },
+      props: {
+        components: [
+          {color: 'SUCCESS', id: 'success-title', label: 'Device authorized', type: 'TEXT', variant: 'HEADING_1'},
+        ],
+      },
+    });
+
+    expect(wrapper.get('#success-title').element.getAttribute('style')).toContain(
+      'color: var(--thunderid-color-success-main)',
+    );
+  });
+
   it('exposes the step additionalData to the default slot', () => {
     const slot: Mock = vi.fn(() => []);
     mount(BaseSignIn, {

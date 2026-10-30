@@ -70,6 +70,13 @@ const translations: I18nTranslations = {
   /* |---------------------------------------------------------------| */
 
   /* Base Sign In */
+  'deviceGrant.errors.start': 'Não foi possível iniciar a verificação do dispositivo. Recarregue esta página.',
+  'deviceGrant.errors.continue': 'Não foi possível continuar a autorização do dispositivo. Tente novamente.',
+  'deviceGrant.messages.complete': 'Dispositivo autorizado',
+  'deviceGrant.messages.completeDescription': 'Você pode voltar ao seu dispositivo.',
+  'deviceGrant.messages.failed': 'Falha na autorização do dispositivo',
+  'deviceGrant.messages.failedDescription': 'Volte ao seu dispositivo e comece novamente.',
+
   'signin.heading': 'Entrar',
   'signin.subheading': 'Digite suas credencias para continuar.',
   'signin.images.app_logo.alt': 'Logotipo do aplicativo',
@@ -179,6 +186,8 @@ const translations: I18nTranslations = {
   'consent.essential_claims': 'Atributos essenciais',
   'consent.optional_claims': 'Atributos opcionais',
   'consent.authorize_scope': 'Permissões',
+  'consent.essential_scope': 'Permissões essenciais',
+  'consent.optional_scope': 'Permissões opcionais',
   'consent.essential_claims.info': 'Esses atributos são necessários para o funcionamento adequado do serviço.',
   'consent.optional_claims.info': 'Esses atributos são opcionais e podem ser fornecidos a seu critério.',
   'consent.authorize_scope.info': 'Essas permissões permitem que o serviço acesse recursos adicionais.',
@@ -196,6 +205,8 @@ const translations: I18nTranslations = {
   'consent.authorization_details.add_item': '{item}, adicionar',
   'consent.authorization_details.add_back_item': '{item}, adicionar novamente',
   'consent.authorization_details.new_item': '{label}, adicionar',
+  'consent.essential_scope.info': 'Essas permissões são necessárias para o funcionamento adequado do serviço.',
+  'consent.optional_scope.info': 'Essas permissões são opcionais e podem ser concedidas a seu critério.',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

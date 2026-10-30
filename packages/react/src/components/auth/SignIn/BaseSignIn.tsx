@@ -10,7 +10,7 @@ import {
   Preferences,
   buildValidatorFromRules,
 } from '@thunderid/browser';
-import {FC, useEffect, useMemo, useState, useCallback, useContext, ReactElement, ReactNode} from 'react';
+import {FC, useEffect, useMemo, useRef, useState, useCallback, useContext, ReactElement, ReactNode} from 'react';
 import useStyles from './BaseSignIn.styles';
 import ComponentRendererContext, {
   ComponentRendererMap,
@@ -167,6 +167,11 @@ export interface BaseSignInProps {
   isLoading?: boolean;
 
   /**
+   * Values to seed form fields with, such as a value supplied by a verification URI.
+   */
+  initialValues?: Record<string, string>;
+
+  /**
    * Timer flag disabling actions
    */
   isTimeoutDisabled?: boolean;
@@ -251,6 +256,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
   size = 'medium',
   variant = 'outlined',
   isLoading: externalIsLoading,
+  initialValues,
   children,
   additionalData = {},
   isTimeoutDisabled = false,
@@ -376,6 +382,7 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
     errors: formErrors,
     isValid: isFormValid,
     setValue: setFormValue,
+    setValues: setFormValues,
     setTouched: setFormTouched,
     setTouchedFields,
     setErrors: setFormErrors,
@@ -385,6 +392,25 @@ const BaseSignInContent: FC<BaseSignInProps> = ({
     reset: resetForm,
     revalidateTouchedFields,
   } = form;
+
+  const initialValuesKey: string = useMemo(
+    () => JSON.stringify(Object.entries(initialValues ?? {}).sort(([left], [right]) => left.localeCompare(right))),
+    [initialValues],
+  );
+  const appliedInitialValuesKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (
+      !initialValues ||
+      Object.keys(initialValues).length === 0 ||
+      appliedInitialValuesKeyRef.current === initialValuesKey
+    ) {
+      return;
+    }
+
+    appliedInitialValuesKeyRef.current = initialValuesKey;
+    setFormValues(initialValues);
+  }, [initialValues, initialValuesKey, setFormValues]);
 
   // Project server-side fieldErrors into form state. `setTouchedFields` is used instead
   // of `setTouched` so client-side `validateField` doesn't wipe server errors when the

@@ -70,6 +70,13 @@ const translations: I18nTranslations = {
   /* |---------------------------------------------------------------| */
 
   /* Base Sign In */
+  'deviceGrant.errors.start': 'डिवाइस सत्यापन शुरू नहीं हो सका। कृपया यह पेज फिर से लोड करें।',
+  'deviceGrant.errors.continue': 'डिवाइस प्राधिकरण जारी नहीं रह सका। कृपया फिर से प्रयास करें।',
+  'deviceGrant.messages.complete': 'डिवाइस अधिकृत है',
+  'deviceGrant.messages.completeDescription': 'आप अपने डिवाइस पर लौट सकते हैं।',
+  'deviceGrant.messages.failed': 'डिवाइस प्राधिकरण विफल हुआ',
+  'deviceGrant.messages.failedDescription': 'अपने डिवाइस पर लौटें और फिर से शुरू करें।',
+
   'signin.heading': 'साइन इन',
   'signin.subheading': 'जारी रखने के लिए अपनी प्रमाणिक जानकारी दर्ज करें।',
   'signin.images.app_logo.alt': 'एप्लिकेशन लोगो',
@@ -179,6 +186,8 @@ const translations: I18nTranslations = {
   'consent.essential_claims': 'आवश्यक विशेषताएँ',
   'consent.optional_claims': 'वैकल्पिक विशेषताएँ',
   'consent.authorize_scope': 'अनुमतियाँ',
+  'consent.essential_scope': 'आवश्यक अनुमतियाँ',
+  'consent.optional_scope': 'वैकल्पिक अनुमतियाँ',
   'consent.essential_claims.info': 'सेवा के सही ढंग से कार्य करने के लिए ये विशेषताएँ आवश्यक हैं।',
   'consent.optional_claims.info': 'ये विशेषताएँ वैकल्पिक हैं और आपके विवेकानुसार प्रदान की जा सकती हैं।',
   'consent.authorize_scope.info': 'ये अनुमतियाँ सेवा को अतिरिक्त सुविधाओं तक पहुँचने की अनुमति देती हैं।',
@@ -196,6 +205,8 @@ const translations: I18nTranslations = {
   'consent.authorization_details.add_item': '{item}, जोड़ें',
   'consent.authorization_details.add_back_item': '{item}, फिर से जोड़ें',
   'consent.authorization_details.new_item': '{label}, जोड़ें',
+  'consent.essential_scope.info': 'सेवा के सही ढंग से कार्य करने के लिए ये अनुमतियाँ आवश्यक हैं।',
+  'consent.optional_scope.info': 'ये अनुमतियाँ वैकल्पिक हैं और आपके विवेकानुसार दी जा सकती हैं।',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

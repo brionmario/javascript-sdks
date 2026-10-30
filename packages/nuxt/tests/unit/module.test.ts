@@ -25,6 +25,7 @@ vi.mock('@nuxt/kit', () => ({
 }));
 
 const {default: thunderIDModule} = await import('../../src/module');
+const {addComponent} = await import('@nuxt/kit');
 
 const setupModule = (userOptions: ThunderIDNuxtConfig) => {
   const nuxt = {options: {runtimeConfig: {public: {}}}} as any;
@@ -35,6 +36,7 @@ const setupModule = (userOptions: ThunderIDNuxtConfig) => {
 const ENV_KEYS = ['NUXT_PUBLIC_THUNDERID_BASE_URL', 'NUXT_PUBLIC_THUNDERID_CLIENT_ID'];
 
 beforeEach(() => {
+  vi.clearAllMocks();
   viteConfigExtenders.length = 0;
   ENV_KEYS.forEach((key) => vi.stubEnv(key, undefined as unknown as string));
 });
@@ -44,6 +46,17 @@ afterEach(() => {
 });
 
 describe('@thunderid/nuxt module', () => {
+  describe('components', () => {
+    it('registers DeviceGrant through the Nuxt component surface', () => {
+      setupModule({});
+
+      expect(addComponent).toHaveBeenCalledWith({
+        filePath: './runtime/components/auth/DeviceGrant',
+        name: 'DeviceGrant',
+      });
+    });
+  });
+
   describe('scopes', () => {
     it('uses an array of scopes from nuxt.config as given, without adding the default scopes to it', () => {
       const runtimeConfig = setupModule({scopes: ['openid', 'profile', 'email']});

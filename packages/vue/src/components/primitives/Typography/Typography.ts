@@ -5,6 +5,17 @@ import {withVendorCSSClassPrefix} from '@thunderid/browser';
 import {type Component, type SetupContext, type VNode, defineComponent, h, type PropType} from 'vue';
 
 type TypographyProps = Readonly<{
+  color:
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'success'
+    | 'warning'
+    | 'info'
+    | 'textPrimary'
+    | 'textSecondary'
+    | 'inherit'
+    | undefined;
   component: string | undefined;
   variant:
     | 'h1'
@@ -24,6 +35,12 @@ type TypographyProps = Readonly<{
 const Typography: Component = defineComponent({
   name: 'Typography',
   props: {
+    color: {
+      default: undefined,
+      type: String as PropType<
+        'primary' | 'secondary' | 'error' | 'success' | 'warning' | 'info' | 'textPrimary' | 'textSecondary' | 'inherit'
+      >,
+    },
     component: {
       default: undefined,
       type: String as PropType<string>,
@@ -52,7 +69,22 @@ const Typography: Component = defineComponent({
         subtitle2: 'h6',
       };
 
-      const tag: string = props.component || tagMap[props.variant] || 'p';
+      const tag: string = props.component ?? tagMap[props.variant] ?? 'p';
+      const colorVar: Record<NonNullable<TypographyProps['color']>, string> = {
+        error: 'var(--thunderid-color-error-main)',
+        info: 'var(--thunderid-color-info-main)',
+        inherit: 'inherit',
+        primary: 'var(--thunderid-color-primary-main)',
+        secondary: 'var(--thunderid-color-secondary-main)',
+        success: 'var(--thunderid-color-success-main)',
+        textPrimary: 'var(--thunderid-color-text-primary)',
+        textSecondary: 'var(--thunderid-color-text-secondary)',
+        warning: 'var(--thunderid-color-warning-main)',
+      };
+      const style: Record<string, unknown> = {
+        ...(attrs.style as Record<string, unknown> | undefined),
+        ...(props.color ? {color: colorVar[props.color]} : {}),
+      };
 
       return h(
         tag,
@@ -64,7 +96,7 @@ const Typography: Component = defineComponent({
           ]
             .filter(Boolean)
             .join(' '),
-          style: attrs.style,
+          style,
         },
         slots['default']?.(),
       );

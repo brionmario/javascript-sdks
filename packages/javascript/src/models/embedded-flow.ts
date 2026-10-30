@@ -3,6 +3,7 @@
 
 export enum EmbeddedFlowType {
   Authentication = 'AUTHENTICATION',
+  DeviceGrant = 'DEVICE_GRANT',
   Recovery = 'RECOVERY',
   Registration = 'REGISTRATION',
   UserOnboarding = 'USER_ONBOARDING',

@@ -172,6 +172,52 @@ describe('AuthOptionFactory rich-text action', () => {
   });
 });
 
+describe('AuthOptionFactory form actions', () => {
+  it('cancels the native submit action before dispatching the SDK submission', () => {
+    const onSubmit = vi.fn();
+    const components: EmbeddedFlowComponent[] = [
+      {
+        components: [
+          {
+            eventType: EmbeddedFlowEventType.Submit,
+            id: 'continue',
+            label: 'Continue',
+            type: EmbeddedFlowComponentType.Action,
+          },
+        ],
+        id: 'device-code-form',
+        type: EmbeddedFlowComponentType.Block,
+      },
+    ];
+    const elements = renderSignInComponents(
+      components,
+      {user_code: 'ABCD-EFGH'},
+      {},
+      {},
+      false,
+      true,
+      () => undefined,
+      () => undefined,
+      {onSubmit},
+    );
+    const {container} = render(
+      <ThemeContext.Provider
+        value={{colorScheme: 'light', direction: 'ltr', theme: createTheme(), toggleTheme: vi.fn()}}
+      >
+        <div>{elements}</div>
+      </ThemeContext.Provider>,
+    );
+    const form = container.querySelector<HTMLFormElement>('#device-code-form')!;
+    const nativeSubmit = vi.fn((event: Event): void => event.preventDefault());
+    form.addEventListener('submit', nativeSubmit);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(nativeSubmit).not.toHaveBeenCalled();
+  });
+});
+
 describe('AuthOptionFactory stack grid layout', () => {
   const stackWith = (extra: Record<string, unknown>, childCount = 4): EmbeddedFlowComponent =>
     ({

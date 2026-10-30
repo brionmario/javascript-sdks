@@ -70,6 +70,13 @@ const translations: I18nTranslations = {
   /* |---------------------------------------------------------------| */
 
   /* Base Sign In */
+  'deviceGrant.errors.start': 'పరికర ధృవీకరణను ప్రారంభించలేకపోయింది. ఈ పేజీని మళ్లీ లోడ్ చేయండి.',
+  'deviceGrant.errors.continue': 'పరికర అధికారాన్ని కొనసాగించలేకపోయింది. మళ్లీ ప్రయత్నించండి.',
+  'deviceGrant.messages.complete': 'పరికరానికి అధికారం ఇచ్చారు',
+  'deviceGrant.messages.completeDescription': 'మీరు మీ పరికరానికి తిరిగి వెళ్లవచ్చు.',
+  'deviceGrant.messages.failed': 'పరికర అధికారం విఫలమైంది',
+  'deviceGrant.messages.failedDescription': 'మీ పరికరానికి తిరిగి వెళ్లి మళ్లీ ప్రారంభించండి.',
+
   'signin.heading': 'సైన్ ఇన్ చేయండి',
   'signin.subheading': 'కొనసాగించడానికి మీ వివరాలు ఇవ్వండి.',
   'signin.images.app_logo.alt': 'అప్లికేషన్ లోగో',
@@ -181,6 +188,8 @@ const translations: I18nTranslations = {
   'consent.essential_claims': 'ఆవశ్యక లక్షణాలు',
   'consent.optional_claims': 'ఐచ్ఛిక లక్షణాలు',
   'consent.authorize_scope': 'అనుమతులు',
+  'consent.essential_scope': 'అవసరమైన అనుమతులు',
+  'consent.optional_scope': 'ఐచ్ఛిక అనుమతులు',
   'consent.essential_claims.info': 'సేవ సరిగ్గా పనిచేయడానికి ఈ లక్షణాలు అవసరం.',
   'consent.optional_claims.info': 'ఈ లక్షణాలు ఐచ్ఛికం మరియు మీ విచక్షణ మేరకు అందించవచ్చు.',
   'consent.authorize_scope.info': 'ఈ అనుమతులు సేవను అదనపు ఫీచర్‌లను యాక్సెస్ చేయడానికి అనుమతిస్తాయి.',
@@ -198,6 +207,8 @@ const translations: I18nTranslations = {
   'consent.authorization_details.add_item': '{item}, జోడించు',
   'consent.authorization_details.add_back_item': '{item}, మళ్లీ జోడించు',
   'consent.authorization_details.new_item': '{label}, జోడించు',
+  'consent.essential_scope.info': 'సేవ సరిగ్గా పనిచేయడానికి ఈ అనుమతులు అవసరం.',
+  'consent.optional_scope.info': 'ఈ అనుమతులు ఐచ్ఛికం మరియు మీ విచక్షణ మేరకు మంజూరు చేయవచ్చు.',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

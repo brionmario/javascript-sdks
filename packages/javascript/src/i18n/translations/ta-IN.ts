@@ -70,6 +70,13 @@ const translations: I18nTranslations = {
   /* |---------------------------------------------------------------| */
 
   /* Base Sign In */
+  'deviceGrant.errors.start': 'சாதனச் சரிபார்ப்பைத் தொடங்க முடியவில்லை. இந்தப் பக்கத்தை மீண்டும் ஏற்றவும்.',
+  'deviceGrant.errors.continue': 'சாதன அங்கீகாரத்தைத் தொடர முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+  'deviceGrant.messages.complete': 'சாதனத்திற்கு அங்கீகாரம் வழங்கப்பட்டது',
+  'deviceGrant.messages.completeDescription': 'உங்கள் சாதனத்திற்குத் திரும்பலாம்.',
+  'deviceGrant.messages.failed': 'சாதன அங்கீகாரம் தோல்வியடைந்தது',
+  'deviceGrant.messages.failedDescription': 'உங்கள் சாதனத்திற்குத் திரும்பி மீண்டும் தொடங்கவும்.',
+
   'signin.heading': 'உள்நுழை',
   'signin.subheading': 'தொடர உங்கள் சான்றுகளை உள்ளிடவும்.',
   'signin.images.app_logo.alt': 'பயன்பாட்டு லோகோ',
@@ -181,6 +188,8 @@ const translations: I18nTranslations = {
   'consent.essential_claims': 'அத்தியாவசிய பண்புகள்',
   'consent.optional_claims': 'விருப்பத் பண்புகள்',
   'consent.authorize_scope': 'அனுமதிகள்',
+  'consent.essential_scope': 'அத்தியாவசிய அனுமதிகள்',
+  'consent.optional_scope': 'விருப்ப அனுமதிகள்',
   'consent.essential_claims.info': 'சேவை சரியாக செயல்பட இந்த பண்புகள் தேவை.',
   'consent.optional_claims.info': 'இந்த பண்புகள் விருப்பத்தேர்வு மற்றும் உங்கள் விருப்பப்படி வழங்கப்படலாம்.',
   'consent.authorize_scope.info': 'இந்த அனுமதிகள் கூடுதல் அம்சங்களை அணுக சேவைக்கு உதவுகின்றன.',
@@ -198,6 +207,8 @@ const translations: I18nTranslations = {
   'consent.authorization_details.add_item': '{item}, சேர்',
   'consent.authorization_details.add_back_item': '{item}, மீண்டும் சேர்',
   'consent.authorization_details.new_item': '{label}, சேர்',
+  'consent.essential_scope.info': 'சேவை சரியாக செயல்பட இந்த அனுமதிகள் தேவை.',
+  'consent.optional_scope.info': 'இந்த அனுமதிகள் விருப்பமானவை; உங்கள் விருப்பப்படி வழங்கலாம்.',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

@@ -69,6 +69,14 @@ export interface I18nTranslations {
   /* |                        Widgets                                | */
   /* |---------------------------------------------------------------| */
 
+  /* Device Grant */
+  'deviceGrant.errors.start': string;
+  'deviceGrant.errors.continue': string;
+  'deviceGrant.messages.complete': string;
+  'deviceGrant.messages.completeDescription': string;
+  'deviceGrant.messages.failed': string;
+  'deviceGrant.messages.failedDescription': string;
+
   /* Base Sign In */
   'signin.heading': string;
   'signin.subheading': string;
@@ -182,6 +190,8 @@ export interface I18nTranslations {
   'consent.essential_claims': string;
   'consent.optional_claims': string;
   'consent.authorize_scope': string;
+  'consent.essential_scope': string;
+  'consent.optional_scope': string;
   'consent.essential_claims.info': string;
   'consent.optional_claims.info': string;
   'consent.authorize_scope.info': string;
@@ -199,6 +209,8 @@ export interface I18nTranslations {
   'consent.authorization_details.add_item': string;
   'consent.authorization_details.add_back_item': string;
   'consent.authorization_details.new_item': string;
+  'consent.essential_scope.info': string;
+  'consent.optional_scope.info': string;
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

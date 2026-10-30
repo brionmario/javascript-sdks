@@ -70,6 +70,13 @@ const translations: I18nTranslations = {
   /* |---------------------------------------------------------------| */
 
   /* Base Sign In */
+  'deviceGrant.errors.start': 'Impossible de démarrer la vérification de l’appareil. Rechargez cette page.',
+  'deviceGrant.errors.continue': 'Impossible de poursuivre l’autorisation de l’appareil. Réessayez.',
+  'deviceGrant.messages.complete': 'Appareil autorisé',
+  'deviceGrant.messages.completeDescription': 'Vous pouvez revenir à votre appareil.',
+  'deviceGrant.messages.failed': 'Échec de l’autorisation de l’appareil',
+  'deviceGrant.messages.failedDescription': 'Revenez à votre appareil et recommencez.',
+
   'signin.heading': 'Se connecter',
   'signin.subheading': 'Entrez vos identifiants pour continuer.',
   'signin.images.app_logo.alt': "Logo de l'application",
@@ -182,10 +189,14 @@ const translations: I18nTranslations = {
   'consent.essential_claims': 'Attributs essentiels',
   'consent.optional_claims': 'Attributs facultatifs',
   'consent.authorize_scope': 'Autorisations',
+  'consent.essential_scope': 'Autorisations essentielles',
+  'consent.optional_scope': 'Autorisations facultatives',
   'consent.essential_claims.info': 'Ces attributs sont nécessaires au bon fonctionnement du service.',
   'consent.optional_claims.info': 'Ces attributs sont facultatifs et peuvent être fournis à votre discrétion.',
   'consent.authorize_scope.info':
     "Ces autorisations permettent au service d'accéder à des fonctionnalités supplémentaires.",
+  'consent.essential_scope.info': 'Ces autorisations sont nécessaires au bon fonctionnement du service.',
+  'consent.optional_scope.info': 'Ces autorisations sont facultatives et peuvent être accordées à votre discrétion.',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

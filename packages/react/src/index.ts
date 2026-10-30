@@ -90,6 +90,12 @@ export * from './components/auth/guards/SignedOut';
 export {default as Loading} from './components/auth/guards/Loading';
 export * from './components/auth/guards/Loading';
 
+export {default as DeviceGrant} from './components/auth/DeviceGrant/DeviceGrant';
+export * from './components/auth/DeviceGrant/DeviceGrant';
+
+export {default as BaseDeviceGrant} from './components/auth/DeviceGrant/BaseDeviceGrant';
+export * from './components/auth/DeviceGrant/BaseDeviceGrant';
+
 export {default as BaseSignIn} from './components/auth/SignIn/BaseSignIn';
 export * from './components/auth/SignIn/BaseSignIn';
 

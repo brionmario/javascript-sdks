@@ -117,6 +117,16 @@ export {default as SignIn} from './components/auth/sign-in/SignIn';
 export type {SignInRenderProps} from './components/auth/sign-in/SignIn';
 export {default as BaseSignIn} from './components/auth/sign-in/BaseSignIn';
 export type {BaseSignInRenderProps, BaseSignInProps} from './components/auth/sign-in/BaseSignIn';
+export {default as Consent} from './components/auth/flow/Consent';
+export type {ConsentData, ConsentProps, ConsentRenderProps} from './components/auth/flow/Consent';
+export {default as DeviceGrant} from './components/auth/device-grant/DeviceGrant';
+export type {
+  BaseDeviceGrantProps,
+  BaseDeviceGrantRenderProps,
+  DeviceGrantResult,
+} from './components/auth/device-grant/BaseDeviceGrant';
+export type {DeviceGrantRenderProps} from './components/auth/device-grant/DeviceGrant';
+export {default as BaseDeviceGrant} from './components/auth/device-grant/BaseDeviceGrant';
 export {default as SignUp} from './components/auth/sign-up/SignUp';
 export type {SignUpRenderProps} from './components/auth/sign-up/SignUp';
 export {default as BaseSignUp} from './components/auth/sign-up/BaseSignUp';

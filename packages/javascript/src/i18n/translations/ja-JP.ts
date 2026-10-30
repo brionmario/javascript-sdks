@@ -70,6 +70,13 @@ const translations: I18nTranslations = {
   /* |---------------------------------------------------------------| */
 
   /* Base Sign In */
+  'deviceGrant.errors.start': 'デバイスの確認を開始できませんでした。このページを再読み込みしてください。',
+  'deviceGrant.errors.continue': 'デバイスの認可を続行できませんでした。もう一度お試しください。',
+  'deviceGrant.messages.complete': 'デバイスが認可されました',
+  'deviceGrant.messages.completeDescription': 'デバイスに戻ることができます。',
+  'deviceGrant.messages.failed': 'デバイスの認可に失敗しました',
+  'deviceGrant.messages.failedDescription': 'デバイスに戻り、もう一度開始してください。',
+
   'signin.heading': 'ログイン',
   'signin.subheading': '続行するには認証情報を入力してください。',
   'signin.images.app_logo.alt': 'アプリケーションロゴ',
@@ -179,6 +186,8 @@ const translations: I18nTranslations = {
   'consent.essential_claims': '必須属性',
   'consent.optional_claims': '任意属性',
   'consent.authorize_scope': '権限',
+  'consent.essential_scope': '必須権限',
+  'consent.optional_scope': '任意権限',
   'consent.essential_claims.info': 'これらの属性は、サービスが正常に機能するために必要です。',
   'consent.optional_claims.info': 'これらの属性は任意であり、お客様の判断で提供できます。',
   'consent.authorize_scope.info': 'これらの権限により、サービスが追加機能にアクセスできるようになります。',
@@ -196,6 +205,8 @@ const translations: I18nTranslations = {
   'consent.authorization_details.add_item': '{item}、追加',
   'consent.authorization_details.add_back_item': '{item}、再追加',
   'consent.authorization_details.new_item': '{label}、追加',
+  'consent.essential_scope.info': 'これらの権限は、サービスが正常に機能するために必要です。',
+  'consent.optional_scope.info': 'これらの権限は任意であり、お客様の判断で付与できます。',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

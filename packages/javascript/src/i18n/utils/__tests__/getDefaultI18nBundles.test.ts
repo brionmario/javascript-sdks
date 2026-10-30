@@ -78,6 +78,10 @@ describe('getDefaultI18nBundles', (): void => {
       expect(translations).toHaveProperty('signin.heading');
       expect(translations).toHaveProperty('signin.subheading');
       expect(translations).toHaveProperty('errors.heading');
+      expect(translations).toHaveProperty('consent.essential_scope');
+      expect(translations).toHaveProperty('consent.optional_scope');
+      expect(translations).toHaveProperty('consent.essential_scope.info');
+      expect(translations).toHaveProperty('consent.optional_scope.info');
 
       Object.values(translations).forEach((value: string) => {
         expect(typeof value).toBe('string');

@@ -12,6 +12,7 @@ import {
   Button,
   Card,
   Checkbox,
+  DeviceGrant,
   Divider,
   FacebookButton,
   FlowTimer,
@@ -691,6 +692,43 @@ export const COMPONENTS: ComponentDef[] = [
       {args: {provider: 'GitHubButton'}, id: 'github', name: 'GitHub'},
       {args: {provider: 'MicrosoftButton'}, id: 'microsoft', name: 'Microsoft'},
       {args: {provider: 'SignInWithEthereumButton'}, id: 'ethereum', name: 'Ethereum'},
+    ],
+  },
+  {
+    code: (args: Args) => ({
+      imports: ['DeviceGrant'],
+      jsx: jsx('DeviceGrant', args, {
+        defaults: {size: 'medium', variant: 'default'},
+        extra: ['onComplete={handleComplete}', 'onError={handleError}'],
+      }),
+    }),
+    controls: [
+      {control: SIZE, description: 'Spacing and control size.', name: 'size', type: "'small' | 'medium' | 'large'"},
+      {
+        control: ['default', 'outlined', 'elevated'],
+        description: 'Card variant of the flow container.',
+        name: 'variant',
+        type: 'CardVariant',
+      },
+    ],
+    defaults: {size: 'medium', variant: 'default'},
+    group: 'Auth flows',
+    id: 'device-grant',
+    live: true,
+    name: 'DeviceGrant',
+    render: (args: Args, action: Action) => (
+      <Narrow width={400}>
+        <DeviceGrant
+          size={str(args, 'size') as 'medium'}
+          variant={str(args, 'variant') as 'default' | 'outlined' | 'elevated'}
+          onComplete={() => action('onComplete')}
+          onError={(error: Error) => action('onError', error.message)}
+        />
+      </Narrow>
+    ),
+    stories: [
+      {id: 'default', name: 'Default'},
+      {args: {size: 'small', variant: 'elevated'}, id: 'compact', name: 'Compact'},
     ],
   },
   {

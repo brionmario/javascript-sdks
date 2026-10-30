@@ -18,6 +18,9 @@ export type {SignUpButtonProps} from './components/auth/buttons/SignUpButton/Sig
 export {default as SignIn} from './components/auth/SignIn/SignIn';
 export type {SignInProps} from './components/auth/SignIn/SignIn';
 
+export {default as DeviceGrant} from './components/auth/DeviceGrant/DeviceGrant';
+export type {DeviceGrantProps} from './components/auth/DeviceGrant/DeviceGrant';
+
 export {default as SignOutButton} from './components/auth/buttons/SignOutButton/SignOutButton';
 export type {SignOutButtonProps} from './components/auth/buttons/SignOutButton/SignOutButton';
 

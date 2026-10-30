@@ -70,6 +70,13 @@ const translations: I18nTranslations = {
   /* |---------------------------------------------------------------| */
 
   /* Base Sign In */
+  'deviceGrant.errors.start': 'උපාංගය සත්\u200dයාපනය ආරම්භ කළ නොහැක. මෙම පිටුව නැවත පූරණය කරන්න.',
+  'deviceGrant.errors.continue': 'උපාංග අවසරය ඉදිරියට ගෙන යා නොහැක. නැවත උත්සාහ කරන්න.',
+  'deviceGrant.messages.complete': 'උපාංගයට අවසර ලබා දී ඇත',
+  'deviceGrant.messages.completeDescription': 'ඔබට ඔබගේ උපාංගය වෙත ආපසු යා හැක.',
+  'deviceGrant.messages.failed': 'උපාංග අවසරය අසාර්ථක විය',
+  'deviceGrant.messages.failedDescription': 'ඔබගේ උපාංගය වෙත ආපසු ගොස් නැවත ආරම්භ කරන්න.',
+
   'signin.heading': 'ලොග් වෙන්න',
   'signin.subheading': 'ඉදිරියට යාමට ඔබේ සත්‍යාපන තොරතුරු ඇතුළත් කරන්න.',
   'signin.images.app_logo.alt': 'යෙදුමේ ලාංඡනය',
@@ -180,6 +187,8 @@ const translations: I18nTranslations = {
   'consent.essential_claims': 'අත්‍යවශ්‍ය ගුණාංග',
   'consent.optional_claims': 'විකල්ප ගුණාංග',
   'consent.authorize_scope': 'අවසර',
+  'consent.essential_scope': 'අත්‍යවශ්‍ය අවසර',
+  'consent.optional_scope': 'විකල්ප අවසර',
   'consent.essential_claims.info': 'සේවාව නිසි ලෙස ක්‍රියාත්මක වීම සඳහා මෙම ගුණාංග අවශ්‍ය වේ.',
   'consent.optional_claims.info': 'මෙම ගුණාංග විකල්ප වන අතර ඔබේ අභිමතය පරිදි සැපයිය හැක.',
   'consent.authorize_scope.info': 'මෙම අවසරයන් මගින් සේවාවට අමතර විශේෂාංග වෙත ප්‍රවේශ වීමට ඉඩ සලසයි.',
@@ -197,6 +206,8 @@ const translations: I18nTranslations = {
   'consent.authorization_details.add_item': '{item}, එක් කරන්න',
   'consent.authorization_details.add_back_item': '{item}, නැවත එක් කරන්න',
   'consent.authorization_details.new_item': '{label}, එක් කරන්න',
+  'consent.essential_scope.info': 'සේවාව නිසි ලෙස ක්‍රියාත්මක වීම සඳහා මෙම අවසර අවශ්‍ය වේ.',
+  'consent.optional_scope.info': 'මෙම අවසර විකල්ප වන අතර ඔබේ අභිමතය පරිදි ලබා දිය හැක.',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

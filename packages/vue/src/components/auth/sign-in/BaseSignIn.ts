@@ -5,6 +5,7 @@ import {
   withVendorCSSClassPrefix,
   EmbeddedSignInFlowRequest,
   EmbeddedFlowComponent,
+  FieldError,
   FlowMetadataResponse,
 } from '@thunderid/browser';
 import {
@@ -60,10 +61,12 @@ export interface BaseSignInProps {
   error?: Error | null;
   errorClassName?: string;
   inputClassName?: string;
+  initialValues?: Record<string, string>;
   isLoading?: boolean;
   isTimeoutDisabled?: boolean;
   messageClassName?: string;
   onSubmit?: (payload: EmbeddedSignInFlowRequest, component: EmbeddedFlowComponent) => Promise<void>;
+  serverFieldErrors?: FieldError[] | null;
   size?: 'small' | 'medium' | 'large';
   variant?: 'elevated' | 'outlined' | 'flat';
 }
@@ -126,6 +129,10 @@ const BaseSignIn: Component = defineComponent({
     error: {default: null, type: Object as PropType<Error | null>},
     errorClassName: {default: '', type: String},
     inputClassName: {default: '', type: String},
+    initialValues: {
+      default: (): Record<string, string> => ({}),
+      type: Object as PropType<Record<string, string>>,
+    },
     isLoading: {default: false, type: Boolean},
     isTimeoutDisabled: {default: false, type: Boolean},
     messageClassName: {default: '', type: String},
@@ -140,6 +147,7 @@ const BaseSignIn: Component = defineComponent({
         (payload: EmbeddedSignInFlowRequest, component: EmbeddedFlowComponent) => Promise<void>
       >,
     },
+    serverFieldErrors: {default: null, type: Array as PropType<FieldError[] | null>},
     size: {
       default: 'medium',
       type: String as PropType<'small' | 'medium' | 'large'>,
@@ -159,10 +167,12 @@ const BaseSignIn: Component = defineComponent({
       error: Error | null;
       errorClassName: string;
       inputClassName: string;
+      initialValues: Record<string, string>;
       isLoading: boolean;
       isTimeoutDisabled: boolean;
       messageClassName: string;
       onSubmit?: (payload: EmbeddedSignInFlowRequest, component: EmbeddedFlowComponent) => Promise<void>;
+      serverFieldErrors: FieldError[] | null;
       size: 'small' | 'medium' | 'large';
       variant: 'elevated' | 'outlined' | 'flat';
     }>,
@@ -186,9 +196,9 @@ const BaseSignIn: Component = defineComponent({
       () => props.components,
       (newComponents: EmbeddedFlowComponent[]) => {
         const fields: FieldDefinition[] = extractFormFields(newComponents || []);
-        const freshValues: Record<string, string> = {};
+        const freshValues: Record<string, string> = {...props.initialValues};
         fields.forEach((f: FieldDefinition) => {
-          freshValues[f.name] = '';
+          freshValues[f.name] = props.initialValues[f.name] ?? '';
         });
         formValues.value = freshValues;
         touchedFields.value = {};
@@ -196,17 +206,33 @@ const BaseSignIn: Component = defineComponent({
       {deep: false, immediate: true},
     );
 
+    watch(
+      () => props.initialValues,
+      (initialValues: Record<string, string>) => {
+        formValues.value = {...formValues.value, ...initialValues};
+      },
+      {deep: true},
+    );
+
     // Computed form errors based on current values + touched
     const formErrors: ComputedRef<Record<string, string>> = computed<Record<string, string>>(() => {
       const fields: FieldDefinition[] = extractFormFields(props.components || []);
       const errors: Record<string, string> = {};
+      (props.serverFieldErrors ?? []).forEach((fieldError: FieldError) => {
+        if (!(fieldError.identifier in errors)) errors[fieldError.identifier] = fieldError.message;
+      });
       fields.forEach((field: FieldDefinition) => {
         const value: string = formValues.value[field.name] || '';
         const isTouched: boolean = touchedFields.value[field.name] || false;
-        if (field.required && isTouched && (!value || value.trim() === '')) {
+        if (!(field.name in errors) && field.required && isTouched && (!value || value.trim() === '')) {
           errors[field.name] = t('validations.required.field.error') || 'This field is required';
         }
-        if (field.type === 'EMAIL_INPUT' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        if (
+          !(field.name in errors) &&
+          field.type === 'EMAIL_INPUT' &&
+          value &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+        ) {
           errors[field.name] = t('field.email.invalid') || 'Invalid email address';
         }
       });

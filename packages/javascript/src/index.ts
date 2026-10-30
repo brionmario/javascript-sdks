@@ -4,6 +4,14 @@
 export {IsomorphicCrypto} from './IsomorphicCrypto';
 
 export {default as executeEmbeddedSignInFlow} from './api/auth/executeEmbeddedSignInFlow';
+export {default as executeEmbeddedDeviceGrantFlow} from './api/auth/executeEmbeddedDeviceGrantFlow';
+export type {
+  EmbeddedDeviceGrantFlowContinuationPayload,
+  EmbeddedDeviceGrantFlowPayload,
+  EmbeddedDeviceGrantFlowRequestConfig,
+  EmbeddedDeviceGrantFlowResponse,
+  EmbeddedDeviceGrantFlowStartPayload,
+} from './api/auth/executeEmbeddedDeviceGrantFlow';
 export {default as executeEmbeddedSignUpFlow} from './api/auth/executeEmbeddedSignUpFlow';
 export {default as executeEmbeddedRecoveryFlow} from './api/auth/executeEmbeddedRecoveryFlow';
 export {default as executeEmbeddedUserOnboardingFlow} from './api/auth/executeEmbeddedUserOnboardingFlow';

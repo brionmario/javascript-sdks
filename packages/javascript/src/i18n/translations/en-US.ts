@@ -69,6 +69,14 @@ const translations: I18nTranslations = {
   /* |                        Widgets                                | */
   /* |---------------------------------------------------------------| */
 
+  /* Device Grant */
+  'deviceGrant.errors.start': 'Could not start device verification. Please reload this page.',
+  'deviceGrant.errors.continue': 'Could not continue device authorization. Please try again.',
+  'deviceGrant.messages.complete': 'Device authorized',
+  'deviceGrant.messages.completeDescription': 'You can return to your device.',
+  'deviceGrant.messages.failed': 'Device authorization failed',
+  'deviceGrant.messages.failedDescription': 'Return to your device and start again.',
+
   /* Base Sign In */
   'signin.heading': 'Sign In',
   'signin.subheading': 'Welcome back! Please sign in to continue.',
@@ -179,6 +187,8 @@ const translations: I18nTranslations = {
   'consent.essential_claims': 'Essential Attributes',
   'consent.optional_claims': 'Optional Attributes',
   'consent.authorize_scope': 'Permissions',
+  'consent.essential_scope': 'Essential Permissions',
+  'consent.optional_scope': 'Optional Permissions',
   'consent.essential_claims.info': 'These attributes are required for the service to function properly.',
   'consent.optional_claims.info': 'These attributes are optional and can be provided at your discretion.',
   'consent.authorize_scope.info': 'These permissions allow the service to access additional features.',
@@ -196,6 +206,8 @@ const translations: I18nTranslations = {
   'consent.authorization_details.add_item': '{item}, add',
   'consent.authorization_details.add_back_item': '{item}, add back',
   'consent.authorization_details.new_item': '{label}, add',
+  'consent.essential_scope.info': 'These permissions are required for the service to function properly.',
+  'consent.optional_scope.info': 'These permissions are optional and can be granted at your discretion.',
 
   /* |---------------------------------------------------------------| */
   /* |                        Errors                                 | */

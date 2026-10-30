@@ -26,6 +26,7 @@ import {
 import type {FetchAuthFlows, FetchUsers, FetchUserTypes} from '@thunderid/browser';
 import DOMPurify from 'dompurify';
 import {h, type VNode} from 'vue';
+import Consent, {getConsentOptionalKey} from './Consent';
 import {createField} from './FieldFactory';
 import {createVueLogger} from '../../../utils/logger';
 import BaseAuthFlowSelect from '../../primitives/AuthFlowSelect/BaseAuthFlowSelect';
@@ -43,11 +44,6 @@ import GoogleButton from '../buttons/GoogleButton';
 import MicrosoftButton from '../buttons/MicrosoftButton';
 
 const logger: ReturnType<typeof createVueLogger> = createVueLogger('AuthOptionFactory');
-
-/**
- * Inline helper for consent optional attribute key (mirrors ConsentCheckboxList.getConsentOptionalKey).
- */
-const getConsentOptionalKey = (purposeId: string | number, attr: string): string => `consent_${purposeId}_${attr}`;
 
 /**
  * Replaces `emoji:` URIs embedded in HTML before DOMPurify sanitization.
@@ -78,6 +74,7 @@ const resolveEmojiUrisInHtml = (html: string): string => {
 };
 
 type TranslationFn = (key: string, params?: Record<string, string | number>) => string;
+type TypographyColor = 'primary' | 'secondary' | 'error' | 'success' | 'warning' | 'info';
 
 /**
  * Get the appropriate FieldType for an input component.
@@ -117,6 +114,25 @@ const getTypographyVariant = (variant: string): any => {
   } as Record<EmbeddedFlowTextVariant, string>;
 
   return variantMap[variant] || 'h3';
+};
+
+const getTypographyColor = (color?: string): TypographyColor | undefined => {
+  switch (color?.toUpperCase()) {
+    case 'ERROR':
+      return 'error';
+    case 'INFO':
+      return 'info';
+    case 'PRIMARY':
+      return 'primary';
+    case 'SECONDARY':
+      return 'secondary';
+    case 'SUCCESS':
+      return 'success';
+    case 'WARNING':
+      return 'warning';
+    default:
+      return undefined;
+  }
 };
 
 /**
@@ -385,11 +401,14 @@ const createAuthComponentFromFlow = (
     case EmbeddedFlowComponentType.Text: {
       const variant: any = getTypographyVariant(component.variant ?? '');
       const align: string = typeof (component as any).align === 'string' ? (component as any).align : 'left';
+      const color: TypographyColor | undefined = getTypographyColor(component.color);
 
       return h(
         Typography,
         {
+          id: component.id,
           key,
+          color,
           style: {marginBottom: '0.5rem', textAlign: align},
           variant,
         },
@@ -588,9 +607,13 @@ const createAuthComponentFromFlow = (
     }
 
     case EmbeddedFlowComponentType.Consent: {
-      // Consent component is not yet implemented in the Vue SDK.
-      logger.warn(`Consent component type is not yet fully supported in the Vue SDK.`);
-      return null;
+      return h(Consent, {
+        consentData: options.additionalData?.['consentPrompt'] as ConsentPromptData | string | undefined,
+        formValues,
+        key,
+        onInputChange,
+        t: options.t,
+      });
     }
 
     case EmbeddedFlowComponentType.Timer: {

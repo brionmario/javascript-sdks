@@ -29,6 +29,7 @@ import {getDisplayName} from './user';
 import {
   AuthFlowSelect,
   ChangeCredential,
+  DeviceGrant,
   Loading,
   SignedIn,
   SignedOut,
@@ -570,6 +571,43 @@ export const COMPONENTS: ComponentDef[] = [
       {args: {provider: 'GitHubButton'}, id: 'github', name: 'GitHub'},
       {args: {provider: 'MicrosoftButton'}, id: 'microsoft', name: 'Microsoft'},
       {args: {provider: 'FacebookButton'}, id: 'facebook', name: 'Facebook'},
+    ],
+  },
+  {
+    code: (args: Args) => ({
+      imports: [],
+      template: tag('DeviceGrant', args, {
+        defaults: {size: 'medium', variant: 'flat'},
+        extra: ['@complete="handleComplete"', '@error="handleError"'],
+      }),
+    }),
+    controls: [
+      {control: SIZE, description: 'Spacing and control size.', name: 'size', type: "'small' | 'medium' | 'large'"},
+      {
+        control: CARD_VARIANT,
+        description: 'Card variant of the flow container.',
+        name: 'variant',
+        type: "'elevated' | 'outlined' | 'flat'",
+      },
+    ],
+    defaults: {size: 'medium', variant: 'flat'},
+    group: 'Auth flows',
+    id: 'devicegrant',
+    live: true,
+    name: 'DeviceGrant',
+    render: (args: Args, action: Action) =>
+      narrow(
+        400,
+        h(DeviceGrant, {
+          onComplete: () => action('complete'),
+          onError: (error: Error) => action('error', error.message),
+          size: str(args, 'size'),
+          variant: str(args, 'variant'),
+        }),
+      ),
+    stories: [
+      {id: 'default', name: 'Default'},
+      {args: {size: 'small', variant: 'elevated'}, id: 'compact', name: 'Compact'},
     ],
   },
   {

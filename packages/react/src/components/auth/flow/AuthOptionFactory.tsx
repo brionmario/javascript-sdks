@@ -29,7 +29,7 @@ import {
   getConsentElementDecision,
 } from '@thunderid/browser';
 import DOMPurify from 'dompurify';
-import {ChangeEvent, cloneElement, CSSProperties, FormEvent, ReactElement} from 'react';
+import {ChangeEvent, cloneElement, CSSProperties, FormEvent, MouseEvent, ReactElement} from 'react';
 import Consent from './Consent';
 import {getConsentOptionalKey} from './ConsentCheckboxList';
 import {createField} from './FieldFactory';
@@ -54,7 +54,7 @@ import flowIconRegistry from '../../primitives/Icons/flowIconRegistry';
 import KeyValueList from '../../primitives/KeyValueList/KeyValueList';
 import Select from '../../primitives/Select/Select';
 import Typography from '../../primitives/Typography/Typography';
-import {TypographyVariant} from '../../primitives/Typography/Typography.styles';
+import {TypographyColor, TypographyVariant} from '../../primitives/Typography/Typography.styles';
 import BaseUserSelect, {BaseUserSelectProps} from '../../primitives/UserSelect/BaseUserSelect';
 import BaseUserTypeSelect from '../../primitives/UserTypeSelect/BaseUserTypeSelect';
 import FacebookButton from '../buttons/FacebookButton';
@@ -168,6 +168,26 @@ const getTypographyVariant = (variant: string): any => {
   };
 
   return variantMap[variant] || 'h3';
+};
+
+/** Maps flow text color values to SDK typography color variants. */
+const getTypographyColor = (color?: string): TypographyColor | undefined => {
+  switch (color?.toUpperCase()) {
+    case 'ERROR':
+      return 'error';
+    case 'WARNING':
+      return 'warning';
+    case 'SUCCESS':
+      return 'success';
+    case 'INFO':
+      return 'info';
+    case 'PRIMARY':
+      return 'primary';
+    case 'SECONDARY':
+      return 'secondary';
+    default:
+      return undefined;
+  }
 };
 
 /**
@@ -446,7 +466,12 @@ const createAuthComponentFromFlow = (
           formValues,
         );
 
-      const handleClick = (): any => {
+      const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
+        // Flow actions are handled by the SDK. Cancel the native button action before
+        // onSubmit can switch steps or replace the form; otherwise the browser tries to
+        // submit a form that React has already disconnected from the document.
+        event.preventDefault();
+
         if (options.onSubmit) {
           const formData: Record<string, any> = {};
           Object.keys(formValues).forEach((field: any) => {
@@ -567,13 +592,20 @@ const createAuthComponentFromFlow = (
 
     case EmbeddedFlowComponentType.Text: {
       const variant: any = getTypographyVariant(component.variant!);
+      const color: TypographyColor | undefined = getTypographyColor(component.color);
       const textAlignClass: string = css({
         marginBottom: 2,
         textAlign:
           typeof component?.align === 'string' ? (component.align as React.CSSProperties['textAlign']) : 'left',
       });
       return (
-        <Typography key={key} id={component.id} className={cx(component.classes, textAlignClass)} variant={variant}>
+        <Typography
+          key={key}
+          id={component.id}
+          className={cx(component.classes, textAlignClass)}
+          variant={variant}
+          color={color}
+        >
           {resolve(component.label)}
         </Typography>
       );
