@@ -1,7 +1,7 @@
 // Copyright 2025-2026 The ThunderID Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import {EmbeddedFlowResponseType, EmbeddedFlowType, FlowExecutionError} from './embedded-flow';
+import {EmbeddedFlowResponseType, EmbeddedFlowSessionData, EmbeddedFlowType, FlowExecutionError} from './embedded-flow';
 
 /**
  * Status enumeration for ThunderID embedded sign-up flow operations.
@@ -173,6 +173,17 @@ export interface EmbeddedSignUpFlowResponse extends ExtendedEmbeddedSignUpFlowRe
    * Determines whether more input is needed or the flow is complete.
    */
   flowStatus: EmbeddedSignUpFlowStatus;
+
+  /**
+   * SSO sessions this step started. A step that starts one need not be the last, so they can arrive on
+   * an INCOMPLETE response.
+   */
+  sessionData?: EmbeddedFlowSessionData[];
+
+  /**
+   * Flow identifiers whose SSO session this step ended.
+   */
+  clearedSessions?: string[];
 
   /**
    * Type of response, indicating the expected user interaction.

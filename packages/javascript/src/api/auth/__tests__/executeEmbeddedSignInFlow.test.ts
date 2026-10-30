@@ -437,6 +437,124 @@ describe('executeEmbeddedSignInFlow', (): void => {
     });
   });
 
+  describe('session data posted with the callback', (): void => {
+    const BASE_URL = 'https://localhost:8090';
+
+    const respond = (body: Record<string, unknown>): {json: () => Promise<unknown>; ok: boolean} => ({
+      json: () => Promise.resolve(body),
+      ok: true,
+    });
+
+    it('posts the sessions every response returned, INCOMPLETE ones included', async (): Promise<void> => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respond({
+            flowStatus: EmbeddedSignInFlowStatus.Incomplete,
+            sessionData: [{expiresIn: 28800, flowIdentifier: 'flow-a', sessionHandle: 'handle-a'}],
+          }),
+        )
+        .mockResolvedValueOnce(
+          respond({
+            assertion: 'signed-assertion',
+            flowStatus: EmbeddedSignInFlowStatus.Complete,
+            sessionData: [{expiresIn: 28800, flowIdentifier: 'flow-b', sessionHandle: 'handle-b'}],
+          }),
+        )
+        .mockResolvedValueOnce(respond({redirect_uri: 'https://client.example.com/cb?code=xyz'}));
+
+      await executeEmbeddedSignInFlow({authId: 'auth-sessions', baseUrl: BASE_URL, payload: {executionId: 'e-1'}});
+      await executeEmbeddedSignInFlow({
+        authId: 'auth-sessions',
+        baseUrl: BASE_URL,
+        payload: {action: 'submit', executionId: 'e-1'},
+      });
+
+      expect(captureRequestBody()).toEqual({
+        assertion: 'signed-assertion',
+        authId: 'auth-sessions',
+        sessionData: [
+          {flowIdentifier: 'flow-a', sessionHandle: 'handle-a'},
+          {flowIdentifier: 'flow-b', sessionHandle: 'handle-b'},
+        ],
+      });
+    });
+
+    it('does not post a session a later step cleared', async (): Promise<void> => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respond({
+            flowStatus: EmbeddedSignInFlowStatus.Incomplete,
+            sessionData: [{flowIdentifier: 'flow-a', sessionHandle: 'handle-a'}],
+          }),
+        )
+        .mockResolvedValueOnce(
+          respond({
+            assertion: 'signed-assertion',
+            clearedSessions: ['flow-a'],
+            flowStatus: EmbeddedSignInFlowStatus.Complete,
+          }),
+        )
+        .mockResolvedValueOnce(respond({redirect_uri: 'https://client.example.com/cb?code=xyz'}));
+
+      await executeEmbeddedSignInFlow({authId: 'auth-cleared', baseUrl: BASE_URL, payload: {executionId: 'e-2'}});
+      await executeEmbeddedSignInFlow({
+        authId: 'auth-cleared',
+        baseUrl: BASE_URL,
+        payload: {action: 'submit', executionId: 'e-2'},
+      });
+
+      expect(captureRequestBody()).toEqual({assertion: 'signed-assertion', authId: 'auth-cleared'});
+    });
+
+    it('keeps the sessions of one authorization request out of another', async (): Promise<void> => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respond({
+            flowStatus: EmbeddedSignInFlowStatus.Incomplete,
+            sessionData: [{flowIdentifier: 'flow-a', sessionHandle: 'handle-a'}],
+          }),
+        )
+        .mockResolvedValueOnce(respond({assertion: 'signed-assertion', flowStatus: EmbeddedSignInFlowStatus.Complete}))
+        .mockResolvedValueOnce(respond({redirect_uri: 'https://client.example.com/cb?code=xyz'}));
+
+      await executeEmbeddedSignInFlow({authId: 'auth-one', baseUrl: BASE_URL, payload: {executionId: 'e-3'}});
+      await executeEmbeddedSignInFlow({
+        authId: 'auth-other',
+        baseUrl: BASE_URL,
+        payload: {action: 'submit', executionId: 'e-4'},
+      });
+
+      expect(captureRequestBody()).toEqual({assertion: 'signed-assertion', authId: 'auth-other'});
+    });
+
+    it('does not post the collected sessions with a failure', async (): Promise<void> => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          respond({
+            flowStatus: EmbeddedSignInFlowStatus.Incomplete,
+            sessionData: [{flowIdentifier: 'flow-a', sessionHandle: 'handle-a'}],
+          }),
+        )
+        .mockResolvedValueOnce(
+          respond({errorAssertion: 'signed-error-assertion', flowStatus: EmbeddedSignInFlowStatus.Error}),
+        )
+        .mockResolvedValueOnce(respond({redirect_uri: 'https://client.example.com/cb?error=access_denied'}));
+
+      await executeEmbeddedSignInFlow({authId: 'auth-failed', baseUrl: BASE_URL, payload: {executionId: 'e-5'}});
+      await executeEmbeddedSignInFlow({
+        authId: 'auth-failed',
+        baseUrl: BASE_URL,
+        payload: {action: 'submit', executionId: 'e-5'},
+      });
+
+      expect(captureRequestBody()).toEqual({assertion: 'signed-error-assertion', authId: 'auth-failed'});
+    });
+  });
+
   it('throws when payload is missing', async (): Promise<void> => {
     await expect(executeEmbeddedSignInFlow({url: URL})).rejects.toThrow('Authorization payload is required');
   });

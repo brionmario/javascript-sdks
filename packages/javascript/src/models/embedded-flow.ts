@@ -15,6 +15,19 @@ export enum EmbeddedFlowResponseType {
 }
 
 /**
+ * An SSO session a flow step started, as the flow execution API returns it. The handle resumes the
+ * session without authentication, so it is held as a credential.
+ */
+export interface EmbeddedFlowSessionData {
+  /** Seconds until the session reaches its absolute timeout. Present on a session a step started. */
+  expiresIn?: number;
+  /** Identifies the flow the session belongs to. */
+  flowIdentifier: string;
+  /** The session handle. */
+  sessionHandle: string;
+}
+
+/**
  * Base request configuration for executing embedded flow operations.
  *
  * @template T - Type of the payload data being sent with the request
